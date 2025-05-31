@@ -30,8 +30,9 @@ public class Investor {
     @Column(name = "investment_capacity", precision = 19, scale = 2)
     private BigDecimal investmentCapacity;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "investor_type")
-    private String investorType;
+    private InvestorType investorType;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -46,7 +47,7 @@ public class Investor {
     }
 
     public Investor(String name, String email, String phoneNumber, String companyId,
-            BigDecimal investmentCapacity, String investorType) {
+            BigDecimal investmentCapacity, InvestorType investorType) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -117,11 +118,11 @@ public class Investor {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getInvestorType() {
+    public InvestorType getInvestorType() {
         return investorType;
     }
 
-    public void setInvestorType(String investorType) {
+    public void setInvestorType(InvestorType investorType) {
         this.investorType = investorType;
         this.updatedAt = LocalDateTime.now();
     }

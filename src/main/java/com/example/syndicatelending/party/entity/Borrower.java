@@ -30,8 +30,9 @@ public class Borrower {
     @Column(name = "credit_limit", precision = 19, scale = 2)
     private BigDecimal creditLimit;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "credit_rating")
-    private String creditRating;
+    private CreditRating creditRating;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -43,7 +44,7 @@ public class Borrower {
     }
 
     public Borrower(String name, String email, String phoneNumber, String companyId,
-            BigDecimal creditLimit, String creditRating) {
+            BigDecimal creditLimit, CreditRating creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -113,11 +114,11 @@ public class Borrower {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getCreditRating() {
+    public CreditRating getCreditRating() {
         return creditRating;
     }
 
-    public void setCreditRating(String creditRating) {
+    public void setCreditRating(CreditRating creditRating) {
         this.creditRating = creditRating;
         this.updatedAt = LocalDateTime.now();
     }

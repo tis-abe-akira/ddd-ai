@@ -1,6 +1,10 @@
 package com.example.syndicatelending.party.controller;
 
 import com.example.syndicatelending.party.dto.*;
+import com.example.syndicatelending.party.entity.Industry;
+import com.example.syndicatelending.party.entity.Country;
+import com.example.syndicatelending.party.entity.CreditRating;
+import com.example.syndicatelending.party.entity.InvestorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +45,7 @@ class PartyControllerTest {
         void 企業を正常に作成できる() throws Exception {
                 setUp();
                 CreateCompanyRequest request = new CreateCompanyRequest(
-                                "Test Company", "REG123456", "Technology", "123 Main St", "Japan");
+                                "Test Company", "REG123456", Industry.IT, "123 Main St", Country.JAPAN);
 
                 mockMvc.perform(post("/api/v1/parties/companies")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -49,9 +53,9 @@ class PartyControllerTest {
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.companyName").value("Test Company"))
                                 .andExpect(jsonPath("$.registrationNumber").value("REG123456"))
-                                .andExpect(jsonPath("$.industry").value("Technology"))
+                                .andExpect(jsonPath("$.industry").value("IT"))
                                 .andExpect(jsonPath("$.address").value("123 Main St"))
-                                .andExpect(jsonPath("$.country").value("Japan"))
+                                .andExpect(jsonPath("$.country").value("JAPAN"))
                                 .andExpect(jsonPath("$.id").exists())
                                 .andExpect(jsonPath("$.createdAt").exists())
                                 .andExpect(jsonPath("$.updatedAt").exists());
@@ -62,7 +66,7 @@ class PartyControllerTest {
                 setUp();
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "borrower@example.com", "123-456-7890",
-                                null, BigDecimal.valueOf(1000000), "AA");
+                                null, BigDecimal.valueOf(1000000), CreditRating.AA);
 
                 mockMvc.perform(post("/api/v1/parties/borrowers")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -83,7 +87,7 @@ class PartyControllerTest {
                 setUp();
                 CreateInvestorRequest request = new CreateInvestorRequest(
                                 "Test Investor", "investor@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(5000000), "Bank");
+                                null, BigDecimal.valueOf(5000000), InvestorType.BANK);
 
                 mockMvc.perform(post("/api/v1/parties/investors")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -93,7 +97,7 @@ class PartyControllerTest {
                                 .andExpect(jsonPath("$.email").value("investor@example.com"))
                                 .andExpect(jsonPath("$.phoneNumber").value("987-654-3210"))
                                 .andExpect(jsonPath("$.investmentCapacity").value(5000000))
-                                .andExpect(jsonPath("$.investorType").value("Bank"))
+                                .andExpect(jsonPath("$.investorType").value("BANK"))
                                 .andExpect(jsonPath("$.isActive").value(true))
                                 .andExpect(jsonPath("$.id").exists())
                                 .andExpect(jsonPath("$.createdAt").exists())

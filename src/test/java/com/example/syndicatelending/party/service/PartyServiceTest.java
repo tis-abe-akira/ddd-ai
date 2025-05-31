@@ -9,6 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -43,8 +47,8 @@ class PartyServiceTest {
         @Test
         void 企業を正常に作成できる() {
                 CreateCompanyRequest request = new CreateCompanyRequest(
-                                "Test Company", "REG123", "Tech", "Tokyo", "Japan");
-                Company savedCompany = new Company("Test Company", "REG123", "Tech", "Tokyo", "Japan");
+                                "Test Company", "REG123", Industry.IT, "Tokyo", Country.JAPAN);
+                Company savedCompany = new Company("Test Company", "REG123", Industry.IT, "Tokyo", Country.JAPAN);
 
                 when(companyRepository.save(any(Company.class))).thenReturn(savedCompany);
 
@@ -85,10 +89,10 @@ class PartyServiceTest {
         void 借り手を正常に作成できる() {
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, BigDecimal.valueOf(1000000), "AA");
+                                null, BigDecimal.valueOf(1000000), CreditRating.AA);
                 Borrower savedBorrower = new Borrower(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, BigDecimal.valueOf(1000000), "AA");
+                                null, BigDecimal.valueOf(1000000), CreditRating.AA);
 
                 when(borrowerRepository.save(any(Borrower.class))).thenReturn(savedBorrower);
 
@@ -106,12 +110,12 @@ class PartyServiceTest {
                 String companyId = "1";
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                companyId, BigDecimal.ZERO, "AA");
+                                companyId, BigDecimal.ZERO, CreditRating.AA);
 
                 when(companyRepository.existsById(1L)).thenReturn(true);
                 Borrower savedBorrower = new Borrower(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                companyId, BigDecimal.ZERO, "AA");
+                                companyId, BigDecimal.ZERO, CreditRating.AA);
                 when(borrowerRepository.save(any(Borrower.class))).thenReturn(savedBorrower);
 
                 Borrower result = partyService.createBorrower(request);
@@ -127,7 +131,7 @@ class PartyServiceTest {
                 String companyId = "999";
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                companyId, BigDecimal.ZERO, "AA");
+                                companyId, BigDecimal.ZERO, CreditRating.AA);
 
                 when(companyRepository.existsById(999L)).thenReturn(false);
 
@@ -144,10 +148,10 @@ class PartyServiceTest {
         void 投資家を正常に作成できる() {
                 CreateInvestorRequest request = new CreateInvestorRequest(
                                 "Test Investor", "investor@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(5000000), "Bank");
+                                null, BigDecimal.valueOf(5000000), InvestorType.BANK);
                 Investor savedInvestor = new Investor(
                                 "Test Investor", "investor@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(5000000), "Bank");
+                                null, BigDecimal.valueOf(5000000), InvestorType.BANK);
 
                 when(investorRepository.save(any(Investor.class))).thenReturn(savedInvestor);
 
@@ -157,30 +161,32 @@ class PartyServiceTest {
                 assertEquals("Test Investor", result.getName());
                 assertEquals("investor@example.com", result.getEmail());
                 assertEquals(BigDecimal.valueOf(5000000), result.getInvestmentCapacity());
-                assertEquals("Bank", result.getInvestorType());
+                assertEquals(InvestorType.BANK, result.getInvestorType());
                 verify(investorRepository).save(any(Investor.class));
         }
 
         @Test
         void 全ての企業を取得できる() {
                 List<Company> companies = List.of(
-                                new Company("Company 1", null, null, null, null),
-                                new Company("Company 2", null, null, null, null));
-                when(companyRepository.findAll()).thenReturn(companies);
+                                new Company("Company 1", null, Industry.OTHER, null, Country.OTHER),
+                                new Company("Company 2", null, Industry.OTHER, null, Country.OTHER));
+                Pageable pageable = PageRequest.of(0, 10);
+                Page<Company> companyPage = new PageImpl<>(companies, pageable, companies.size());
+                when(companyRepository.findAll(pageable)).thenReturn(companyPage);
 
-                List<Company> result = partyService.getAllCompanies();
+                Page<Company> result = partyService.getAllCompanies(pageable);
 
-                assertEquals(2, result.size());
-                assertEquals("Company 1", result.get(0).getCompanyName());
-                assertEquals("Company 2", result.get(1).getCompanyName());
-                verify(companyRepository).findAll();
+                assertEquals(2, result.getTotalElements());
+                assertEquals("Company 1", result.getContent().get(0).getCompanyName());
+                assertEquals("Company 2", result.getContent().get(1).getCompanyName());
+                verify(companyRepository).findAll(pageable);
         }
 
         @Test
         void アクティブな投資家のみ取得できる() {
                 List<Investor> activeInvestors = List.of(
-                                new Investor("Investor 1", null, null, null, null, null),
-                                new Investor("Investor 2", null, null, null, null, null));
+                                new Investor("Investor 1", null, null, null, null, InvestorType.BANK),
+                                new Investor("Investor 2", null, null, null, null, InvestorType.BANK));
                 when(investorRepository.findByIsActiveTrue()).thenReturn(activeInvestors);
 
                 List<Investor> result = partyService.getActiveInvestors();

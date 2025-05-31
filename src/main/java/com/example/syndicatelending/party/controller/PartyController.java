@@ -6,6 +6,8 @@ import com.example.syndicatelending.party.service.PartyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,8 +45,8 @@ public class PartyController {
 
     @GetMapping("/companies")
     @Operation(summary = "Get all companies")
-    public ResponseEntity<List<Company>> getAllCompanies() {
-        List<Company> companies = partyService.getAllCompanies();
+    public ResponseEntity<Page<Company>> getAllCompanies(Pageable pageable) {
+        Page<Company> companies = partyService.getAllCompanies(pageable);
         return ResponseEntity.ok(companies);
     }
 

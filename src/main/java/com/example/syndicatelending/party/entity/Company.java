@@ -20,14 +20,16 @@ public class Company {
     @Column(name = "registration_number")
     private String registrationNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "industry")
-    private String industry;
+    private Industry industry;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "country")
+    private Country country;
 
     @Column(name = "address")
     private String address;
-
-    @Column(name = "country")
-    private String country;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -38,7 +40,7 @@ public class Company {
     public Company() {
     }
 
-    public Company(String companyName, String registrationNumber, String industry, String address, String country) {
+    public Company(String companyName, String registrationNumber, Industry industry, String address, Country country) {
         this.companyName = companyName;
         this.registrationNumber = registrationNumber;
         this.industry = industry;
@@ -80,11 +82,11 @@ public class Company {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getIndustry() {
+    public Industry getIndustry() {
         return industry;
     }
 
-    public void setIndustry(String industry) {
+    public void setIndustry(Industry industry) {
         this.industry = industry;
         this.updatedAt = LocalDateTime.now();
     }
@@ -98,11 +100,11 @@ public class Company {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getCountry() {
+    public Country getCountry() {
         return country;
     }
 
-    public void setCountry(String country) {
+    public void setCountry(Country country) {
         this.country = country;
         this.updatedAt = LocalDateTime.now();
     }

@@ -1,5 +1,6 @@
 package com.example.syndicatelending.party.dto;
 
+import com.example.syndicatelending.party.entity.CreditRating;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -23,12 +24,13 @@ public class CreateBorrowerRequest {
     @PositiveOrZero(message = "Credit limit must be positive or zero")
     private BigDecimal creditLimit;
 
-    private String creditRating;
+    private CreditRating creditRating;
 
-    public CreateBorrowerRequest() {}
+    public CreateBorrowerRequest() {
+    }
 
     public CreateBorrowerRequest(String name, String email, String phoneNumber,
-                                String companyId, BigDecimal creditLimit, String creditRating) {
+            String companyId, BigDecimal creditLimit, CreditRating creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -38,21 +40,51 @@ public class CreateBorrowerRequest {
     }
 
     // Getters and Setters
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getCompanyId() { return companyId; }
-    public void setCompanyId(String companyId) { this.companyId = companyId; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public BigDecimal getCreditLimit() { return creditLimit; }
-    public void setCreditLimit(BigDecimal creditLimit) { this.creditLimit = creditLimit; }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
 
-    public String getCreditRating() { return creditRating; }
-    public void setCreditRating(String creditRating) { this.creditRating = creditRating; }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(String companyId) {
+        this.companyId = companyId;
+    }
+
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit;
+    }
+
+    public CreditRating getCreditRating() {
+        return creditRating;
+    }
+
+    public void setCreditRating(CreditRating creditRating) {
+        this.creditRating = creditRating;
+    }
 }

@@ -4,6 +4,8 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,8 +48,8 @@ public class PartyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Company> getAllCompanies() {
-        return companyRepository.findAll();
+    public Page<Company> getAllCompanies(Pageable pageable) {
+        return companyRepository.findAll(pageable);
     }
 
     // Borrower operations
