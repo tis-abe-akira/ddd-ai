@@ -3,7 +3,6 @@ package com.example.syndicatelending.party.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * 借り手エンティティ（JPA Entity兼ドメインエンティティ）。
@@ -15,9 +14,6 @@ public class Borrower {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "business_id", unique = true, nullable = false)
-    private String businessId;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -46,9 +42,8 @@ public class Borrower {
     public Borrower() {
     }
 
-    public Borrower(String name, String email, String phoneNumber, String companyId, 
-                    BigDecimal creditLimit, String creditRating) {
-        this.businessId = UUID.randomUUID().toString();
+    public Borrower(String name, String email, String phoneNumber, String companyId,
+            BigDecimal creditLimit, String creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -65,51 +60,81 @@ public class Borrower {
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getBusinessId() { return businessId; }
-    public void setBusinessId(String businessId) { this.businessId = businessId; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
         this.name = name;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
         this.email = email;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { 
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getCompanyId() { return companyId; }
-    public void setCompanyId(String companyId) { 
+    public String getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(String companyId) {
         this.companyId = companyId;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public BigDecimal getCreditLimit() { return creditLimit; }
-    public void setCreditLimit(BigDecimal creditLimit) { 
+    public BigDecimal getCreditLimit() {
+        return creditLimit;
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
         this.creditLimit = creditLimit;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getCreditRating() { return creditRating; }
-    public void setCreditRating(String creditRating) { 
+    public String getCreditRating() {
+        return creditRating;
+    }
+
+    public void setCreditRating(String creditRating) {
         this.creditRating = creditRating;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
