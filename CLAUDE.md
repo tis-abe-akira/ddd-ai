@@ -11,10 +11,10 @@
 - **Dependencies**: Spring Web, Data JPA, Validation, AOP, Lombok, JaCoCo, SpringDoc OpenAPI
 
 ## アーキテクチャ
-3層クリーンアーキテクチャ：
-- **Domain Layer**: エンティティ、値オブジェクト、ドメインサービス
-- **Application Layer**: ユースケース、アプリケーションサービス
-- **Infrastructure Layer**: DB実装、REST API、外部連携
+実用的な3層アーキテクチャ（簡素化版）：
+- **Controller Layer**: REST API、リクエスト/レスポンス処理
+- **Service Layer**: ビジネスロジック、トランザクション管理
+- **Repository Layer**: データ永続化（Spring Data JPA）
 
 ## パッケージ構造
 ```
@@ -23,10 +23,12 @@ com.example.syndicatelending/
 │   ├── domain/model/   # Money, Percentage
 │   ├── application/exception/ # BusinessRuleViolationException, ResourceNotFoundException
 │   └── infrastructure/ # GlobalExceptionHandler
-└── [feature]/          # 機能別境界コンテキスト
-    ├── domain/         # ドメインレイヤー
-    ├── application/    # アプリケーションレイヤー
-    └── infrastructure/ # インフラレイヤー
+└── party/              # Party管理機能（完了）
+    ├── entity/         # JPA Entity (Company, Borrower, Investor)
+    ├── repository/     # Spring Data JPA Repository
+    ├── service/        # PartyService (統合サービス)
+    ├── controller/     # PartyController (REST API)
+    └── dto/           # Request DTO
 ```
 
 ## 開発コマンド
@@ -42,14 +44,14 @@ mvn clean install
 ```
 
 ## 開発規約
-1. **DDD**: エンティティと値オブジェクトを適切に分離
-2. **Clean Architecture**: 依存関係は内側に向かう（Domain <- Application <- Infrastructure）
+1. **実用的設計**: 機能の複雑さに応じて適切な構造を選択
+2. **3層アーキテクチャ**: Controller -> Service -> Repository の明確な責務分離
 3. **Value Objects**: MoneyとPercentageは不変で金融計算に特化
 4. **Exception Handling**: 
    - `BusinessRuleViolationException`: 業務ルール違反（400）
    - `ResourceNotFoundException`: リソース未発見（404）
    - `GlobalExceptionHandler`: 統一的エラーレスポンス
-5. **Testing**: レイヤー別テスト戦略（Domain Unit -> Application Service -> Infrastructure Integration）
+5. **Testing**: 各層での適切なテスト戦略（Entity -> Service -> API Integration）
 
 ## データベース
 - H2コンソール: http://localhost:8080/h2-console
@@ -61,7 +63,12 @@ mvn clean install
 - 構造化エラーレスポンス
 
 ## 重要な設計判断
-1. **JPA分離**: ドメインエンティティとJPAエンティティは分離
-2. **Business ID**: ドメインエンティティはUUID、JPA側は自動生成ID
-3. **金融計算**: BigDecimalベースの厳密な計算
-4. **境界コンテキスト**: 機能別パッケージングでコードの凝集性を高める
+1. **アーキテクチャ簡素化**: CRUD中心機能では複雑なDDD構造より3層アーキテクチャが効率的
+2. **JPA Entity統合**: JPA EntityをドメインEntityとして直接使用し、マッピング層を省略
+3. **Business ID**: エンティティはUUID自動生成、データベースは別途自動増分ID
+4. **金融計算**: BigDecimalベースの厳密な計算
+5. **統合サービス**: 機能単位での統合サービスで複雑さを削減
+
+## 完了機能
+- ✅ **Party管理**: 企業・借り手・投資家の作成・検索・一覧（全23テスト成功）
+- ✅ **共通基盤**: Money/Percentage値オブジェクト、例外処理、バリデーション
