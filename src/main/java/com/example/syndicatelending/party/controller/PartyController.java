@@ -67,8 +67,8 @@ public class PartyController {
 
     @GetMapping("/borrowers")
     @Operation(summary = "Get all borrowers")
-    public ResponseEntity<List<Borrower>> getAllBorrowers() {
-        List<Borrower> borrowers = partyService.getAllBorrowers();
+    public ResponseEntity<Page<Borrower>> getAllBorrowers(Pageable pageable) {
+        Page<Borrower> borrowers = partyService.getAllBorrowers(pageable);
         return ResponseEntity.ok(borrowers);
     }
 
@@ -89,8 +89,8 @@ public class PartyController {
 
     @GetMapping("/investors")
     @Operation(summary = "Get all investors")
-    public ResponseEntity<List<Investor>> getAllInvestors() {
-        List<Investor> investors = partyService.getAllInvestors();
+    public ResponseEntity<Page<Investor>> getAllInvestors(Pageable pageable) {
+        Page<Investor> investors = partyService.getAllInvestors(pageable);
         return ResponseEntity.ok(investors);
     }
 

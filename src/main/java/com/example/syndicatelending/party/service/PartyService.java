@@ -82,8 +82,8 @@ public class PartyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Borrower> getAllBorrowers() {
-        return borrowerRepository.findAll();
+    public Page<Borrower> getAllBorrowers(Pageable pageable) {
+        return borrowerRepository.findAll(pageable);
     }
 
     // Investor operations
@@ -116,8 +116,8 @@ public class PartyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Investor> getAllInvestors() {
-        return investorRepository.findAll();
+    public Page<Investor> getAllInvestors(Pageable pageable) {
+        return investorRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
