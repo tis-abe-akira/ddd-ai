@@ -32,5 +32,5 @@ logs/
 Thumbs.db
 
 # Specific to Spring Boot
-!**/src/main/**/target/
-!**/src/test/**/target/
+#!**/src/main/**/target/
+#!**/src/test/**/target/
