@@ -13,8 +13,6 @@ import java.util.Optional;
 @Repository
 public interface CompanyRepository extends JpaRepository<Company, Long> {
 
-    Optional<Company> findByBusinessId(String businessId);
-
     List<Company> findByCompanyNameContainingIgnoreCase(String companyName);
 
     Optional<Company> findByRegistrationNumber(String registrationNumber);
@@ -22,6 +20,4 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     List<Company> findByIndustry(String industry);
 
     List<Company> findByCountry(String country);
-
-    boolean existsByBusinessId(String businessId);
 }

@@ -34,10 +34,10 @@ public class PartyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(company);
     }
 
-    @GetMapping("/companies/{businessId}")
-    @Operation(summary = "Get company by business ID")
-    public ResponseEntity<Company> getCompany(@PathVariable String businessId) {
-        Company company = partyService.getCompanyById(businessId);
+    @GetMapping("/companies/{id}")
+    @Operation(summary = "Get company by ID")
+    public ResponseEntity<Company> getCompany(@PathVariable Long id) {
+        Company company = partyService.getCompanyById(id);
         return ResponseEntity.ok(company);
     }
 
@@ -56,10 +56,10 @@ public class PartyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(borrower);
     }
 
-    @GetMapping("/borrowers/{businessId}")
-    @Operation(summary = "Get borrower by business ID")
-    public ResponseEntity<Borrower> getBorrower(@PathVariable String businessId) {
-        Borrower borrower = partyService.getBorrowerById(businessId);
+    @GetMapping("/borrowers/{id}")
+    @Operation(summary = "Get borrower by ID")
+    public ResponseEntity<Borrower> getBorrower(@PathVariable Long id) {
+        Borrower borrower = partyService.getBorrowerById(id);
         return ResponseEntity.ok(borrower);
     }
 
@@ -78,10 +78,10 @@ public class PartyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(investor);
     }
 
-    @GetMapping("/investors/{businessId}")
-    @Operation(summary = "Get investor by business ID")
-    public ResponseEntity<Investor> getInvestor(@PathVariable String businessId) {
-        Investor investor = partyService.getInvestorById(businessId);
+    @GetMapping("/investors/{id}")
+    @Operation(summary = "Get investor by ID")
+    public ResponseEntity<Investor> getInvestor(@PathVariable Long id) {
+        Investor investor = partyService.getInvestorById(id);
         return ResponseEntity.ok(investor);
     }
 

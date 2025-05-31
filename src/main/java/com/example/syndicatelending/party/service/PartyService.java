@@ -21,8 +21,8 @@ public class PartyService {
     private final InvestorRepository investorRepository;
 
     public PartyService(CompanyRepository companyRepository,
-                        BorrowerRepository borrowerRepository,
-                        InvestorRepository investorRepository) {
+            BorrowerRepository borrowerRepository,
+            InvestorRepository investorRepository) {
         this.companyRepository = companyRepository;
         this.borrowerRepository = borrowerRepository;
         this.investorRepository = investorRepository;
@@ -35,15 +35,14 @@ public class PartyService {
                 request.getRegistrationNumber(),
                 request.getIndustry(),
                 request.getAddress(),
-                request.getCountry()
-        );
+                request.getCountry());
         return companyRepository.save(company);
     }
 
     @Transactional(readOnly = true)
-    public Company getCompanyById(String businessId) {
-        return companyRepository.findByBusinessId(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with ID: " + businessId));
+    public Company getCompanyById(Long id) {
+        return companyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
@@ -54,26 +53,30 @@ public class PartyService {
     // Borrower operations
     public Borrower createBorrower(CreateBorrowerRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            if (!companyRepository.existsByBusinessId(request.getCompanyId())) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
                 throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
             }
         }
-
         Borrower borrower = new Borrower(
                 request.getName(),
                 request.getEmail(),
                 request.getPhoneNumber(),
                 request.getCompanyId(),
                 request.getCreditLimit(),
-                request.getCreditRating()
-        );
+                request.getCreditRating());
         return borrowerRepository.save(borrower);
     }
 
     @Transactional(readOnly = true)
-    public Borrower getBorrowerById(String businessId) {
-        return borrowerRepository.findByBusinessId(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + businessId));
+    public Borrower getBorrowerById(Long id) {
+        return borrowerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
@@ -84,26 +87,30 @@ public class PartyService {
     // Investor operations
     public Investor createInvestor(CreateInvestorRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            if (!companyRepository.existsByBusinessId(request.getCompanyId())) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
                 throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
             }
         }
-
         Investor investor = new Investor(
                 request.getName(),
                 request.getEmail(),
                 request.getPhoneNumber(),
                 request.getCompanyId(),
                 request.getInvestmentCapacity(),
-                request.getInvestorType()
-        );
+                request.getInvestorType());
         return investorRepository.save(investor);
     }
 
     @Transactional(readOnly = true)
-    public Investor getInvestorById(String businessId) {
-        return investorRepository.findByBusinessId(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Investor not found with ID: " + businessId));
+    public Investor getInvestorById(Long id) {
+        return investorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Investor not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
