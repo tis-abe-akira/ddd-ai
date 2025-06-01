@@ -3,6 +3,9 @@ package com.example.syndicatelending.facility.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
+import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
+
 @Entity
 @Table(name = "facilities")
 public class FacilityEntity {
@@ -13,8 +16,9 @@ public class FacilityEntity {
     @Column(nullable = false)
     private Long syndicateId;
 
+    @Convert(converter = MoneyAttributeConverter.class)
     @Column(nullable = false, precision = 19, scale = 2)
-    private String commitment; // Money型はJPAではStringやBigDecimalで持つ
+    private Money commitment;
 
     @Column(nullable = false)
     private String currency;
@@ -28,7 +32,25 @@ public class FacilityEntity {
     @Column
     private String interestTerms;
 
-    // SharePieは別テーブルで管理する想定
+    public FacilityEntity() {
+    }
+
+    public FacilityEntity(Long syndicateId, Money commitment, String currency, LocalDate startDate,
+            LocalDate endDate, String interestTerms) {
+        this.syndicateId = syndicateId;
+        this.commitment = commitment;
+        this.currency = currency;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.interestTerms = interestTerms;
+    }
+
+    // BigDecimal互換のためのオーバーロード
+    public FacilityEntity(Long syndicateId, java.math.BigDecimal commitment, String currency,
+            LocalDate startDate, LocalDate endDate, String interestTerms) {
+        this(syndicateId, commitment == null ? null : Money.of(commitment), currency, startDate, endDate,
+                interestTerms);
+    }
 
     // getter/setter
     public Long getId() {
@@ -47,11 +69,11 @@ public class FacilityEntity {
         this.syndicateId = syndicateId;
     }
 
-    public String getCommitment() {
+    public Money getCommitment() {
         return commitment;
     }
 
-    public void setCommitment(String commitment) {
+    public void setCommitment(Money commitment) {
         this.commitment = commitment;
     }
 

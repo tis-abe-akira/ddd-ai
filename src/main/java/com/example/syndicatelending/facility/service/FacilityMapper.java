@@ -4,7 +4,6 @@ import com.example.syndicatelending.facility.entity.FacilityEntity;
 import com.example.syndicatelending.facility.entity.SharePieEntity;
 import com.example.syndicatelending.position.domain.Facility;
 import com.example.syndicatelending.position.domain.SharePie;
-import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 
 import java.util.List;
@@ -18,7 +17,7 @@ public class FacilityMapper {
                 .collect(Collectors.toList());
         return new Facility(
                 entity.getSyndicateId(),
-                Money.of(new java.math.BigDecimal(entity.getCommitment())),
+                entity.getCommitment(),
                 entity.getCurrency(),
                 entity.getStartDate(),
                 entity.getEndDate(),
@@ -36,7 +35,7 @@ public class FacilityMapper {
     public static FacilityEntity toEntity(Facility domain) {
         FacilityEntity entity = new FacilityEntity();
         entity.setSyndicateId(domain.getSyndicateId());
-        entity.setCommitment(domain.getCommitment().getAmount().toString());
+        entity.setCommitment(domain.getCommitment());
         entity.setCurrency(domain.getCurrency());
         entity.setStartDate(domain.getStartDate());
         entity.setEndDate(domain.getEndDate());

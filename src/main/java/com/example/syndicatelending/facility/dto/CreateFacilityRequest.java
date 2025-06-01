@@ -4,6 +4,9 @@ import java.time.LocalDate;
 import java.util.List;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 
 public class CreateFacilityRequest {
     private Long syndicateId;
@@ -14,6 +17,36 @@ public class CreateFacilityRequest {
     private String interestTerms;
     private List<SharePieRequest> sharePies;
 
+    // デフォルトコンストラクタ
+    public CreateFacilityRequest() {
+    }
+
+    @JsonCreator
+    public CreateFacilityRequest(
+            @JsonProperty("syndicateId") Long syndicateId,
+            @JsonProperty("commitment") BigDecimal commitment,
+            @JsonProperty("currency") String currency,
+            @JsonProperty("startDate") LocalDate startDate,
+            @JsonProperty("endDate") LocalDate endDate,
+            @JsonProperty("interestTerms") String interestTerms,
+            @JsonProperty("sharePies") List<SharePieRequest> sharePies) {
+        this(syndicateId, commitment == null ? null : Money.of(commitment), currency, startDate, endDate, interestTerms,
+                sharePies);
+    }
+
+    // 引数を受け取るコンストラクタ
+    public CreateFacilityRequest(Long syndicateId, Money commitment, String currency,
+            LocalDate startDate, LocalDate endDate, String interestTerms,
+            List<SharePieRequest> sharePies) {
+        this.syndicateId = syndicateId;
+        this.commitment = commitment;
+        this.currency = currency;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.interestTerms = interestTerms;
+        this.sharePies = sharePies;
+    }
+
     public Long getSyndicateId() {
         return syndicateId;
     }
@@ -22,8 +55,9 @@ public class CreateFacilityRequest {
         this.syndicateId = syndicateId;
     }
 
-    public Money getCommitment() {
-        return commitment;
+    @JsonProperty("commitment")
+    public BigDecimal getCommitment() {
+        return commitment == null ? null : commitment.getAmount();
     }
 
     public void setCommitment(Money commitment) {
