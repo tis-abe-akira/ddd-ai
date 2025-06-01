@@ -1,5 +1,8 @@
 package com.example.syndicatelending.common.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
@@ -97,5 +100,15 @@ public final class Percentage {
     @Override
     public String toString() {
         return value.toPlainString() + " (ratio)"; // または value.multiply(BigDecimal.valueOf(100)).toPlainString() + " %"
+    }
+
+    @JsonCreator
+    public static Percentage fromJson(BigDecimal value) {
+        return Percentage.of(value);
+    }
+
+    @JsonValue
+    public BigDecimal toJson() {
+        return this.value;
     }
 }
