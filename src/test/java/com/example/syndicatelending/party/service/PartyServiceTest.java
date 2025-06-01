@@ -4,6 +4,7 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
+import com.example.syndicatelending.common.domain.model.Money;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -90,10 +91,10 @@ class PartyServiceTest {
         void 借り手を正常に作成できる() {
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, BigDecimal.valueOf(1000000), CreditRating.AA);
+                                null, Money.of(1000000), CreditRating.AA);
                 Borrower savedBorrower = new Borrower(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, BigDecimal.valueOf(1000000), CreditRating.AA);
+                                null, Money.of(1000000), CreditRating.AA);
 
                 when(borrowerRepository.save(any(Borrower.class))).thenReturn(savedBorrower);
 
@@ -102,7 +103,7 @@ class PartyServiceTest {
                 assertNotNull(result);
                 assertEquals("Test Borrower", result.getName());
                 assertEquals("test@example.com", result.getEmail());
-                assertEquals(BigDecimal.valueOf(1000000), result.getCreditLimit());
+                assertEquals(Money.of(1000000), result.getCreditLimit());
                 verify(borrowerRepository).save(any(Borrower.class));
         }
 
@@ -111,12 +112,12 @@ class PartyServiceTest {
                 String companyId = "1";
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                companyId, BigDecimal.ZERO, CreditRating.AA);
+                                companyId, Money.zero(), CreditRating.AA);
 
                 when(companyRepository.existsById(1L)).thenReturn(true);
                 Borrower savedBorrower = new Borrower(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                companyId, BigDecimal.ZERO, CreditRating.AA);
+                                companyId, Money.zero(), CreditRating.AA);
                 when(borrowerRepository.save(any(Borrower.class))).thenReturn(savedBorrower);
 
                 Borrower result = partyService.createBorrower(request);
@@ -132,7 +133,7 @@ class PartyServiceTest {
                 String companyId = "999";
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                companyId, BigDecimal.ZERO, CreditRating.AA);
+                                companyId, Money.zero(), CreditRating.AA);
 
                 when(companyRepository.existsById(999L)).thenReturn(false);
 
@@ -208,7 +209,7 @@ class PartyServiceTest {
         void creditLimit上限を超えると例外が発生する() {
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, new BigDecimal("60000000"), CreditRating.AA); // AAの上限は50000000
+                                null, Money.of(60000000), CreditRating.AA); // AAの上限は50000000
                 // creditLimitOverrideはデフォルトfalse
                 assertThrows(com.example.syndicatelending.common.application.exception.BusinessRuleViolationException.class,
                                 () -> partyService.createBorrower(request));
@@ -219,15 +220,15 @@ class PartyServiceTest {
         void creditLimitOverrideがtrueなら上限超過でも登録できる() {
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, new BigDecimal("60000000"), CreditRating.AA);
+                                null, Money.of(60000000), CreditRating.AA);
                 request.setCreditLimitOverride(true);
                 Borrower savedBorrower = new Borrower(
                                 "Test Borrower", "test@example.com", "123-456-7890",
-                                null, new BigDecimal("60000000"), CreditRating.AA);
+                                null, Money.of(60000000), CreditRating.AA);
                 when(borrowerRepository.save(any(Borrower.class))).thenReturn(savedBorrower);
                 Borrower result = partyService.createBorrower(request);
                 assertNotNull(result);
-                assertEquals(new BigDecimal("60000000"), result.getCreditLimit());
+                assertEquals(Money.of(60000000), result.getCreditLimit());
                 verify(borrowerRepository).save(any(Borrower.class));
         }
 }

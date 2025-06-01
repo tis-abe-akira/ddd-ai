@@ -1,9 +1,11 @@
 package com.example.syndicatelending.party.dto;
 
+import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.party.entity.CreditRating;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 
@@ -21,8 +23,7 @@ public class CreateBorrowerRequest {
     private String phoneNumber;
     private String companyId;
 
-    @PositiveOrZero(message = "Credit limit must be positive or zero")
-    private BigDecimal creditLimit;
+    private Money creditLimit;
 
     private CreditRating creditRating;
 
@@ -35,8 +36,20 @@ public class CreateBorrowerRequest {
     public CreateBorrowerRequest() {
     }
 
+    @JsonCreator
+    public CreateBorrowerRequest(
+            @JsonProperty("name") String name,
+            @JsonProperty("email") String email,
+            @JsonProperty("phoneNumber") String phoneNumber,
+            @JsonProperty("companyId") String companyId,
+            @JsonProperty("creditLimit") BigDecimal creditLimit,
+            @JsonProperty("creditRating") CreditRating creditRating) {
+        this(name, email, phoneNumber, companyId, creditLimit == null ? null : Money.of(creditLimit), creditRating);
+    }
+
+    // Money型を直接受けるコンストラクタ（内部用）
     public CreateBorrowerRequest(String name, String email, String phoneNumber,
-            String companyId, BigDecimal creditLimit, CreditRating creditRating) {
+            String companyId, Money creditLimit, CreditRating creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -78,12 +91,13 @@ public class CreateBorrowerRequest {
         this.companyId = companyId;
     }
 
+    @JsonProperty("creditLimit")
     public BigDecimal getCreditLimit() {
-        return creditLimit;
+        return creditLimit == null ? null : creditLimit.getAmount();
     }
 
     public void setCreditLimit(BigDecimal creditLimit) {
-        this.creditLimit = creditLimit;
+        this.creditLimit = creditLimit == null ? null : Money.of(creditLimit);
     }
 
     public CreditRating getCreditRating() {
@@ -100,5 +114,16 @@ public class CreateBorrowerRequest {
 
     public void setCreditLimitOverride(boolean creditLimitOverride) {
         this.creditLimitOverride = creditLimitOverride;
+    }
+
+    // Money型のgetter/setterは@JsonIgnore推奨
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public Money getCreditLimitAsMoney() {
+        return creditLimit;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public void setCreditLimit(Money creditLimit) {
+        this.creditLimit = creditLimit;
     }
 }

@@ -1,5 +1,7 @@
 package com.example.syndicatelending.party.entity;
 
+import com.example.syndicatelending.common.domain.model.Money;
+
 import java.math.BigDecimal;
 
 public enum CreditRating {
@@ -11,19 +13,24 @@ public enum CreditRating {
     B(new BigDecimal("2000000")),
     CCC(null), CC(null), C(null), D(null);
 
-    private final BigDecimal limit;
+    private final Money limit;
 
     CreditRating(BigDecimal limit) {
-        this.limit = limit;
+        this.limit = limit == null ? null : Money.of(limit);
     }
 
-    public BigDecimal getLimit() {
+    public Money getLimit() {
         return limit;
     }
 
-    public boolean isLimitSatisfied(BigDecimal creditLimit) {
+    public boolean isLimitSatisfied(Money creditLimit) {
         if (limit == null || creditLimit == null)
             return true;
-        return creditLimit.compareTo(limit) <= 0;
+        return creditLimit.isLessThan(limit) || creditLimit.equals(limit);
+    }
+
+    // BigDecimal互換のためのオーバーロード（既存呼び出しのため）
+    public boolean isLimitSatisfied(BigDecimal creditLimit) {
+        return isLimitSatisfied(creditLimit == null ? null : Money.of(creditLimit));
     }
 }

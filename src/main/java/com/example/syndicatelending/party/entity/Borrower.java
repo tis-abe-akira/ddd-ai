@@ -1,7 +1,8 @@
 package com.example.syndicatelending.party.entity;
 
+import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -27,8 +28,9 @@ public class Borrower {
     @Column(name = "company_id")
     private String companyId;
 
-    @Column(name = "credit_limit", precision = 19, scale = 2)
-    private BigDecimal creditLimit;
+    @Convert(converter = MoneyAttributeConverter.class)
+    @Column(name = "credit_limit")
+    private Money creditLimit;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "credit_rating")
@@ -44,15 +46,21 @@ public class Borrower {
     }
 
     public Borrower(String name, String email, String phoneNumber, String companyId,
-            BigDecimal creditLimit, CreditRating creditRating) {
+            Money creditLimit, CreditRating creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.companyId = companyId;
-        this.creditLimit = creditLimit != null ? creditLimit : BigDecimal.ZERO;
+        this.creditLimit = creditLimit != null ? creditLimit : Money.zero();
         this.creditRating = creditRating;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    // BigDecimal互換のためのオーバーロード
+    public Borrower(String name, String email, String phoneNumber, String companyId,
+            java.math.BigDecimal creditLimit, CreditRating creditRating) {
+        this(name, email, phoneNumber, companyId, creditLimit == null ? null : Money.of(creditLimit), creditRating);
     }
 
     @PreUpdate
@@ -105,11 +113,11 @@ public class Borrower {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public BigDecimal getCreditLimit() {
+    public Money getCreditLimit() {
         return creditLimit;
     }
 
-    public void setCreditLimit(BigDecimal creditLimit) {
+    public void setCreditLimit(Money creditLimit) {
         this.creditLimit = creditLimit;
         this.updatedAt = LocalDateTime.now();
     }
@@ -137,5 +145,20 @@ public class Borrower {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // BigDecimalとの互換性のためのメソッド
+    public java.math.BigDecimal getCreditLimitAsBigDecimal() {
+        return creditLimit == null ? null : creditLimit.getAmount();
+    }
+
+    public void setCreditLimit(java.math.BigDecimal creditLimit) {
+        setCreditLimit(creditLimit == null ? null : Money.of(creditLimit));
+    }
+
+    // APIレスポンス用: 金額のみ返すgetter
+    @com.fasterxml.jackson.annotation.JsonProperty("creditLimit")
+    public java.math.BigDecimal getCreditLimitAmount() {
+        return creditLimit == null ? null : creditLimit.getAmount();
     }
 }
