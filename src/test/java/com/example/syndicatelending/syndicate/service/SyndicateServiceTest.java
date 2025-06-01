@@ -3,6 +3,10 @@ package com.example.syndicatelending.syndicate.service;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
+import com.example.syndicatelending.party.repository.InvestorRepository;
+import com.example.syndicatelending.party.entity.Investor;
+import com.example.syndicatelending.party.entity.InvestorType;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -18,17 +22,23 @@ import static org.mockito.Mockito.*;
 class SyndicateServiceTest {
     @Mock
     private SyndicateRepository syndicateRepository;
+    @Mock
+    private InvestorRepository investorRepository;
     private SyndicateService syndicateService;
 
     @BeforeEach
     void setUp() {
-        syndicateService = new SyndicateService(syndicateRepository);
+        syndicateService = new SyndicateService(syndicateRepository, investorRepository);
     }
 
     @Test
     void createSyndicate正常系() {
         Syndicate s = new Syndicate("団A", 1L, List.of(2L, 3L));
         when(syndicateRepository.existsByName("団A")).thenReturn(false);
+        Investor leadBank = new Investor();
+        leadBank.setId(1L);
+        leadBank.setInvestorType(InvestorType.LEAD_BANK);
+        when(investorRepository.findById(1L)).thenReturn(java.util.Optional.of(leadBank));
         when(syndicateRepository.save(any(Syndicate.class))).thenReturn(s);
         Syndicate result = syndicateService.createSyndicate(s);
         assertEquals("団A", result.getName());
@@ -56,5 +66,40 @@ class SyndicateServiceTest {
     void getSyndicateById存在しないと例外() {
         when(syndicateRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> syndicateService.getSyndicateById(99L));
+    }
+
+    @Test
+    void createSyndicate_リードバンクがLEAD_BANKでないと例外() {
+        Syndicate s = new Syndicate("団B", 100L, List.of(2L, 3L));
+        when(syndicateRepository.existsByName("団B")).thenReturn(false);
+        Investor notLeadBank = new Investor();
+        notLeadBank.setId(100L);
+        notLeadBank.setInvestorType(InvestorType.BANK); // LEAD_BANK以外
+        when(investorRepository.findById(100L)).thenReturn(java.util.Optional.of(notLeadBank));
+        assertThrows(BusinessRuleViolationException.class, () -> syndicateService.createSyndicate(s));
+        verify(syndicateRepository, never()).save(any());
+    }
+
+    @Test
+    void createSyndicate_リードバンクが存在しないと例外() {
+        Syndicate s = new Syndicate("団C", 200L, List.of(2L, 3L));
+        when(syndicateRepository.existsByName("団C")).thenReturn(false);
+        when(investorRepository.findById(200L)).thenReturn(java.util.Optional.empty());
+        assertThrows(BusinessRuleViolationException.class, () -> syndicateService.createSyndicate(s));
+        verify(syndicateRepository, never()).save(any());
+    }
+
+    @Test
+    void createSyndicate_リードバンクがLEAD_BANKなら正常() {
+        Syndicate s = new Syndicate("団D", 300L, List.of(2L, 3L));
+        when(syndicateRepository.existsByName("団D")).thenReturn(false);
+        Investor leadBank = new Investor();
+        leadBank.setId(300L);
+        leadBank.setInvestorType(InvestorType.LEAD_BANK);
+        when(investorRepository.findById(300L)).thenReturn(java.util.Optional.of(leadBank));
+        when(syndicateRepository.save(any(Syndicate.class))).thenReturn(s);
+        Syndicate result = syndicateService.createSyndicate(s);
+        assertEquals("団D", result.getName());
+        verify(syndicateRepository).save(any(Syndicate.class));
     }
 }
