@@ -203,4 +203,31 @@ class PartyServiceTest {
                                 ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Investor>>any(),
                                 eq(pageable));
         }
+
+        @Test
+        void creditLimit上限を超えると例外が発生する() {
+                CreateBorrowerRequest request = new CreateBorrowerRequest(
+                                "Test Borrower", "test@example.com", "123-456-7890",
+                                null, new BigDecimal("60000000"), CreditRating.AA); // AAの上限は50000000
+                // creditLimitOverrideはデフォルトfalse
+                assertThrows(com.example.syndicatelending.common.application.exception.BusinessRuleViolationException.class,
+                                () -> partyService.createBorrower(request));
+                verify(borrowerRepository, never()).save(any(Borrower.class));
+        }
+
+        @Test
+        void creditLimitOverrideがtrueなら上限超過でも登録できる() {
+                CreateBorrowerRequest request = new CreateBorrowerRequest(
+                                "Test Borrower", "test@example.com", "123-456-7890",
+                                null, new BigDecimal("60000000"), CreditRating.AA);
+                request.setCreditLimitOverride(true);
+                Borrower savedBorrower = new Borrower(
+                                "Test Borrower", "test@example.com", "123-456-7890",
+                                null, new BigDecimal("60000000"), CreditRating.AA);
+                when(borrowerRepository.save(any(Borrower.class))).thenReturn(savedBorrower);
+                Borrower result = partyService.createBorrower(request);
+                assertNotNull(result);
+                assertEquals(new BigDecimal("60000000"), result.getCreditLimit());
+                verify(borrowerRepository).save(any(Borrower.class));
+        }
 }

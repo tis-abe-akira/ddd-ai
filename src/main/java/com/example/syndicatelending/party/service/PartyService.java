@@ -66,6 +66,17 @@ public class PartyService {
                 throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
             }
         }
+        // CreditRatingのバリデーション振る舞いを利用
+        if (!request.isCreditLimitOverride()) {
+            if (request.getCreditRating() == null || request.getCreditLimit() == null ||
+                    !request.getCreditRating().isLimitSatisfied(request.getCreditLimit())) {
+                throw new com.example.syndicatelending.common.application.exception.BusinessRuleViolationException(
+                        "creditLimit exceeds allowed maximum for creditRating " + request.getCreditRating() +
+                                " (max: "
+                                + (request.getCreditRating() != null ? request.getCreditRating().getLimit() : null)
+                                + ")");
+            }
+        }
         Borrower borrower = new Borrower(
                 request.getName(),
                 request.getEmail(),

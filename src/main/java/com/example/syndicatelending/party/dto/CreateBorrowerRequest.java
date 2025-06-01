@@ -26,6 +26,12 @@ public class CreateBorrowerRequest {
 
     private CreditRating creditRating;
 
+    /**
+     * CreditLimit上限バリデーションを無効化する場合にtrue。
+     * デフォルトはfalse。
+     */
+    private boolean creditLimitOverride = false;
+
     public CreateBorrowerRequest() {
     }
 
@@ -86,5 +92,13 @@ public class CreateBorrowerRequest {
 
     public void setCreditRating(CreditRating creditRating) {
         this.creditRating = creditRating;
+    }
+
+    public boolean isCreditLimitOverride() {
+        return creditLimitOverride;
+    }
+
+    public void setCreditLimitOverride(boolean creditLimitOverride) {
+        this.creditLimitOverride = creditLimitOverride;
     }
 }
