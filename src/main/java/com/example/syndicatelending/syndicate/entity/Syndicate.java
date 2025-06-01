@@ -15,8 +15,9 @@ public class Syndicate {
     @Column(nullable = false, unique = true)
     private String name;
 
-    // シンジケート団のリードバンク（代表金融機関）
-    private String leadBank;
+    // シンジケート団のリードバンク（InvestorのIDで管理）
+    @Column(name = "lead_bank_id")
+    private Long leadBankId;
 
     // メンバー（投資家IDのリスト、シンプルな形で実装）
     @ElementCollection
@@ -24,15 +25,32 @@ public class Syndicate {
     @Column(name = "investor_id")
     private List<Long> memberInvestorIds = new ArrayList<>();
 
+    // 作成日時・更新日時
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private java.time.LocalDateTime updatedAt;
+
     public Syndicate() {
     }
 
-    public Syndicate(String name, String leadBank, List<Long> memberInvestorIds) {
+    public Syndicate(String name, Long leadBankId, List<Long> memberInvestorIds) {
         this.name = name;
-        this.leadBank = leadBank;
+        this.leadBankId = leadBankId;
         if (memberInvestorIds != null) {
             this.memberInvestorIds = memberInvestorIds;
         }
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = this.updatedAt = java.time.LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = java.time.LocalDateTime.now();
     }
 
     public Long getId() {
@@ -51,12 +69,12 @@ public class Syndicate {
         this.name = name;
     }
 
-    public String getLeadBank() {
-        return leadBank;
+    public Long getLeadBankId() {
+        return leadBankId;
     }
 
-    public void setLeadBank(String leadBank) {
-        this.leadBank = leadBank;
+    public void setLeadBankId(Long leadBankId) {
+        this.leadBankId = leadBankId;
     }
 
     public List<Long> getMemberInvestorIds() {
@@ -65,6 +83,22 @@ public class Syndicate {
 
     public void setMemberInvestorIds(List<Long> memberInvestorIds) {
         this.memberInvestorIds = memberInvestorIds;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public java.time.LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(java.time.LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     @Override
