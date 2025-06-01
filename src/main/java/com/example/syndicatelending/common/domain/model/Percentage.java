@@ -21,10 +21,12 @@ public final class Percentage {
             throw new IllegalArgumentException("Percentage value cannot be null");
         }
         // 0以上1以下のバリデーション（必要に応じて）
-        // if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(BigDecimal.ONE) > 0) {
-        //     throw new IllegalArgumentException("Percentage value must be between 0 and 1");
+        // if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(BigDecimal.ONE) >
+        // 0) {
+        // throw new IllegalArgumentException("Percentage value must be between 0 and
+        // 1");
         // }
-         // コンストラクタでスケールと丸めを強制
+        // コンストラクタでスケールと丸めを強制
         this.value = value.setScale(DEFAULT_SCALE, DEFAULT_ROUNDING_MODE);
     }
 
@@ -36,17 +38,17 @@ public final class Percentage {
         return new Percentage(value);
     }
 
-     /**
+    /**
      * 0から100の間のint値からPercentageインスタンスを生成する。
      * 例: Percentage.of(10) // 10%
      */
     public static Percentage of(int value) {
-         if (value < 0 || value > 100) {
+        if (value < 0 || value > 100) {
             throw new IllegalArgumentException("Percentage integer value must be between 0 and 100");
-         }
-        return new Percentage(BigDecimal.valueOf(value).divide(BigDecimal.valueOf(100), DEFAULT_SCALE, DEFAULT_ROUNDING_MODE));
+        }
+        return new Percentage(
+                BigDecimal.valueOf(value).divide(BigDecimal.valueOf(100), DEFAULT_SCALE, DEFAULT_ROUNDING_MODE));
     }
-
 
     /**
      * パーセンテージのBigDecimal値（0〜1）を取得する。
@@ -62,27 +64,38 @@ public final class Percentage {
     public Money applyTo(Money money) {
         Objects.requireNonNull(money, "Cannot apply percentage to null Money");
         // 計算結果のスケールはMoneyのデフォルトスケールに合わせる
-        BigDecimal resultAmount = money.getAmount().multiply(this.value).setScale(Money.DEFAULT_SCALE, Money.DEFAULT_ROUNDING_MODE);
+        BigDecimal resultAmount = money.getAmount().multiply(this.value).setScale(Money.DEFAULT_SCALE,
+                Money.DEFAULT_ROUNDING_MODE);
         return Money.of(resultAmount);
+    }
+
+    /**
+     * このパーセンテージと他のパーセンテージを加算した新しいPercentageを返す。
+     */
+    public Percentage add(Percentage other) {
+        Objects.requireNonNull(other, "other Percentage must not be null");
+        return new Percentage(this.value.add(other.value));
     }
 
     // equals, hashCode, toString (BigDecimal based) - Omitted for brevity
 
-     @Override
-     public boolean equals(Object o) {
-         if (this == o) return true;
-         if (o == null || getClass() != o.getClass()) return false;
-         Percentage that = (Percentage) o;
-         return Objects.equals(value, that.value);
-     }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Percentage that = (Percentage) o;
+        return Objects.equals(value, that.value);
+    }
 
-     @Override
-     public int hashCode() {
-         return Objects.hash(value);
-     }
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
 
-     @Override
-     public String toString() {
-         return value.toPlainString() + " (ratio)"; // または value.multiply(BigDecimal.valueOf(100)).toPlainString() + " %"
-     }
+    @Override
+    public String toString() {
+        return value.toPlainString() + " (ratio)"; // または value.multiply(BigDecimal.valueOf(100)).toPlainString() + " %"
+    }
 }
