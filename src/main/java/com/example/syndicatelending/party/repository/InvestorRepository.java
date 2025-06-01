@@ -1,19 +1,20 @@
 package com.example.syndicatelending.party.repository;
 
 import com.example.syndicatelending.party.entity.Investor;
+import com.example.syndicatelending.party.entity.InvestorType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Investor Spring Data JPA Repository。
  */
 @Repository
-public interface InvestorRepository extends JpaRepository<Investor, Long> {
-
-    Optional<Investor> findByBusinessId(String businessId);
+public interface InvestorRepository extends JpaRepository<Investor, Long>, JpaSpecificationExecutor<Investor> {
 
     List<Investor> findByNameContainingIgnoreCase(String name);
 
@@ -21,5 +22,7 @@ public interface InvestorRepository extends JpaRepository<Investor, Long> {
 
     List<Investor> findByIsActiveTrue();
 
-    boolean existsByBusinessId(String businessId);
+    Page<Investor> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    Page<Investor> findByInvestorType(InvestorType investorType, Pageable pageable);
 }

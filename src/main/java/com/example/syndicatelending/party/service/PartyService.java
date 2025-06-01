@@ -4,6 +4,9 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +24,8 @@ public class PartyService {
     private final InvestorRepository investorRepository;
 
     public PartyService(CompanyRepository companyRepository,
-                        BorrowerRepository borrowerRepository,
-                        InvestorRepository investorRepository) {
+            BorrowerRepository borrowerRepository,
+            InvestorRepository investorRepository) {
         this.companyRepository = companyRepository;
         this.borrowerRepository = borrowerRepository;
         this.investorRepository = investorRepository;
@@ -35,84 +38,150 @@ public class PartyService {
                 request.getRegistrationNumber(),
                 request.getIndustry(),
                 request.getAddress(),
-                request.getCountry()
-        );
+                request.getCountry());
         return companyRepository.save(company);
     }
 
     @Transactional(readOnly = true)
-    public Company getCompanyById(String businessId) {
-        return companyRepository.findByBusinessId(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with ID: " + businessId));
+    public Company getCompanyById(Long id) {
+        return companyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<Company> getAllCompanies() {
-        return companyRepository.findAll();
+    public Page<Company> getAllCompanies(Pageable pageable) {
+        return companyRepository.findAll(pageable);
     }
 
     // Borrower operations
     public Borrower createBorrower(CreateBorrowerRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            if (!companyRepository.existsByBusinessId(request.getCompanyId())) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
                 throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
             }
         }
-
+        // CreditRatingのバリデーション振る舞いを利用
+        if (!request.isCreditLimitOverride()) {
+            if (request.getCreditRating() == null || request.getCreditLimit() == null ||
+                    !request.getCreditRating().isLimitSatisfied(request.getCreditLimit())) {
+                throw new com.example.syndicatelending.common.application.exception.BusinessRuleViolationException(
+                        "creditLimit exceeds allowed maximum for creditRating " + request.getCreditRating() +
+                                " (max: "
+                                + (request.getCreditRating() != null ? request.getCreditRating().getLimit() : null)
+                                + ")");
+            }
+        }
         Borrower borrower = new Borrower(
                 request.getName(),
                 request.getEmail(),
                 request.getPhoneNumber(),
                 request.getCompanyId(),
                 request.getCreditLimit(),
-                request.getCreditRating()
-        );
+                request.getCreditRating());
         return borrowerRepository.save(borrower);
     }
 
     @Transactional(readOnly = true)
-    public Borrower getBorrowerById(String businessId) {
-        return borrowerRepository.findByBusinessId(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + businessId));
+    public Borrower getBorrowerById(Long id) {
+        return borrowerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<Borrower> getAllBorrowers() {
-        return borrowerRepository.findAll();
+    public Page<Borrower> getAllBorrowers(Pageable pageable) {
+        return borrowerRepository.findAll(pageable);
     }
 
     // Investor operations
     public Investor createInvestor(CreateInvestorRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            if (!companyRepository.existsByBusinessId(request.getCompanyId())) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
                 throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
             }
         }
-
         Investor investor = new Investor(
                 request.getName(),
                 request.getEmail(),
                 request.getPhoneNumber(),
                 request.getCompanyId(),
                 request.getInvestmentCapacity(),
-                request.getInvestorType()
-        );
+                request.getInvestorType());
         return investorRepository.save(investor);
     }
 
     @Transactional(readOnly = true)
-    public Investor getInvestorById(String businessId) {
-        return investorRepository.findByBusinessId(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Investor not found with ID: " + businessId));
+    public Investor getInvestorById(Long id) {
+        return investorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Investor not found with ID: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<Investor> getAllInvestors() {
-        return investorRepository.findAll();
+    public Page<Investor> getAllInvestors(Pageable pageable) {
+        return investorRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<Investor> getActiveInvestors() {
-        return investorRepository.findByIsActiveTrue();
+    public Page<Investor> getActiveInvestors(Pageable pageable) {
+        return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Borrower> searchBorrowers(String name, CreditRating creditRating, Pageable pageable) {
+        if (name != null && !name.isBlank() && creditRating != null) {
+            Specification<Borrower> spec = (root, query, cb) -> cb.and(
+                    cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"),
+                    cb.equal(root.get("creditRating"), creditRating));
+            return borrowerRepository.findAll(spec, pageable);
+        } else if (name != null && !name.isBlank()) {
+            return borrowerRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else if (creditRating != null) {
+            return borrowerRepository.findByCreditRating(creditRating, pageable);
+        } else {
+            return borrowerRepository.findAll(pageable);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Company> searchCompanies(String name, Industry industry, Pageable pageable) {
+        if (name != null && !name.isBlank() && industry != null) {
+            Specification<Company> spec = (root, query, cb) -> cb.and(
+                    cb.like(cb.lower(root.get("companyName")), "%" + name.toLowerCase() + "%"),
+                    cb.equal(root.get("industry"), industry));
+            return companyRepository.findAll(spec, pageable);
+        } else if (name != null && !name.isBlank()) {
+            return companyRepository.findByCompanyNameContainingIgnoreCase(name, pageable);
+        } else if (industry != null) {
+            return companyRepository.findByIndustry(industry, pageable);
+        } else {
+            return companyRepository.findAll(pageable);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Investor> searchInvestors(String name, InvestorType investorType, Pageable pageable) {
+        if (name != null && !name.isBlank() && investorType != null) {
+            Specification<Investor> spec = (root, query, cb) -> cb.and(
+                    cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"),
+                    cb.equal(root.get("investorType"), investorType));
+            return investorRepository.findAll(spec, pageable);
+        } else if (name != null && !name.isBlank()) {
+            return investorRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else if (investorType != null) {
+            return investorRepository.findByInvestorType(investorType, pageable);
+        } else {
+            return investorRepository.findAll(pageable);
+        }
     }
 }

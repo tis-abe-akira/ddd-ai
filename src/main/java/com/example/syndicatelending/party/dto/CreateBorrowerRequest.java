@@ -1,8 +1,11 @@
 package com.example.syndicatelending.party.dto;
 
+import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.party.entity.CreditRating;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 
@@ -20,15 +23,33 @@ public class CreateBorrowerRequest {
     private String phoneNumber;
     private String companyId;
 
-    @PositiveOrZero(message = "Credit limit must be positive or zero")
-    private BigDecimal creditLimit;
+    private Money creditLimit;
 
-    private String creditRating;
+    private CreditRating creditRating;
 
-    public CreateBorrowerRequest() {}
+    /**
+     * CreditLimit上限バリデーションを無効化する場合にtrue。
+     * デフォルトはfalse。
+     */
+    private boolean creditLimitOverride = false;
 
+    public CreateBorrowerRequest() {
+    }
+
+    @JsonCreator
+    public CreateBorrowerRequest(
+            @JsonProperty("name") String name,
+            @JsonProperty("email") String email,
+            @JsonProperty("phoneNumber") String phoneNumber,
+            @JsonProperty("companyId") String companyId,
+            @JsonProperty("creditLimit") BigDecimal creditLimit,
+            @JsonProperty("creditRating") CreditRating creditRating) {
+        this(name, email, phoneNumber, companyId, creditLimit == null ? null : Money.of(creditLimit), creditRating);
+    }
+
+    // Money型を直接受けるコンストラクタ（内部用）
     public CreateBorrowerRequest(String name, String email, String phoneNumber,
-                                String companyId, BigDecimal creditLimit, String creditRating) {
+            String companyId, Money creditLimit, CreditRating creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -38,21 +59,71 @@ public class CreateBorrowerRequest {
     }
 
     // Getters and Setters
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getCompanyId() { return companyId; }
-    public void setCompanyId(String companyId) { this.companyId = companyId; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public BigDecimal getCreditLimit() { return creditLimit; }
-    public void setCreditLimit(BigDecimal creditLimit) { this.creditLimit = creditLimit; }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
 
-    public String getCreditRating() { return creditRating; }
-    public void setCreditRating(String creditRating) { this.creditRating = creditRating; }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(String companyId) {
+        this.companyId = companyId;
+    }
+
+    @JsonProperty("creditLimit")
+    public BigDecimal getCreditLimit() {
+        return creditLimit == null ? null : creditLimit.getAmount();
+    }
+
+    public void setCreditLimit(BigDecimal creditLimit) {
+        this.creditLimit = creditLimit == null ? null : Money.of(creditLimit);
+    }
+
+    public CreditRating getCreditRating() {
+        return creditRating;
+    }
+
+    public void setCreditRating(CreditRating creditRating) {
+        this.creditRating = creditRating;
+    }
+
+    public boolean isCreditLimitOverride() {
+        return creditLimitOverride;
+    }
+
+    public void setCreditLimitOverride(boolean creditLimitOverride) {
+        this.creditLimitOverride = creditLimitOverride;
+    }
+
+    // Money型のgetter/setterは@JsonIgnore推奨
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public Money getCreditLimitAsMoney() {
+        return creditLimit;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public void setCreditLimit(Money creditLimit) {
+        this.creditLimit = creditLimit;
+    }
 }

@@ -2,7 +2,6 @@ package com.example.syndicatelending.party.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * 企業エンティティ（JPA Entity兼ドメインエンティティ）。
@@ -15,23 +14,22 @@ public class Company {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "business_id", unique = true, nullable = false)
-    private String businessId;
-
     @Column(name = "company_name", nullable = false)
     private String companyName;
 
     @Column(name = "registration_number")
     private String registrationNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "industry")
-    private String industry;
+    private Industry industry;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "country")
+    private Country country;
 
     @Column(name = "address")
     private String address;
-
-    @Column(name = "country")
-    private String country;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -42,8 +40,7 @@ public class Company {
     public Company() {
     }
 
-    public Company(String companyName, String registrationNumber, String industry, String address, String country) {
-        this.businessId = UUID.randomUUID().toString();
+    public Company(String companyName, String registrationNumber, Industry industry, String address, Country country) {
         this.companyName = companyName;
         this.registrationNumber = registrationNumber;
         this.industry = industry;
@@ -59,45 +56,72 @@ public class Company {
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getBusinessId() { return businessId; }
-    public void setBusinessId(String businessId) { this.businessId = businessId; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getCompanyName() { return companyName; }
-    public void setCompanyName(String companyName) { 
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
         this.companyName = companyName;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getRegistrationNumber() { return registrationNumber; }
-    public void setRegistrationNumber(String registrationNumber) { 
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
+
+    public void setRegistrationNumber(String registrationNumber) {
         this.registrationNumber = registrationNumber;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getIndustry() { return industry; }
-    public void setIndustry(String industry) { 
+    public Industry getIndustry() {
+        return industry;
+    }
+
+    public void setIndustry(Industry industry) {
         this.industry = industry;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { 
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
         this.address = address;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getCountry() { return country; }
-    public void setCountry(String country) { 
+    public Country getCountry() {
+        return country;
+    }
+
+    public void setCountry(Country country) {
         this.country = country;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

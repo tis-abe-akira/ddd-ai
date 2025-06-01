@@ -1,5 +1,7 @@
 package com.example.syndicatelending.party.dto;
 
+import com.example.syndicatelending.party.entity.Industry;
+import com.example.syndicatelending.party.entity.Country;
 import jakarta.validation.constraints.NotBlank;
 
 /**
@@ -11,14 +13,15 @@ public class CreateCompanyRequest {
     private String companyName;
 
     private String registrationNumber;
-    private String industry;
+    private Industry industry;
     private String address;
-    private String country;
+    private Country country;
 
-    public CreateCompanyRequest() {}
+    public CreateCompanyRequest() {
+    }
 
-    public CreateCompanyRequest(String companyName, String registrationNumber, 
-                               String industry, String address, String country) {
+    public CreateCompanyRequest(String companyName, String registrationNumber,
+            Industry industry, String address, Country country) {
         this.companyName = companyName;
         this.registrationNumber = registrationNumber;
         this.industry = industry;
@@ -27,18 +30,43 @@ public class CreateCompanyRequest {
     }
 
     // Getters and Setters
-    public String getCompanyName() { return companyName; }
-    public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public String getCompanyName() {
+        return companyName;
+    }
 
-    public String getRegistrationNumber() { return registrationNumber; }
-    public void setRegistrationNumber(String registrationNumber) { this.registrationNumber = registrationNumber; }
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
 
-    public String getIndustry() { return industry; }
-    public void setIndustry(String industry) { this.industry = industry; }
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public void setRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
 
-    public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
+    public Industry getIndustry() {
+        return industry;
+    }
+
+    public void setIndustry(Industry industry) {
+        this.industry = industry;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Country getCountry() {
+        return country;
+    }
+
+    public void setCountry(Country country) {
+        this.country = country;
+    }
 }
