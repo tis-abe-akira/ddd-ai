@@ -60,4 +60,24 @@ echo "Syndicate ID: $SYNDICATE_ID"
 echo "--- Syndicate 一覧取得 ---"
 curl -s "$API_URL/syndicates" | jq
 
+echo "--- 検証: Syndicateのリードバンクとメンバー ---"
+SYNDICATE_JSON=$(curl -s "$API_URL/syndicates/$SYNDICATE_ID")
+LEAD_BANK_ID=$(echo "$SYNDICATE_JSON" | jq -r '.leadBankId')
+MEMBER_IDS=$(echo "$SYNDICATE_JSON" | jq -r '.memberInvestorIds | join(",")')
+
+if [[ "$LEAD_BANK_ID" = "$INVESTOR_ID" ]]; then
+  echo "[OK] リードバンクIDは正しく $LEAD_BANK_ID です"
+else
+  echo "[NG] リードバンクIDが想定外: $LEAD_BANK_ID"
+  exit 1
+fi
+
+EXPECTED_MEMBER_IDS="$INVESTOR_ID,$INVESTOR_ID2,$INVESTOR_ID3"
+if [[ "$MEMBER_IDS" = "$EXPECTED_MEMBER_IDS" ]]; then
+  echo "[OK] メンバー投資家IDリストも正しい: $MEMBER_IDS"
+else
+  echo "[NG] メンバー投資家IDリストが想定外: $MEMBER_IDS"
+  exit 1
+fi
+
 echo "--- 完了 ---"
