@@ -7,6 +7,7 @@ import com.example.syndicatelending.party.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -187,13 +188,19 @@ class PartyServiceTest {
                 List<Investor> activeInvestors = List.of(
                                 new Investor("Investor 1", null, null, null, null, InvestorType.BANK),
                                 new Investor("Investor 2", null, null, null, null, InvestorType.BANK));
-                when(investorRepository.findByIsActiveTrue()).thenReturn(activeInvestors);
+                Pageable pageable = PageRequest.of(0, 10);
+                Page<Investor> investorPage = new PageImpl<>(activeInvestors, pageable, activeInvestors.size());
+                when(investorRepository.findAll(
+                                ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Investor>>any(),
+                                eq(pageable))).thenReturn(investorPage);
 
-                List<Investor> result = partyService.getActiveInvestors();
+                Page<Investor> result = partyService.getActiveInvestors(pageable);
 
-                assertEquals(2, result.size());
-                assertEquals("Investor 1", result.get(0).getName());
-                assertEquals("Investor 2", result.get(1).getName());
-                verify(investorRepository).findByIsActiveTrue();
+                assertEquals(2, result.getTotalElements());
+                assertEquals("Investor 1", result.getContent().get(0).getName());
+                assertEquals("Investor 2", result.getContent().get(1).getName());
+                verify(investorRepository).findAll(
+                                ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Investor>>any(),
+                                eq(pageable));
         }
 }

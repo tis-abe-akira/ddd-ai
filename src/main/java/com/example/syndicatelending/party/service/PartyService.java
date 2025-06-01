@@ -6,6 +6,7 @@ import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,7 +122,55 @@ public class PartyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Investor> getActiveInvestors() {
-        return investorRepository.findByIsActiveTrue();
+    public Page<Investor> getActiveInvestors(Pageable pageable) {
+        return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Borrower> searchBorrowers(String name, CreditRating creditRating, Pageable pageable) {
+        if (name != null && !name.isBlank() && creditRating != null) {
+            Specification<Borrower> spec = (root, query, cb) -> cb.and(
+                    cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"),
+                    cb.equal(root.get("creditRating"), creditRating));
+            return borrowerRepository.findAll(spec, pageable);
+        } else if (name != null && !name.isBlank()) {
+            return borrowerRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else if (creditRating != null) {
+            return borrowerRepository.findByCreditRating(creditRating, pageable);
+        } else {
+            return borrowerRepository.findAll(pageable);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Company> searchCompanies(String name, Industry industry, Pageable pageable) {
+        if (name != null && !name.isBlank() && industry != null) {
+            Specification<Company> spec = (root, query, cb) -> cb.and(
+                    cb.like(cb.lower(root.get("companyName")), "%" + name.toLowerCase() + "%"),
+                    cb.equal(root.get("industry"), industry));
+            return companyRepository.findAll(spec, pageable);
+        } else if (name != null && !name.isBlank()) {
+            return companyRepository.findByCompanyNameContainingIgnoreCase(name, pageable);
+        } else if (industry != null) {
+            return companyRepository.findByIndustry(industry, pageable);
+        } else {
+            return companyRepository.findAll(pageable);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Investor> searchInvestors(String name, InvestorType investorType, Pageable pageable) {
+        if (name != null && !name.isBlank() && investorType != null) {
+            Specification<Investor> spec = (root, query, cb) -> cb.and(
+                    cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"),
+                    cb.equal(root.get("investorType"), investorType));
+            return investorRepository.findAll(spec, pageable);
+        } else if (name != null && !name.isBlank()) {
+            return investorRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else if (investorType != null) {
+            return investorRepository.findByInvestorType(investorType, pageable);
+        } else {
+            return investorRepository.findAll(pageable);
+        }
     }
 }

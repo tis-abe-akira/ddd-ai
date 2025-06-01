@@ -95,9 +95,39 @@ public class PartyController {
     }
 
     @GetMapping("/investors/active")
-    @Operation(summary = "Get all active investors")
-    public ResponseEntity<List<Investor>> getActiveInvestors() {
-        List<Investor> activeInvestors = partyService.getActiveInvestors();
+    @Operation(summary = "Get all active investors (paged)")
+    public ResponseEntity<Page<Investor>> getActiveInvestors(Pageable pageable) {
+        Page<Investor> activeInvestors = partyService.getActiveInvestors(pageable);
         return ResponseEntity.ok(activeInvestors);
+    }
+
+    @GetMapping("/investors/search")
+    @Operation(summary = "Search investors by name and/or type")
+    public ResponseEntity<Page<Investor>> searchInvestors(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) InvestorType investorType,
+            Pageable pageable) {
+        Page<Investor> result = partyService.searchInvestors(name, investorType, pageable);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/borrowers/search")
+    @Operation(summary = "Search borrowers by name and/or credit rating")
+    public ResponseEntity<Page<Borrower>> searchBorrowers(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) CreditRating creditRating,
+            Pageable pageable) {
+        Page<Borrower> result = partyService.searchBorrowers(name, creditRating, pageable);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/companies/search")
+    @Operation(summary = "Search companies by name and/or industry")
+    public ResponseEntity<Page<Company>> searchCompanies(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Industry industry,
+            Pageable pageable) {
+        Page<Company> result = partyService.searchCompanies(name, industry, pageable);
+        return ResponseEntity.ok(result);
     }
 }
