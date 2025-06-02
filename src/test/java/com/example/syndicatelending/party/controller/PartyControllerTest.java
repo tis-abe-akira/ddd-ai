@@ -1,5 +1,6 @@
 package com.example.syndicatelending.party.controller;
 
+import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.Industry;
 import com.example.syndicatelending.party.entity.Country;
@@ -66,7 +67,7 @@ class PartyControllerTest {
                 setUp();
                 CreateBorrowerRequest request = new CreateBorrowerRequest(
                                 "Test Borrower", "borrower@example.com", "123-456-7890",
-                                null, BigDecimal.valueOf(1000000), CreditRating.AA);
+                                null, Money.of(BigDecimal.valueOf(1000000)), CreditRating.AA);
 
                 mockMvc.perform(post("/api/v1/parties/borrowers")
                                 .contentType(MediaType.APPLICATION_JSON)

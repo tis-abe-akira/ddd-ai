@@ -45,13 +45,6 @@ public class FacilityEntity {
         this.interestTerms = interestTerms;
     }
 
-    // BigDecimal互換のためのオーバーロード
-    public FacilityEntity(Long syndicateId, java.math.BigDecimal commitment, String currency,
-            LocalDate startDate, LocalDate endDate, String interestTerms) {
-        this(syndicateId, commitment == null ? null : Money.of(commitment), currency, startDate, endDate,
-                interestTerms);
-    }
-
     // getter/setter
     public Long getId() {
         return id;

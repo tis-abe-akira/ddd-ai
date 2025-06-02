@@ -27,15 +27,14 @@ public class FacilityService {
                 request.getCurrency(),
                 request.getStartDate(),
                 request.getEndDate(),
-                request.getInterestTerms()
-        );
+                request.getInterestTerms());
         FacilityEntity saved = facilityRepository.save(facility);
         // SharePieEntity生成
         for (CreateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
             SharePieEntity entity = new SharePieEntity();
             entity.setFacilityId(saved.getId());
             entity.setInvestorId(pie.getInvestorId());
-            entity.setShare(pie.getShare().getValue().toString());
+            entity.setShare(pie.getShare());
             sharePieRepository.save(entity);
         }
         return saved;

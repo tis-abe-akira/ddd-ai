@@ -1,5 +1,7 @@
 package com.example.syndicatelending.common.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.math.BigDecimal;
 import java.math.RoundingMode; // Use standard RoundingMode
 import java.util.Objects;
@@ -32,10 +34,18 @@ public final class Money {
     }
 
     /**
+     * JSONからMoneyインスタンスを生成するファクトリメソッド。
+     */
+    @JsonCreator
+    public static Money fromJson(BigDecimal amount) {
+        return new Money(amount);
+    }
+
+    /**
      * 指定されたlong値からMoneyインスタンスを生成するファクトリメソッド。(整数金額用)
      */
     public static Money of(long amount) {
-         return new Money(BigDecimal.valueOf(amount));
+        return new Money(BigDecimal.valueOf(amount));
     }
 
     /**
@@ -53,6 +63,14 @@ public final class Money {
     }
 
     /**
+     * JSON用の値を取得する。
+     */
+    @JsonValue
+    public BigDecimal toJson() {
+        return amount;
+    }
+
+    /**
      * 加算。
      */
     public Money add(Money other) {
@@ -64,7 +82,7 @@ public final class Money {
      * 減算。
      */
     public Money subtract(Money other) {
-         Objects.requireNonNull(other, "Cannot subtract null Money");
+        Objects.requireNonNull(other, "Cannot subtract null Money");
         return new Money(this.amount.subtract(other.amount));
     }
 
@@ -72,8 +90,8 @@ public final class Money {
      * 乗算。
      */
     public Money multiply(BigDecimal multiplier) {
-         Objects.requireNonNull(multiplier, "Cannot multiply by null BigDecimal");
-         // 乗算結果のスケールはBigDecimalのデフォルトに任せるか、ここで強制するか検討
+        Objects.requireNonNull(multiplier, "Cannot multiply by null BigDecimal");
+        // 乗算結果のスケールはBigDecimalのデフォルトに任せるか、ここで強制するか検討
         return new Money(this.amount.multiply(multiplier));
     }
 
@@ -104,39 +122,41 @@ public final class Money {
     /**
      * 現在の金額がゼロまたは正か。
      */
-     public boolean isPositiveOrZero() {
+    public boolean isPositiveOrZero() {
         return this.amount.compareTo(BigDecimal.ZERO) >= 0;
-     }
+    }
 
     /**
      * 現在の金額がゼロか。
      */
-     public boolean isZero() {
-         return this.amount.compareTo(BigDecimal.ZERO) == 0;
-     }
+    public boolean isZero() {
+        return this.amount.compareTo(BigDecimal.ZERO) == 0;
+    }
 
     // equals, hashCode, toString (BigDecimal based) - Omitted for brevity
 
-     @Override
-     public boolean equals(Object o) {
-         if (this == o) return true;
-         if (o == null || getClass() != o.getClass()) return false;
-         Money money = (Money) o;
-         // BigDecimalのequalsはスケールも比較するので注意。
-         // 金額としての等価性を比較する場合は compareTo == 0 を使うことが多いが、
-         // Value Objectとしてはequalsもスケール込みとするのが一般的。
-         // または、equalsForAmount(Money other) のようなメソッドを別途用意する。
-         // ここでは標準的なequals実装を採用。
-         return Objects.equals(amount, money.amount);
-     }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Money money = (Money) o;
+        // BigDecimalのequalsはスケールも比較するので注意。
+        // 金額としての等価性を比較する場合は compareTo == 0 を使うことが多いが、
+        // Value Objectとしてはequalsもスケール込みとするのが一般的。
+        // または、equalsForAmount(Money other) のようなメソッドを別途用意する。
+        // ここでは標準的なequals実装を採用。
+        return Objects.equals(amount, money.amount);
+    }
 
-     @Override
-     public int hashCode() {
-         return Objects.hash(amount);
-     }
+    @Override
+    public int hashCode() {
+        return Objects.hash(amount);
+    }
 
-     @Override
-     public String toString() {
-         return amount.toPlainString(); // 指数表記を避ける
-     }
+    @Override
+    public String toString() {
+        return amount.toPlainString(); // 指数表記を避ける
+    }
 }

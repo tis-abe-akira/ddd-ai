@@ -4,7 +4,6 @@ import com.example.syndicatelending.facility.entity.FacilityEntity;
 import com.example.syndicatelending.facility.entity.SharePieEntity;
 import com.example.syndicatelending.position.domain.Facility;
 import com.example.syndicatelending.position.domain.SharePie;
-import com.example.syndicatelending.common.domain.model.Percentage;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +27,7 @@ public class FacilityMapper {
     public static SharePie toDomainSharePie(SharePieEntity entity) {
         return new SharePie(
                 entity.getInvestorId(),
-                Percentage.of(new java.math.BigDecimal(entity.getShare())));
+                entity.getShare());
     }
 
     // Domain → Entity
@@ -47,7 +46,7 @@ public class FacilityMapper {
         SharePieEntity entity = new SharePieEntity();
         entity.setFacilityId(facilityId);
         entity.setInvestorId(domain.getInvestorId());
-        entity.setShare(domain.getShare().getValue().toString());
+        entity.setShare(domain.getShare());
         return entity;
     }
 }

@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-import java.math.BigDecimal;
-
 /**
  * 借り手作成リクエストDTO。
  */
@@ -42,14 +40,8 @@ public class CreateBorrowerRequest {
             @JsonProperty("email") String email,
             @JsonProperty("phoneNumber") String phoneNumber,
             @JsonProperty("companyId") String companyId,
-            @JsonProperty("creditLimit") BigDecimal creditLimit,
+            @JsonProperty("creditLimit") Money creditLimit,
             @JsonProperty("creditRating") CreditRating creditRating) {
-        this(name, email, phoneNumber, companyId, creditLimit == null ? null : Money.of(creditLimit), creditRating);
-    }
-
-    // Money型を直接受けるコンストラクタ（内部用）
-    public CreateBorrowerRequest(String name, String email, String phoneNumber,
-            String companyId, Money creditLimit, CreditRating creditRating) {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -91,13 +83,12 @@ public class CreateBorrowerRequest {
         this.companyId = companyId;
     }
 
-    @JsonProperty("creditLimit")
-    public BigDecimal getCreditLimit() {
-        return creditLimit == null ? null : creditLimit.getAmount();
+    public Money getCreditLimit() {
+        return creditLimit;
     }
 
-    public void setCreditLimit(BigDecimal creditLimit) {
-        this.creditLimit = creditLimit == null ? null : Money.of(creditLimit);
+    public void setCreditLimit(Money creditLimit) {
+        this.creditLimit = creditLimit;
     }
 
     public CreditRating getCreditRating() {
@@ -114,16 +105,5 @@ public class CreateBorrowerRequest {
 
     public void setCreditLimitOverride(boolean creditLimitOverride) {
         this.creditLimitOverride = creditLimitOverride;
-    }
-
-    // Money型のgetter/setterは@JsonIgnore推奨
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    public Money getCreditLimitAsMoney() {
-        return creditLimit;
-    }
-
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    public void setCreditLimit(Money creditLimit) {
-        this.creditLimit = creditLimit;
     }
 }

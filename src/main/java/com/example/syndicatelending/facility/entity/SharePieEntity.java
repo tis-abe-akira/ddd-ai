@@ -1,5 +1,7 @@
 package com.example.syndicatelending.facility.entity;
 
+import com.example.syndicatelending.common.domain.model.Percentage;
+import com.example.syndicatelending.common.domain.model.PercentageAttributeConverter;
 import jakarta.persistence.*;
 
 @Entity
@@ -15,8 +17,9 @@ public class SharePieEntity {
     @Column(nullable = false)
     private Long investorId;
 
+    @Convert(converter = PercentageAttributeConverter.class)
     @Column(nullable = false, precision = 8, scale = 4)
-    private String share; // Percentage型はJPAではStringやBigDecimalで持つ
+    private Percentage share;
 
     // getter/setter
     public Long getId() {
@@ -43,11 +46,11 @@ public class SharePieEntity {
         this.investorId = investorId;
     }
 
-    public String getShare() {
+    public Percentage getShare() {
         return share;
     }
 
-    public void setShare(String share) {
+    public void setShare(Percentage share) {
         this.share = share;
     }
 }
