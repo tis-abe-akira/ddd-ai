@@ -1,6 +1,7 @@
 package com.example.syndicatelending.facility.service;
 
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
+import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
@@ -14,9 +15,11 @@ import java.util.List;
 @Service
 public class FacilityService {
     private final FacilityRepository facilityRepository;
+    private final FacilityValidator facilityValidator;
 
-    public FacilityService(FacilityRepository facilityRepository) {
+    public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator) {
         this.facilityRepository = facilityRepository;
+        this.facilityValidator = facilityValidator;
     }
 
     @Transactional
@@ -43,7 +46,7 @@ public class FacilityService {
         facility.setSharePies(sharePies);
 
         // 3. バリデーション実行
-        facility.validateSharePie();
+        facilityValidator.validateCreateFacilityRequest(request);
 
         // 4. 保存（cascadeによりSharePieも一緒に保存される）
         return facilityRepository.save(facility);

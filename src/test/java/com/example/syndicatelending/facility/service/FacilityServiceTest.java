@@ -3,6 +3,7 @@ package com.example.syndicatelending.facility.service;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
+import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
@@ -19,6 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +28,9 @@ class FacilityServiceTest {
 
     @Mock
     private FacilityRepository facilityRepository;
+
+    @Mock
+    private FacilityValidator facilityValidator;
 
     @InjectMocks
     private FacilityService facilityService;
@@ -39,20 +44,28 @@ class FacilityServiceTest {
         savedFacility.setId(1L);
         when(facilityRepository.save(any(Facility.class))).thenReturn(savedFacility);
 
-        // When & Then
-        assertThatCode(() -> facilityService.createFacility(request))
-                .doesNotThrowAnyException();
+        // When
+        facilityService.createFacility(request);
+
+        // Then
+        verify(facilityValidator).validateCreateFacilityRequest(request);
+        verify(facilityRepository).save(any(Facility.class));
     }
 
     @Test
     void SharePieの合計が100パーセント未満の場合はバリデーションエラーになる() {
         // Given
         CreateFacilityRequest request = createInvalidFacilityRequest();
+        doThrow(new BusinessRuleViolationException("SharePieの合計は100%である必要があります"))
+                .when(facilityValidator).validateCreateFacilityRequest(request);
 
         // When & Then
         assertThatThrownBy(() -> facilityService.createFacility(request))
                 .isInstanceOf(BusinessRuleViolationException.class)
-                .hasMessageContaining("SharePieの合計は100%でなければなりません");
+                .hasMessageContaining("SharePieの合計は100%である必要があります");
+
+        verify(facilityValidator).validateCreateFacilityRequest(request);
+        verify(facilityRepository, never()).save(any(Facility.class));
     }
 
     private CreateFacilityRequest createValidFacilityRequest() {
