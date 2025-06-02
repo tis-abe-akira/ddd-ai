@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FacilityService {
@@ -50,5 +51,56 @@ public class FacilityService {
 
         // 4. 保存（cascadeによりSharePieも一緒に保存される）
         return facilityRepository.save(facility);
+    }
+
+    public List<Facility> getAllFacilities() {
+        return facilityRepository.findAll();
+    }
+
+    public Optional<Facility> getFacilityById(Long id) {
+        return facilityRepository.findById(id);
+    }
+
+    @Transactional
+    public Facility updateFacility(Long id, CreateFacilityRequest request) {
+        Optional<Facility> existingFacility = facilityRepository.findById(id);
+        if (existingFacility.isEmpty()) {
+            throw new RuntimeException("Facility not found with id: " + id);
+        }
+
+        Facility facility = existingFacility.get();
+
+        // 基本情報を更新
+        facility.setSyndicateId(request.getSyndicateId());
+        facility.setCommitment(request.getCommitment());
+        facility.setCurrency(request.getCurrency());
+        facility.setStartDate(request.getStartDate());
+        facility.setEndDate(request.getEndDate());
+        facility.setInterestTerms(request.getInterestTerms());
+
+        // SharePieの更新（既存を削除して新規作成）
+        facility.getSharePies().clear();
+        List<SharePie> newSharePies = new ArrayList<>();
+        for (CreateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
+            SharePie entity = new SharePie();
+            entity.setInvestorId(pie.getInvestorId());
+            entity.setShare(pie.getShare());
+            entity.setFacility(facility);
+            newSharePies.add(entity);
+        }
+        facility.setSharePies(newSharePies);
+
+        // バリデーション実行
+        facilityValidator.validateCreateFacilityRequest(request);
+
+        return facilityRepository.save(facility);
+    }
+
+    @Transactional
+    public void deleteFacility(Long id) {
+        if (!facilityRepository.existsById(id)) {
+            throw new RuntimeException("Facility not found with id: " + id);
+        }
+        facilityRepository.deleteById(id);
     }
 }

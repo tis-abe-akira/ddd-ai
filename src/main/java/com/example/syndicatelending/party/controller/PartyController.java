@@ -48,6 +48,29 @@ public class PartyController {
         return ResponseEntity.ok(companies);
     }
 
+    @PutMapping("/companies/{id}")
+    @Operation(summary = "Update company by ID")
+    public ResponseEntity<Company> updateCompany(@PathVariable Long id,
+            @Valid @RequestBody CreateCompanyRequest request) {
+        try {
+            Company updatedCompany = partyService.updateCompany(id, request);
+            return ResponseEntity.ok(updatedCompany);
+        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/companies/{id}")
+    @Operation(summary = "Delete company by ID")
+    public ResponseEntity<Void> deleteCompany(@PathVariable Long id) {
+        try {
+            partyService.deleteCompany(id);
+            return ResponseEntity.noContent().build();
+        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     // Borrower endpoints
     @PostMapping("/borrowers")
     @Operation(summary = "Create a new borrower")
@@ -68,6 +91,31 @@ public class PartyController {
     public ResponseEntity<Page<Borrower>> getAllBorrowers(Pageable pageable) {
         Page<Borrower> borrowers = partyService.getAllBorrowers(pageable);
         return ResponseEntity.ok(borrowers);
+    }
+
+    @PutMapping("/borrowers/{id}")
+    @Operation(summary = "Update borrower by ID")
+    public ResponseEntity<Borrower> updateBorrower(@PathVariable Long id,
+            @Valid @RequestBody CreateBorrowerRequest request) {
+        try {
+            Borrower updatedBorrower = partyService.updateBorrower(id, request);
+            return ResponseEntity.ok(updatedBorrower);
+        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (com.example.syndicatelending.common.application.exception.BusinessRuleViolationException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/borrowers/{id}")
+    @Operation(summary = "Delete borrower by ID")
+    public ResponseEntity<Void> deleteBorrower(@PathVariable Long id) {
+        try {
+            partyService.deleteBorrower(id);
+            return ResponseEntity.noContent().build();
+        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // Investor endpoints
@@ -97,6 +145,29 @@ public class PartyController {
     public ResponseEntity<Page<Investor>> getActiveInvestors(Pageable pageable) {
         Page<Investor> activeInvestors = partyService.getActiveInvestors(pageable);
         return ResponseEntity.ok(activeInvestors);
+    }
+
+    @PutMapping("/investors/{id}")
+    @Operation(summary = "Update investor by ID")
+    public ResponseEntity<Investor> updateInvestor(@PathVariable Long id,
+            @Valid @RequestBody CreateInvestorRequest request) {
+        try {
+            Investor updatedInvestor = partyService.updateInvestor(id, request);
+            return ResponseEntity.ok(updatedInvestor);
+        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/investors/{id}")
+    @Operation(summary = "Delete investor by ID")
+    public ResponseEntity<Void> deleteInvestor(@PathVariable Long id) {
+        try {
+            partyService.deleteInvestor(id);
+            return ResponseEntity.noContent().build();
+        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/investors/search")

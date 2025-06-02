@@ -46,4 +46,36 @@ public class SyndicateService {
     public Page<Syndicate> getAllSyndicates(Pageable pageable) {
         return syndicateRepository.findAll(pageable);
     }
+
+    public Syndicate updateSyndicate(Long id, Syndicate updatedSyndicate) {
+        Syndicate existingSyndicate = getSyndicateById(id); // ResourceNotFoundExceptionをスロー
+
+        // 名前変更時の重複チェック
+        if (!existingSyndicate.getName().equals(updatedSyndicate.getName()) &&
+                syndicateRepository.existsByName(updatedSyndicate.getName())) {
+            throw new IllegalArgumentException("Syndicate name already exists: " + updatedSyndicate.getName());
+        }
+
+        // LEAD_BANK資格チェック
+        Long leadBankId = updatedSyndicate.getLeadBankId();
+        Investor leadBank = investorRepository.findById(leadBankId)
+                .orElseThrow(() -> new BusinessRuleViolationException("指定されたリードバンクが存在しません: id=" + leadBankId));
+        if (leadBank.getInvestorType() != InvestorType.LEAD_BANK) {
+            throw new BusinessRuleViolationException("指定されたリードバンクはLEAD_BANKの資格を持っていません: id=" + leadBankId);
+        }
+
+        existingSyndicate.setName(updatedSyndicate.getName());
+        existingSyndicate.setLeadBankId(updatedSyndicate.getLeadBankId());
+        existingSyndicate.setBorrowerId(updatedSyndicate.getBorrowerId());
+        existingSyndicate.setMemberInvestorIds(updatedSyndicate.getMemberInvestorIds());
+
+        return syndicateRepository.save(existingSyndicate);
+    }
+
+    public void deleteSyndicate(Long id) {
+        if (!syndicateRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Syndicate not found with ID: " + id);
+        }
+        syndicateRepository.deleteById(id);
+    }
 }

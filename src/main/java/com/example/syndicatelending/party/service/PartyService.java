@@ -51,6 +51,23 @@ public class PartyService {
         return companyRepository.findAll(pageable);
     }
 
+    public Company updateCompany(Long id, CreateCompanyRequest request) {
+        Company company = getCompanyById(id); // ResourceNotFoundExceptionをスロー
+        company.setCompanyName(request.getCompanyName());
+        company.setRegistrationNumber(request.getRegistrationNumber());
+        company.setIndustry(request.getIndustry());
+        company.setAddress(request.getAddress());
+        company.setCountry(request.getCountry());
+        return companyRepository.save(company);
+    }
+
+    public void deleteCompany(Long id) {
+        if (!companyRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Company not found with ID: " + id);
+        }
+        companyRepository.deleteById(id);
+    }
+
     // Borrower operations
     public Borrower createBorrower(CreateBorrowerRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
@@ -96,6 +113,50 @@ public class PartyService {
         return borrowerRepository.findAll(pageable);
     }
 
+    public Borrower updateBorrower(Long id, CreateBorrowerRequest request) {
+        Borrower borrower = getBorrowerById(id); // ResourceNotFoundExceptionをスロー
+
+        // Company存在確認
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
+                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+            }
+        }
+
+        // CreditRatingバリデーション
+        if (!request.isCreditLimitOverride()) {
+            if (request.getCreditRating() == null || request.getCreditLimit() == null ||
+                    !request.getCreditRating().isLimitSatisfied(request.getCreditLimit())) {
+                throw new com.example.syndicatelending.common.application.exception.BusinessRuleViolationException(
+                        "creditLimit exceeds allowed maximum for creditRating " + request.getCreditRating() +
+                                " (max: "
+                                + (request.getCreditRating() != null ? request.getCreditRating().getLimit() : null)
+                                + ")");
+            }
+        }
+
+        borrower.setName(request.getName());
+        borrower.setEmail(request.getEmail());
+        borrower.setPhoneNumber(request.getPhoneNumber());
+        borrower.setCompanyId(request.getCompanyId());
+        borrower.setCreditLimit(request.getCreditLimit());
+        borrower.setCreditRating(request.getCreditRating());
+        return borrowerRepository.save(borrower);
+    }
+
+    public void deleteBorrower(Long id) {
+        if (!borrowerRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Borrower not found with ID: " + id);
+        }
+        borrowerRepository.deleteById(id);
+    }
+
     // Investor operations
     public Investor createInvestor(CreateInvestorRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
@@ -133,6 +194,38 @@ public class PartyService {
     @Transactional(readOnly = true)
     public Page<Investor> getActiveInvestors(Pageable pageable) {
         return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
+    }
+
+    public Investor updateInvestor(Long id, CreateInvestorRequest request) {
+        Investor investor = getInvestorById(id); // ResourceNotFoundExceptionをスロー
+
+        // Company存在確認
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
+                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+            }
+        }
+
+        investor.setName(request.getName());
+        investor.setEmail(request.getEmail());
+        investor.setPhoneNumber(request.getPhoneNumber());
+        investor.setCompanyId(request.getCompanyId());
+        investor.setInvestmentCapacity(request.getInvestmentCapacity());
+        investor.setInvestorType(request.getInvestorType());
+        return investorRepository.save(investor);
+    }
+
+    public void deleteInvestor(Long id) {
+        if (!investorRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Investor not found with ID: " + id);
+        }
+        investorRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
