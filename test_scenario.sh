@@ -53,7 +53,7 @@ curl -s "$API_URL/parties/investors" | jq
 echo "--- Syndicate作成 ---"
 SYNDICATE_ID=$(curl -s -X POST "$API_URL/syndicates" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test Syndicate","leadBankId":'$INVESTOR_ID',"memberInvestorIds":['$INVESTOR_ID', '$INVESTOR_ID2', '$INVESTOR_ID3']}' \
+  -d '{"name":"Test Syndicate","leadBankId":'$INVESTOR_ID',"borrowerId":'$BORROWER_ID',"memberInvestorIds":['$INVESTOR_ID', '$INVESTOR_ID2', '$INVESTOR_ID3']}' \
   | jq -r '.id')
 echo "Syndicate ID: $SYNDICATE_ID"
 

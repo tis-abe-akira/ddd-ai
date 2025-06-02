@@ -33,7 +33,7 @@ class SyndicateServiceTest {
 
     @Test
     void createSyndicate正常系() {
-        Syndicate s = new Syndicate("団A", 1L, List.of(2L, 3L));
+        Syndicate s = new Syndicate("団A", 1L, 1L, List.of(2L, 3L)); // borrowerId: 1L を追加
         when(syndicateRepository.existsByName("団A")).thenReturn(false);
         Investor leadBank = new Investor();
         leadBank.setId(1L);
@@ -47,7 +47,7 @@ class SyndicateServiceTest {
 
     @Test
     void createSyndicate重複名で例外() {
-        Syndicate s = new Syndicate("団A", 1L, List.of(2L));
+        Syndicate s = new Syndicate("団A", 1L, 1L, List.of(2L)); // borrowerId: 1L を追加
         when(syndicateRepository.existsByName("団A")).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () -> syndicateService.createSyndicate(s));
         verify(syndicateRepository, never()).save(any());
@@ -55,7 +55,7 @@ class SyndicateServiceTest {
 
     @Test
     void getSyndicateById正常系() {
-        Syndicate s = new Syndicate("団A", 1L, List.of(2L));
+        Syndicate s = new Syndicate("団A", 1L, 1L, List.of(2L)); // borrowerId: 1L を追加
         s.setId(10L);
         when(syndicateRepository.findById(10L)).thenReturn(Optional.of(s));
         Syndicate result = syndicateService.getSyndicateById(10L);
@@ -70,7 +70,7 @@ class SyndicateServiceTest {
 
     @Test
     void createSyndicate_リードバンクがLEAD_BANKでないと例外() {
-        Syndicate s = new Syndicate("団B", 100L, List.of(2L, 3L));
+        Syndicate s = new Syndicate("団B", 100L, 100L, List.of(2L, 3L)); // borrowerId: 100L を追加
         when(syndicateRepository.existsByName("団B")).thenReturn(false);
         Investor notLeadBank = new Investor();
         notLeadBank.setId(100L);
@@ -82,7 +82,7 @@ class SyndicateServiceTest {
 
     @Test
     void createSyndicate_リードバンクが存在しないと例外() {
-        Syndicate s = new Syndicate("団C", 200L, List.of(2L, 3L));
+        Syndicate s = new Syndicate("団C", 200L, 200L, List.of(2L, 3L)); // borrowerId: 200L を追加
         when(syndicateRepository.existsByName("団C")).thenReturn(false);
         when(investorRepository.findById(200L)).thenReturn(java.util.Optional.empty());
         assertThrows(BusinessRuleViolationException.class, () -> syndicateService.createSyndicate(s));
@@ -91,7 +91,7 @@ class SyndicateServiceTest {
 
     @Test
     void createSyndicate_リードバンクがLEAD_BANKなら正常() {
-        Syndicate s = new Syndicate("団D", 300L, List.of(2L, 3L));
+        Syndicate s = new Syndicate("団D", 300L, 300L, List.of(2L, 3L)); // borrowerId: 300L を追加
         when(syndicateRepository.existsByName("団D")).thenReturn(false);
         Investor leadBank = new Investor();
         leadBank.setId(300L);

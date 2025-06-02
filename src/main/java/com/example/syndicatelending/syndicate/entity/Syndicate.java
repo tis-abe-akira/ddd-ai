@@ -19,6 +19,10 @@ public class Syndicate {
     @Column(name = "lead_bank_id")
     private Long leadBankId;
 
+    // 借り手（BorrowerのIDで管理）
+    @Column(name = "borrower_id")
+    private Long borrowerId;
+
     // メンバー（投資家IDのリスト、シンプルな形で実装）
     @ElementCollection
     @CollectionTable(name = "syndicate_members", joinColumns = @JoinColumn(name = "syndicate_id"))
@@ -35,9 +39,10 @@ public class Syndicate {
     public Syndicate() {
     }
 
-    public Syndicate(String name, Long leadBankId, List<Long> memberInvestorIds) {
+    public Syndicate(String name, Long leadBankId, Long borrowerId, List<Long> memberInvestorIds) {
         this.name = name;
         this.leadBankId = leadBankId;
+        this.borrowerId = borrowerId;
         if (memberInvestorIds != null) {
             this.memberInvestorIds = memberInvestorIds;
         }
@@ -75,6 +80,14 @@ public class Syndicate {
 
     public void setLeadBankId(Long leadBankId) {
         this.leadBankId = leadBankId;
+    }
+
+    public Long getBorrowerId() {
+        return borrowerId;
+    }
+
+    public void setBorrowerId(Long borrowerId) {
+        this.borrowerId = borrowerId;
     }
 
     public List<Long> getMemberInvestorIds() {

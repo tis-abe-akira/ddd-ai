@@ -1,16 +1,22 @@
 package com.example.syndicatelending.facility.domain;
 
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
+import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.party.entity.Borrower;
+import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.party.repository.InvestorRepository;
+import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -46,12 +52,12 @@ public class FacilityValidator {
         validateBasicInputs(request);
         validateSyndicateExists(request.getSyndicateId());
 
-        // Syndicate syndicate = syndicateRepository.findById(request.getSyndicateId())
-        // .orElseThrow(() -> new BusinessRuleViolationException("Syndicateが見つかりません"));
+        Syndicate syndicate = syndicateRepository.findById(request.getSyndicateId())
+                .orElseThrow(() -> new BusinessRuleViolationException("Syndicateが見つかりません"));
 
-        // validateInvestorsExistAndBelongToSyndicate(request, syndicate);
+        validateInvestorsExistAndBelongToSyndicate(request, syndicate);
         validateSharePieDuplication(request);
-        // validateCreditLimit(request, syndicate);
+        validateCreditLimit(request, syndicate);
         validateSharePiePercentage(request);
     }
 
@@ -85,32 +91,29 @@ public class FacilityValidator {
         }
     }
 
-    /*
+    /**
      * Investorの存在とSyndicateメンバーシップチェック
      */
-    /*
-     * private void validateInvestorsExistAndBelongToSyndicate(CreateFacilityRequest
-     * request, Syndicate syndicate) {
-     * for (CreateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
-     * // Investor存在チェック
-     * Investor investor = investorRepository.findById(pie.getInvestorId())
-     * .orElseThrow(() -> new BusinessRuleViolationException(
-     * "指定されたInvestorが存在しません: id=" + pie.getInvestorId()));
-     * 
-     * // アクティブ状態チェック
-     * if (!investor.getIsActive()) {
-     * throw new BusinessRuleViolationException(
-     * "非アクティブなInvestorは投資できません: investorId=" + pie.getInvestorId());
-     * }
-     * 
-     * // Syndicateメンバーシップチェック
-     * if (!syndicate.getMemberInvestorIds().contains(pie.getInvestorId())) {
-     * throw new BusinessRuleViolationException(
-     * "InvestorはSyndicateメンバーではありません: investorId=" + pie.getInvestorId());
-     * }
-     * }
-     * }
-     */
+    private void validateInvestorsExistAndBelongToSyndicate(CreateFacilityRequest request, Syndicate syndicate) {
+        for (CreateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
+            // Investor存在チェック
+            Investor investor = investorRepository.findById(pie.getInvestorId())
+                    .orElseThrow(() -> new BusinessRuleViolationException(
+                            "指定されたInvestorが存在しません: id=" + pie.getInvestorId()));
+
+            // アクティブ状態チェック
+            if (!investor.getIsActive()) {
+                throw new BusinessRuleViolationException(
+                        "非アクティブなInvestorは投資できません: investorId=" + pie.getInvestorId());
+            }
+
+            // Syndicateメンバーシップチェック
+            if (!syndicate.getMemberInvestorIds().contains(pie.getInvestorId())) {
+                throw new BusinessRuleViolationException(
+                        "InvestorはSyndicateメンバーではありません: investorId=" + pie.getInvestorId());
+            }
+        }
+    }
 
     /**
      * SharePieの重複チェック
@@ -125,41 +128,34 @@ public class FacilityValidator {
         }
     }
 
-    /*
+    /**
      * BorrowerのCreditLimitチェック
      */
-    /*
-     * private void validateCreditLimit(CreateFacilityRequest request, Syndicate
-     * syndicate) {
-     * Borrower borrower = borrowerRepository.findById(syndicate.getBorrowerId())
-     * .orElseThrow(() -> new BusinessRuleViolationException(
-     * "指定されたSyndicateにBorrowerが関連付けられていません"));
-     * 
-     * // 新規CommitmentがCreditLimitを超えていないかチェック
-     * if (borrower.getCreditLimit().getAmount().compareTo(request.getCommitment().
-     * getAmount()) < 0) {
-     * throw new BusinessRuleViolationException(
-     * "FacilityのCommitment(" + request.getCommitment() +
-     * ")がBorrowerのCreditLimit(" + borrower.getCreditLimit() + ")を超えています");
-     * }
-     * 
-     * // 既存Facility合計 + 新規CommitmentがCreditLimit以下かチェック
-     * List<Facility> existingFacilities =
-     * facilityRepository.findBySyndicateId(request.getSyndicateId());
-     * Money totalExistingCommitment = existingFacilities.stream()
-     * .map(Facility::getCommitment)
-     * .reduce(Money.zero(), Money::add);
-     * 
-     * Money totalCommitment = totalExistingCommitment.add(request.getCommitment());
-     * if
-     * (totalCommitment.getAmount().compareTo(borrower.getCreditLimit().getAmount())
-     * > 0) {
-     * throw new BusinessRuleViolationException(
-     * "総Commitment(" + totalCommitment +
-     * ")がBorrowerのCreditLimit(" + borrower.getCreditLimit() + ")を超えています");
-     * }
-     * }
-     */
+    private void validateCreditLimit(CreateFacilityRequest request, Syndicate syndicate) {
+        Borrower borrower = borrowerRepository.findById(syndicate.getBorrowerId())
+                .orElseThrow(() -> new BusinessRuleViolationException(
+                        "指定されたSyndicateにBorrowerが関連付けられていません"));
+
+        // 新規CommitmentがCreditLimitを超えていないかチェック
+        if (borrower.getCreditLimit().getAmount().compareTo(request.getCommitment().getAmount()) < 0) {
+            throw new BusinessRuleViolationException(
+                    "FacilityのCommitment(" + request.getCommitment() +
+                            ")がBorrowerのCreditLimit(" + borrower.getCreditLimit() + ")を超えています");
+        }
+
+        // 既存Facility合計 + 新規CommitmentがCreditLimit以下かチェック
+        List<Facility> existingFacilities = facilityRepository.findBySyndicateId(request.getSyndicateId());
+        Money totalExistingCommitment = existingFacilities.stream()
+                .map(Facility::getCommitment)
+                .reduce(Money.zero(), Money::add);
+
+        Money totalCommitment = totalExistingCommitment.add(request.getCommitment());
+        if (totalCommitment.getAmount().compareTo(borrower.getCreditLimit().getAmount()) > 0) {
+            throw new BusinessRuleViolationException(
+                    "総Commitment(" + totalCommitment +
+                            ")がBorrowerのCreditLimit(" + borrower.getCreditLimit() + ")を超えています");
+        }
+    }
 
     /**
      * SharePieの合計が100%であることをチェック
