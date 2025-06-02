@@ -5,6 +5,7 @@ import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,15 +58,16 @@ public class FacilityService {
         return facilityRepository.findAll();
     }
 
-    public Optional<Facility> getFacilityById(Long id) {
-        return facilityRepository.findById(id);
+    public Facility getFacilityById(Long id) {
+        return facilityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Facility not found with id: " + id));
     }
 
     @Transactional
     public Facility updateFacility(Long id, CreateFacilityRequest request) {
         Optional<Facility> existingFacility = facilityRepository.findById(id);
         if (existingFacility.isEmpty()) {
-            throw new RuntimeException("Facility not found with id: " + id);
+            throw new ResourceNotFoundException("Facility not found with id: " + id);
         }
 
         Facility facility = existingFacility.get();
@@ -99,7 +101,7 @@ public class FacilityService {
     @Transactional
     public void deleteFacility(Long id) {
         if (!facilityRepository.existsById(id)) {
-            throw new RuntimeException("Facility not found with id: " + id);
+            throw new ResourceNotFoundException("Facility not found with id: " + id);
         }
         facilityRepository.deleteById(id);
     }

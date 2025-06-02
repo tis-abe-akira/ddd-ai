@@ -38,26 +38,15 @@ public class SyndicateController {
     @PutMapping("/{id}")
     public ResponseEntity<Syndicate> updateSyndicate(@PathVariable Long id,
             @RequestBody CreateSyndicateRequest request) {
-        try {
-            Syndicate syndicate = new Syndicate(request.getName(), request.getLeadBankId(), request.getBorrowerId(),
-                    request.getMemberInvestorIds());
-            Syndicate updatedSyndicate = syndicateService.updateSyndicate(id, syndicate);
-            return ResponseEntity.ok(updatedSyndicate);
-        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException
-                | com.example.syndicatelending.common.application.exception.BusinessRuleViolationException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        Syndicate syndicate = new Syndicate(request.getName(), request.getLeadBankId(), request.getBorrowerId(),
+                request.getMemberInvestorIds());
+        Syndicate updatedSyndicate = syndicateService.updateSyndicate(id, syndicate);
+        return ResponseEntity.ok(updatedSyndicate);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSyndicate(@PathVariable Long id) {
-        try {
-            syndicateService.deleteSyndicate(id);
-            return ResponseEntity.noContent().build();
-        } catch (com.example.syndicatelending.common.application.exception.ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        syndicateService.deleteSyndicate(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/facilities")
@@ -32,28 +31,19 @@ public class FacilityController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Facility> getFacilityById(@PathVariable Long id) {
-        Optional<Facility> facility = facilityService.getFacilityById(id);
-        return facility.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Facility facility = facilityService.getFacilityById(id);
+        return ResponseEntity.ok(facility);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Facility> updateFacility(@PathVariable Long id, @RequestBody CreateFacilityRequest request) {
-        try {
-            Facility updatedFacility = facilityService.updateFacility(id, request);
-            return ResponseEntity.ok(updatedFacility);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        Facility updatedFacility = facilityService.updateFacility(id, request);
+        return ResponseEntity.ok(updatedFacility);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFacility(@PathVariable Long id) {
-        try {
-            facilityService.deleteFacility(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        facilityService.deleteFacility(id);
+        return ResponseEntity.noContent().build();
     }
 }
