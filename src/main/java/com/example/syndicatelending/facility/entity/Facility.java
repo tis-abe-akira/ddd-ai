@@ -1,14 +1,18 @@
 package com.example.syndicatelending.facility.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
+import com.example.syndicatelending.common.domain.model.Percentage;
 
 @Entity
 @Table(name = "facilities")
-public class FacilityEntity {
+public class Facility {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,10 +36,13 @@ public class FacilityEntity {
     @Column
     private String interestTerms;
 
-    public FacilityEntity() {
+    @OneToMany(mappedBy = "facility", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<SharePie> sharePies = new ArrayList<>();
+
+    public Facility() {
     }
 
-    public FacilityEntity(Long syndicateId, Money commitment, String currency, LocalDate startDate,
+    public Facility(Long syndicateId, Money commitment, String currency, LocalDate startDate,
             LocalDate endDate, String interestTerms) {
         this.syndicateId = syndicateId;
         this.commitment = commitment;
@@ -100,5 +107,32 @@ public class FacilityEntity {
 
     public void setInterestTerms(String interestTerms) {
         this.interestTerms = interestTerms;
+    }
+
+    public List<SharePie> getSharePies() {
+        return sharePies;
+    }
+
+    public void setSharePies(List<SharePie> sharePies) {
+        this.sharePies = sharePies;
+    }
+
+    /**
+     * SharePieの合計が100%であることを検証する
+     */
+    public void validateSharePie() {
+        if (sharePies == null || sharePies.isEmpty()) {
+            throw new IllegalArgumentException("SharePieが設定されていません");
+        }
+
+        Percentage total = sharePies.stream()
+                .map(SharePie::getShare)
+                .reduce(Percentage.of(0), Percentage::add);
+
+        // 100% = 1.0 (BigDecimal)
+        Percentage expected = Percentage.of(BigDecimal.ONE);
+        if (total.getValue().compareTo(expected.getValue()) != 0) {
+            throw new IllegalArgumentException("SharePieの合計は100%でなければなりません。現在の合計: " + total);
+        }
     }
 }

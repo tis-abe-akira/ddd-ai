@@ -1,7 +1,7 @@
 package com.example.syndicatelending.facility.controller;
 
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
-import com.example.syndicatelending.facility.entity.FacilityEntity;
+import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.service.FacilityService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +16,8 @@ public class FacilityController {
     }
 
     @PostMapping
-    public ResponseEntity<FacilityEntity> createFacility(@RequestBody CreateFacilityRequest request) {
-        FacilityEntity facility = facilityService.createFacility(request);
+    public ResponseEntity<Facility> createFacility(@RequestBody CreateFacilityRequest request) {
+        Facility facility = facilityService.createFacility(request);
         return ResponseEntity.ok(facility);
     }
 }

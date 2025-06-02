@@ -1,42 +1,51 @@
 package com.example.syndicatelending.facility.service;
 
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
-import com.example.syndicatelending.facility.entity.FacilityEntity;
-import com.example.syndicatelending.facility.entity.SharePieEntity;
+import com.example.syndicatelending.facility.entity.Facility;
+import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
-import com.example.syndicatelending.facility.repository.SharePieRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class FacilityService {
     private final FacilityRepository facilityRepository;
-    private final SharePieRepository sharePieRepository;
 
-    public FacilityService(FacilityRepository facilityRepository, SharePieRepository sharePieRepository) {
+    public FacilityService(FacilityRepository facilityRepository) {
         this.facilityRepository = facilityRepository;
-        this.sharePieRepository = sharePieRepository;
     }
 
     @Transactional
-    public FacilityEntity createFacility(CreateFacilityRequest request) {
-        FacilityEntity facility = new FacilityEntity(
+    public Facility createFacility(CreateFacilityRequest request) {
+        // 1. Facility作成
+        Facility facility = new Facility(
                 request.getSyndicateId(),
                 request.getCommitment(),
                 request.getCurrency(),
                 request.getStartDate(),
                 request.getEndDate(),
                 request.getInterestTerms());
-        FacilityEntity saved = facilityRepository.save(facility);
-        // SharePieEntity生成
+
+        // 2. SharePie作成・設定
+        List<SharePie> sharePies = new ArrayList<>();
         for (CreateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
-            SharePieEntity entity = new SharePieEntity();
-            entity.setFacilityId(saved.getId());
+            SharePie entity = new SharePie();
             entity.setInvestorId(pie.getInvestorId());
             entity.setShare(pie.getShare());
-            sharePieRepository.save(entity);
+            entity.setFacility(facility);
+            sharePies.add(entity);
         }
-        return saved;
+
+        facility.setSharePies(sharePies);
+
+        // 3. バリデーション実行
+        facility.validateSharePie();
+
+        // 4. 保存（cascadeによりSharePieも一緒に保存される）
+        return facilityRepository.save(facility);
     }
 }

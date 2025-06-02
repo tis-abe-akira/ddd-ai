@@ -1,6 +1,5 @@
 package com.example.syndicatelending.common.domain.model;
 
-import com.example.syndicatelending.common.domain.model.Percentage;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import java.math.BigDecimal;
