@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import com.example.syndicatelending.common.domain.model.Percentage;
@@ -122,7 +123,7 @@ public class Facility {
      */
     public void validateSharePie() {
         if (sharePies == null || sharePies.isEmpty()) {
-            throw new IllegalArgumentException("SharePieが設定されていません");
+            throw new BusinessRuleViolationException("SharePieが設定されていません");
         }
 
         Percentage total = sharePies.stream()
@@ -132,7 +133,7 @@ public class Facility {
         // 100% = 1.0 (BigDecimal)
         Percentage expected = Percentage.of(BigDecimal.ONE);
         if (total.getValue().compareTo(expected.getValue()) != 0) {
-            throw new IllegalArgumentException("SharePieの合計は100%でなければなりません。現在の合計: " + total);
+            throw new BusinessRuleViolationException("SharePieの合計は100%でなければなりません。現在の合計: " + total);
         }
     }
 }

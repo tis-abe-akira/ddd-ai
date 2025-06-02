@@ -1,5 +1,6 @@
 package com.example.syndicatelending.facility.service;
 
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
@@ -50,7 +51,7 @@ class FacilityServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> facilityService.createFacility(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("SharePieの合計は100%でなければなりません");
     }
 

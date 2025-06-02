@@ -1,5 +1,6 @@
 package com.example.syndicatelending.facility.entity;
 
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import org.junit.jupiter.api.Test;
@@ -17,19 +18,19 @@ class FacilityTest {
     void SharePieの合計が100パーセントの場合はバリデーションが成功する() {
         // Given
         Facility facility = createTestFacility();
-        
+
         SharePie pie1 = new SharePie();
         pie1.setShare(Percentage.of(BigDecimal.valueOf(0.4))); // 40%
         pie1.setFacility(facility);
-        
+
         SharePie pie2 = new SharePie();
         pie2.setShare(Percentage.of(BigDecimal.valueOf(0.35))); // 35%
         pie2.setFacility(facility);
-        
+
         SharePie pie3 = new SharePie();
         pie3.setShare(Percentage.of(BigDecimal.valueOf(0.25))); // 25%
         pie3.setFacility(facility);
-        
+
         List<SharePie> sharePies = Arrays.asList(pie1, pie2, pie3);
         facility.setSharePies(sharePies);
 
@@ -42,25 +43,25 @@ class FacilityTest {
     void SharePieの合計が100パーセント未満の場合はバリデーションでエラーになる() {
         // Given
         Facility facility = createTestFacility();
-        
+
         SharePie pie1 = new SharePie();
         pie1.setShare(Percentage.of(BigDecimal.valueOf(0.4))); // 40%
         pie1.setFacility(facility);
-        
+
         SharePie pie2 = new SharePie();
         pie2.setShare(Percentage.of(BigDecimal.valueOf(0.35))); // 35%
         pie2.setFacility(facility);
-        
+
         SharePie pie3 = new SharePie();
         pie3.setShare(Percentage.of(BigDecimal.valueOf(0.2))); // 20% (合計95%)
         pie3.setFacility(facility);
-        
+
         List<SharePie> sharePies = Arrays.asList(pie1, pie2, pie3);
         facility.setSharePies(sharePies);
 
         // When & Then
         assertThatThrownBy(() -> facility.validateSharePie())
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("SharePieの合計は100%でなければなりません");
     }
 
@@ -68,25 +69,25 @@ class FacilityTest {
     void SharePieの合計が100パーセント超過の場合はバリデーションでエラーになる() {
         // Given
         Facility facility = createTestFacility();
-        
+
         SharePie pie1 = new SharePie();
         pie1.setShare(Percentage.of(BigDecimal.valueOf(0.4))); // 40%
         pie1.setFacility(facility);
-        
+
         SharePie pie2 = new SharePie();
         pie2.setShare(Percentage.of(BigDecimal.valueOf(0.35))); // 35%
         pie2.setFacility(facility);
-        
+
         SharePie pie3 = new SharePie();
         pie3.setShare(Percentage.of(BigDecimal.valueOf(0.3))); // 30% (合計105%)
         pie3.setFacility(facility);
-        
+
         List<SharePie> sharePies = Arrays.asList(pie1, pie2, pie3);
         facility.setSharePies(sharePies);
 
         // When & Then
         assertThatThrownBy(() -> facility.validateSharePie())
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("SharePieの合計は100%でなければなりません");
     }
 
@@ -94,10 +95,10 @@ class FacilityTest {
     void SharePieが空の場合はバリデーションでエラーになる() {
         // Given
         Facility facility = createTestFacility();
-        
+
         // When & Then
         assertThatThrownBy(() -> facility.validateSharePie())
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("SharePieが設定されていません");
     }
 
