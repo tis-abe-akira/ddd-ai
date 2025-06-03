@@ -366,7 +366,7 @@ FACILITY_UPDATE_FINAL=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/version
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
-    "commitment": 5000000,
+    "commitment": 7000000,
     "currency": "USD",
     "startDate": "2025-06-01",
     "endDate": "2026-06-01",
