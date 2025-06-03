@@ -180,19 +180,17 @@ class PartyControllerTest {
                 // まず企業を作成
                 CreateCompanyRequest createRequest = new CreateCompanyRequest(
                                 "Original Company", "REG123456", Industry.IT, "123 Main St", Country.JAPAN);
-
                 String createResponse = mockMvc.perform(post("/api/v1/parties/companies")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(createRequest)))
                                 .andExpect(status().isCreated())
                                 .andReturn().getResponse().getContentAsString();
-
                 Long companyId = objectMapper.readTree(createResponse).get("id").asLong();
-
-                // 企業を更新
-                CreateCompanyRequest updateRequest = new CreateCompanyRequest(
-                                "Updated Company", "REG123456", Industry.FINANCE, "456 Updated St", Country.JAPAN);
-
+                Long version = objectMapper.readTree(createResponse).get("version").asLong();
+                // 企業を更新（UpdateCompanyRequestを利用）
+                UpdateCompanyRequest updateRequest = new UpdateCompanyRequest(
+                                "Updated Company", "REG123456", Industry.FINANCE, "456 Updated St", Country.JAPAN,
+                                version);
                 mockMvc.perform(put("/api/v1/parties/companies/" + companyId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -205,9 +203,8 @@ class PartyControllerTest {
         @Test
         void 存在しない企業を更新すると404が返る() throws Exception {
                 setUp();
-                CreateCompanyRequest updateRequest = new CreateCompanyRequest(
-                                "Updated Company", "REG123456", Industry.FINANCE, "456 Updated St", Country.JAPAN);
-
+                UpdateCompanyRequest updateRequest = new UpdateCompanyRequest(
+                                "Updated Company", "REG123456", Industry.FINANCE, "456 Updated St", Country.JAPAN, 1L);
                 mockMvc.perform(put("/api/v1/parties/companies/999")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -222,20 +219,17 @@ class PartyControllerTest {
                 CreateBorrowerRequest createRequest = new CreateBorrowerRequest(
                                 "Original Borrower", "original@example.com", "123-456-7890",
                                 null, Money.of(BigDecimal.valueOf(1000000)), CreditRating.AA);
-
                 String createResponse = mockMvc.perform(post("/api/v1/parties/borrowers")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(createRequest)))
                                 .andExpect(status().isCreated())
                                 .andReturn().getResponse().getContentAsString();
-
                 Long borrowerId = objectMapper.readTree(createResponse).get("id").asLong();
-
-                // 借り手を更新
-                CreateBorrowerRequest updateRequest = new CreateBorrowerRequest(
+                Long version = objectMapper.readTree(createResponse).get("version").asLong();
+                // 借り手を更新（UpdateBorrowerRequestを利用）
+                UpdateBorrowerRequest updateRequest = new UpdateBorrowerRequest(
                                 "Updated Borrower", "updated@example.com", "987-654-3210",
-                                null, Money.of(BigDecimal.valueOf(2000000)), CreditRating.A);
-
+                                null, Money.of(BigDecimal.valueOf(2000000)), CreditRating.A, version);
                 mockMvc.perform(put("/api/v1/parties/borrowers/" + borrowerId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -249,10 +243,9 @@ class PartyControllerTest {
         @Test
         void 存在しない借り手を更新すると404が返る() throws Exception {
                 setUp();
-                CreateBorrowerRequest updateRequest = new CreateBorrowerRequest(
+                UpdateBorrowerRequest updateRequest = new UpdateBorrowerRequest(
                                 "Updated Borrower", "updated@example.com", "987-654-3210",
-                                null, Money.of(BigDecimal.valueOf(2000000)), CreditRating.A);
-
+                                null, Money.of(BigDecimal.valueOf(2000000)), CreditRating.A, 1L);
                 mockMvc.perform(put("/api/v1/parties/borrowers/999")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -267,20 +260,17 @@ class PartyControllerTest {
                 CreateInvestorRequest createRequest = new CreateInvestorRequest(
                                 "Original Investor", "original@example.com", "123-456-7890",
                                 null, BigDecimal.valueOf(5000000), InvestorType.BANK);
-
                 String createResponse = mockMvc.perform(post("/api/v1/parties/investors")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(createRequest)))
                                 .andExpect(status().isCreated())
                                 .andReturn().getResponse().getContentAsString();
-
                 Long investorId = objectMapper.readTree(createResponse).get("id").asLong();
-
-                // 投資家を更新
-                CreateInvestorRequest updateRequest = new CreateInvestorRequest(
+                Long version = objectMapper.readTree(createResponse).get("version").asLong();
+                // 投資家を更新（UpdateInvestorRequestを利用）
+                UpdateInvestorRequest updateRequest = new UpdateInvestorRequest(
                                 "Updated Investor", "updated@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
-
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE, version);
                 mockMvc.perform(put("/api/v1/parties/investors/" + investorId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updateRequest)))
@@ -294,10 +284,9 @@ class PartyControllerTest {
         @Test
         void 存在しない投資家を更新すると404が返る() throws Exception {
                 setUp();
-                CreateInvestorRequest updateRequest = new CreateInvestorRequest(
+                UpdateInvestorRequest updateRequest = new UpdateInvestorRequest(
                                 "Updated Investor", "updated@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
-
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE, 1L);
                 mockMvc.perform(put("/api/v1/parties/investors/999")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updateRequest)))
