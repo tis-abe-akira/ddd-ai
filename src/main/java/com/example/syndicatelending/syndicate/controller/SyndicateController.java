@@ -38,10 +38,8 @@ public class SyndicateController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Syndicate> updateSyndicate(@PathVariable Long id,
-            @RequestBody CreateSyndicateRequest request) {
-        Syndicate syndicate = new Syndicate(request.getName(), request.getLeadBankId(), request.getBorrowerId(),
-                request.getMemberInvestorIds());
-        Syndicate updatedSyndicate = syndicateService.updateSyndicate(id, syndicate);
+            @RequestBody UpdateSyndicateRequest request) {
+        Syndicate updatedSyndicate = syndicateService.updateSyndicate(id, request);
         return ResponseEntity.ok(updatedSyndicate);
     }
 
@@ -49,12 +47,5 @@ public class SyndicateController {
     public ResponseEntity<Void> deleteSyndicate(@PathVariable Long id) {
         syndicateService.deleteSyndicate(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/{id}/versioned")
-    public ResponseEntity<Syndicate> updateSyndicateVersioned(@PathVariable Long id,
-            @RequestBody UpdateSyndicateRequest request) {
-        Syndicate updatedSyndicate = syndicateService.updateSyndicate(id, request);
-        return ResponseEntity.ok(updatedSyndicate);
     }
 }

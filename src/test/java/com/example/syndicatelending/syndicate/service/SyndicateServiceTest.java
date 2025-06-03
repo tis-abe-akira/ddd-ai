@@ -112,20 +112,15 @@ class SyndicateServiceTest {
         Long syndicateId = 1L;
         Syndicate existingSyndicate = new Syndicate("団A", 1L, 1L, List.of(2L, 3L));
         existingSyndicate.setId(syndicateId);
-
-        Syndicate updateData = new Syndicate("団A更新", 1L, 1L, List.of(2L, 3L, 4L));
-
-        // Lead bank mock setup
+        existingSyndicate.setVersion(1L);
+        UpdateSyndicateRequest updateRequest = new UpdateSyndicateRequest("団A更新", 1L, 1L, List.of(2L, 3L, 4L), 1L);
         Investor leadBank = new Investor("Lead Bank", "lead@example.com", "123-456-7890",
                 null, BigDecimal.valueOf(10000000), InvestorType.LEAD_BANK);
-
         when(syndicateRepository.findById(syndicateId)).thenReturn(Optional.of(existingSyndicate));
         when(syndicateRepository.existsByName("団A更新")).thenReturn(false);
         when(investorRepository.findById(1L)).thenReturn(Optional.of(leadBank));
         when(syndicateRepository.save(any(Syndicate.class))).thenReturn(existingSyndicate);
-
-        Syndicate result = syndicateService.updateSyndicate(syndicateId, updateData);
-
+        Syndicate result = syndicateService.updateSyndicate(syndicateId, updateRequest);
         assertNotNull(result);
         verify(syndicateRepository).findById(syndicateId);
         verify(investorRepository).findById(1L);
@@ -135,13 +130,10 @@ class SyndicateServiceTest {
     @Test
     void updateSyndicate存在しないと例外() {
         Long syndicateId = 999L;
-        Syndicate updateData = new Syndicate("団B", 1L, 1L, List.of(2L, 3L));
-
+        UpdateSyndicateRequest updateRequest = new UpdateSyndicateRequest("団B", 1L, 1L, List.of(2L, 3L), 1L);
         when(syndicateRepository.findById(syndicateId)).thenReturn(Optional.empty());
-
         assertThrows(ResourceNotFoundException.class,
-                () -> syndicateService.updateSyndicate(syndicateId, updateData));
-
+                () -> syndicateService.updateSyndicate(syndicateId, updateRequest));
         verify(syndicateRepository).findById(syndicateId);
         verify(syndicateRepository, never()).save(any(Syndicate.class));
     }
