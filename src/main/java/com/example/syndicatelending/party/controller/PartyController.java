@@ -49,16 +49,8 @@ public class PartyController {
     }
 
     @PutMapping("/companies/{id}")
-    @Operation(summary = "Update company by ID")
-    public ResponseEntity<Company> updateCompany(@PathVariable Long id,
-            @Valid @RequestBody CreateCompanyRequest request) {
-        Company updatedCompany = partyService.updateCompany(id, request);
-        return ResponseEntity.ok(updatedCompany);
-    }
-
-    @PutMapping("/companies/{id}/versioned")
     @Operation(summary = "Update company by ID with optimistic locking")
-    public ResponseEntity<Company> updateCompanyVersioned(@PathVariable Long id,
+    public ResponseEntity<Company> updateCompany(@PathVariable Long id,
             @Valid @RequestBody UpdateCompanyRequest request) {
         Company updatedCompany = partyService.updateCompany(id, request);
         return ResponseEntity.ok(updatedCompany);
@@ -94,16 +86,8 @@ public class PartyController {
     }
 
     @PutMapping("/borrowers/{id}")
-    @Operation(summary = "Update borrower by ID")
-    public ResponseEntity<Borrower> updateBorrower(@PathVariable Long id,
-            @Valid @RequestBody CreateBorrowerRequest request) {
-        Borrower updatedBorrower = partyService.updateBorrower(id, request);
-        return ResponseEntity.ok(updatedBorrower);
-    }
-
-    @PutMapping("/borrowers/{id}/versioned")
     @Operation(summary = "Update borrower by ID with optimistic locking")
-    public ResponseEntity<Borrower> updateBorrowerVersioned(@PathVariable Long id,
+    public ResponseEntity<Borrower> updateBorrower(@PathVariable Long id,
             @Valid @RequestBody UpdateBorrowerRequest request) {
         Borrower updatedBorrower = partyService.updateBorrower(id, request);
         return ResponseEntity.ok(updatedBorrower);
@@ -146,16 +130,8 @@ public class PartyController {
     }
 
     @PutMapping("/investors/{id}")
-    @Operation(summary = "Update investor by ID")
-    public ResponseEntity<Investor> updateInvestor(@PathVariable Long id,
-            @Valid @RequestBody CreateInvestorRequest request) {
-        Investor updatedInvestor = partyService.updateInvestor(id, request);
-        return ResponseEntity.ok(updatedInvestor);
-    }
-
-    @PutMapping("/investors/{id}/versioned")
     @Operation(summary = "Update investor by ID with optimistic locking")
-    public ResponseEntity<Investor> updateInvestorVersioned(@PathVariable Long id,
+    public ResponseEntity<Investor> updateInvestor(@PathVariable Long id,
             @Valid @RequestBody UpdateInvestorRequest request) {
         Investor updatedInvestor = partyService.updateInvestor(id, request);
         return ResponseEntity.ok(updatedInvestor);

@@ -1,7 +1,6 @@
 package com.example.syndicatelending.party.service;
 
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
-import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
@@ -238,17 +237,24 @@ class PartyServiceTest {
         @Test
         void 企業を正常に更新できる() {
                 Long companyId = 1L;
-                CreateCompanyRequest request = new CreateCompanyRequest(
-                                "Updated Company", "REG123", Industry.FINANCE, "Osaka", Country.JAPAN);
+                UpdateCompanyRequest request = new UpdateCompanyRequest(
+                                "Updated Company", "REG123", Industry.FINANCE, "Osaka", Country.JAPAN, 1L);
                 Company existingCompany = new Company("Old Company", "REG123", Industry.IT, "Tokyo", Country.JAPAN);
                 existingCompany.setId(companyId);
+                existingCompany.setVersion(1L);
+                Company updatedCompany = new Company("Updated Company", "REG123", Industry.FINANCE, "Osaka",
+                                Country.JAPAN);
+                updatedCompany.setId(companyId);
+                updatedCompany.setVersion(2L);
 
                 when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
-                when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+                when(companyRepository.save(any(Company.class))).thenReturn(updatedCompany);
 
                 Company result = partyService.updateCompany(companyId, request);
 
                 assertNotNull(result);
+                assertEquals("Updated Company", result.getCompanyName());
+                assertEquals(2L, result.getVersion());
                 verify(companyRepository).findById(companyId);
                 verify(companyRepository).save(any(Company.class));
         }
@@ -256,8 +262,8 @@ class PartyServiceTest {
         @Test
         void 存在しない企業を更新しようとした場合は例外が発生する() {
                 Long companyId = 999L;
-                CreateCompanyRequest request = new CreateCompanyRequest(
-                                "Updated Company", "REG123", Industry.FINANCE, "Osaka", Country.JAPAN);
+                UpdateCompanyRequest request = new UpdateCompanyRequest(
+                                "Updated Company", "REG123", Industry.FINANCE, "Osaka", Country.JAPAN, 1L);
 
                 when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
 
@@ -273,20 +279,28 @@ class PartyServiceTest {
         @Test
         void 借り手を正常に更新できる() {
                 Long borrowerId = 1L;
-                CreateBorrowerRequest request = new CreateBorrowerRequest(
+                UpdateBorrowerRequest request = new UpdateBorrowerRequest(
                                 "Updated Borrower", "updated@example.com", "987-654-3210",
-                                null, Money.of(2000000), CreditRating.A);
+                                null, Money.of(2000000), CreditRating.A, 1L);
                 Borrower existingBorrower = new Borrower(
                                 "Old Borrower", "old@example.com", "123-456-7890",
                                 null, Money.of(1000000), CreditRating.AA);
                 existingBorrower.setId(borrowerId);
+                existingBorrower.setVersion(1L);
+                Borrower updatedBorrower = new Borrower(
+                                "Updated Borrower", "updated@example.com", "987-654-3210",
+                                null, Money.of(2000000), CreditRating.A);
+                updatedBorrower.setId(borrowerId);
+                updatedBorrower.setVersion(2L);
 
                 when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(existingBorrower));
-                when(borrowerRepository.save(any(Borrower.class))).thenReturn(existingBorrower);
+                when(borrowerRepository.save(any(Borrower.class))).thenReturn(updatedBorrower);
 
                 Borrower result = partyService.updateBorrower(borrowerId, request);
 
                 assertNotNull(result);
+                assertEquals("Updated Borrower", result.getName());
+                assertEquals(2L, result.getVersion());
                 verify(borrowerRepository).findById(borrowerId);
                 verify(borrowerRepository).save(any(Borrower.class));
         }
@@ -294,9 +308,9 @@ class PartyServiceTest {
         @Test
         void 存在しない借り手を更新しようとした場合は例外が発生する() {
                 Long borrowerId = 999L;
-                CreateBorrowerRequest request = new CreateBorrowerRequest(
+                UpdateBorrowerRequest request = new UpdateBorrowerRequest(
                                 "Updated Borrower", "updated@example.com", "987-654-3210",
-                                null, Money.of(2000000), CreditRating.A);
+                                null, Money.of(2000000), CreditRating.A, 1L);
 
                 when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.empty());
 
@@ -312,20 +326,28 @@ class PartyServiceTest {
         @Test
         void 投資家を正常に更新できる() {
                 Long investorId = 1L;
-                CreateInvestorRequest request = new CreateInvestorRequest(
+                UpdateInvestorRequest request = new UpdateInvestorRequest(
                                 "Updated Investor", "updated@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE, 1L);
                 Investor existingInvestor = new Investor(
                                 "Old Investor", "old@example.com", "123-456-7890",
                                 null, BigDecimal.valueOf(5000000), InvestorType.BANK);
                 existingInvestor.setId(investorId);
+                existingInvestor.setVersion(1L);
+                Investor updatedInvestor = new Investor(
+                                "Updated Investor", "updated@example.com", "987-654-3210",
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
+                updatedInvestor.setId(investorId);
+                updatedInvestor.setVersion(2L);
 
                 when(investorRepository.findById(investorId)).thenReturn(Optional.of(existingInvestor));
-                when(investorRepository.save(any(Investor.class))).thenReturn(existingInvestor);
+                when(investorRepository.save(any(Investor.class))).thenReturn(updatedInvestor);
 
                 Investor result = partyService.updateInvestor(investorId, request);
 
                 assertNotNull(result);
+                assertEquals("Updated Investor", result.getName());
+                assertEquals(2L, result.getVersion());
                 verify(investorRepository).findById(investorId);
                 verify(investorRepository).save(any(Investor.class));
         }
@@ -333,9 +355,9 @@ class PartyServiceTest {
         @Test
         void 存在しない投資家を更新しようとした場合は例外が発生する() {
                 Long investorId = 999L;
-                CreateInvestorRequest request = new CreateInvestorRequest(
+                UpdateInvestorRequest request = new UpdateInvestorRequest(
                                 "Updated Investor", "updated@example.com", "987-654-3210",
-                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE, 1L);
 
                 when(investorRepository.findById(investorId)).thenReturn(Optional.empty());
 

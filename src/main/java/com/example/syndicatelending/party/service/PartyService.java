@@ -52,28 +52,6 @@ public class PartyService {
         return companyRepository.findAll(pageable);
     }
 
-    /**
-     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
-     * Companyの更新メソッド。
-     * 
-     * @deprecated
-     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
-     *             代わりに、updateCompany(Long id, UpdateCompanyRequest
-     *             request)を使用してください。
-     * @param id
-     * @param request
-     * @return
-     */
-    public Company updateCompany(Long id, CreateCompanyRequest request) {
-        Company company = getCompanyById(id); // ResourceNotFoundExceptionをスロー
-        company.setCompanyName(request.getCompanyName());
-        company.setRegistrationNumber(request.getRegistrationNumber());
-        company.setIndustry(request.getIndustry());
-        company.setAddress(request.getAddress());
-        company.setCountry(request.getCountry());
-        return companyRepository.save(company);
-    }
-
     // ==============================================================
     // 楽観的排他制御対応の更新メソッド
     // ==============================================================
@@ -146,55 +124,6 @@ public class PartyService {
     @Transactional(readOnly = true)
     public Page<Borrower> getAllBorrowers(Pageable pageable) {
         return borrowerRepository.findAll(pageable);
-    }
-
-    /**
-     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
-     * Borrowerの更新メソッド。
-     * 
-     * @deprecated
-     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
-     *             代わりに、updateBorrower(Long id, UpdateBorrowerRequest
-     *             request)を使用してください。
-     * @param id
-     * @param request
-     * @return
-     */
-    public Borrower updateBorrower(Long id, CreateBorrowerRequest request) {
-        Borrower borrower = getBorrowerById(id); // ResourceNotFoundExceptionをスロー
-
-        // Company存在確認
-        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            Long companyId;
-            try {
-                companyId = Long.parseLong(request.getCompanyId());
-            } catch (NumberFormatException e) {
-                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
-            }
-            if (!companyRepository.existsById(companyId)) {
-                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
-            }
-        }
-
-        // CreditRatingバリデーション
-        if (!request.isCreditLimitOverride()) {
-            if (request.getCreditRating() == null || request.getCreditLimit() == null ||
-                    !request.getCreditRating().isLimitSatisfied(request.getCreditLimit())) {
-                throw new com.example.syndicatelending.common.application.exception.BusinessRuleViolationException(
-                        "creditLimit exceeds allowed maximum for creditRating " + request.getCreditRating() +
-                                " (max: "
-                                + (request.getCreditRating() != null ? request.getCreditRating().getLimit() : null)
-                                + ")");
-            }
-        }
-
-        borrower.setName(request.getName());
-        borrower.setEmail(request.getEmail());
-        borrower.setPhoneNumber(request.getPhoneNumber());
-        borrower.setCompanyId(request.getCompanyId());
-        borrower.setCreditLimit(request.getCreditLimit());
-        borrower.setCreditRating(request.getCreditRating());
-        return borrowerRepository.save(borrower);
     }
 
     // ==============================================================
@@ -286,43 +215,6 @@ public class PartyService {
     @Transactional(readOnly = true)
     public Page<Investor> getActiveInvestors(Pageable pageable) {
         return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
-    }
-
-    /**
-     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
-     * Investorの更新メソッド。
-     * 
-     * @deprecated
-     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
-     *             代わりに、updateInvestor(Long id, UpdateInvestorRequest
-     *             request)を使用してください。
-     * @param id
-     * @param request
-     * @return
-     */
-    public Investor updateInvestor(Long id, CreateInvestorRequest request) {
-        Investor investor = getInvestorById(id); // ResourceNotFoundExceptionをスロー
-
-        // Company存在確認
-        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            Long companyId;
-            try {
-                companyId = Long.parseLong(request.getCompanyId());
-            } catch (NumberFormatException e) {
-                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
-            }
-            if (!companyRepository.existsById(companyId)) {
-                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
-            }
-        }
-
-        investor.setName(request.getName());
-        investor.setEmail(request.getEmail());
-        investor.setPhoneNumber(request.getPhoneNumber());
-        investor.setCompanyId(request.getCompanyId());
-        investor.setInvestmentCapacity(request.getInvestmentCapacity());
-        investor.setInvestorType(request.getInvestorType());
-        return investorRepository.save(investor);
     }
 
     // ==============================================================
