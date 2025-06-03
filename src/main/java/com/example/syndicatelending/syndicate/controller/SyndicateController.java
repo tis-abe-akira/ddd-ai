@@ -1,6 +1,7 @@
 package com.example.syndicatelending.syndicate.controller;
 
 import com.example.syndicatelending.syndicate.dto.CreateSyndicateRequest;
+import com.example.syndicatelending.syndicate.dto.UpdateSyndicateRequest;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.service.SyndicateService;
 import org.springframework.data.domain.Page;
@@ -48,5 +49,12 @@ public class SyndicateController {
     public ResponseEntity<Void> deleteSyndicate(@PathVariable Long id) {
         syndicateService.deleteSyndicate(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/versioned")
+    public ResponseEntity<Syndicate> updateSyndicateVersioned(@PathVariable Long id,
+            @RequestBody UpdateSyndicateRequest request) {
+        Syndicate updatedSyndicate = syndicateService.updateSyndicate(id, request);
+        return ResponseEntity.ok(updatedSyndicate);
     }
 }

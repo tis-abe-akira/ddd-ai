@@ -3,6 +3,7 @@ package com.example.syndicatelending.facility.controller;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
+import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.service.FacilityService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -102,16 +103,17 @@ class FacilityControllerTest {
     @Test
     void Facilityを正常に更新できる() throws Exception {
         Long facilityId = 1L;
-        CreateFacilityRequest updateRequest = createValidFacilityRequest();
+        UpdateFacilityRequest updateRequest = createValidUpdateFacilityRequest();
         updateRequest.setCommitment(Money.of(BigDecimal.valueOf(6000000))); // 更新: Commitmentを6000000に
         updateRequest.setInterestTerms("LIBOR + 3%"); // 更新: Interest Termsを変更
+        updateRequest.setVersion(1L); // バージョン情報
 
         Facility updatedFacility = new Facility();
         updatedFacility.setId(facilityId);
         updatedFacility.setCommitment(Money.of(BigDecimal.valueOf(6000000)));
         updatedFacility.setInterestTerms("LIBOR + 3%");
 
-        when(facilityService.updateFacility(eq(facilityId), any(CreateFacilityRequest.class)))
+        when(facilityService.updateFacility(eq(facilityId), any(UpdateFacilityRequest.class)))
                 .thenReturn(updatedFacility);
 
         mockMvc.perform(put("/api/v1/facilities/" + facilityId)
@@ -124,9 +126,9 @@ class FacilityControllerTest {
 
     @Test
     void 存在しないFacilityを更新すると404が返る() throws Exception {
-        CreateFacilityRequest updateRequest = createValidFacilityRequest();
+        UpdateFacilityRequest updateRequest = createValidUpdateFacilityRequest();
 
-        when(facilityService.updateFacility(eq(999L), any(CreateFacilityRequest.class)))
+        when(facilityService.updateFacility(eq(999L), any(UpdateFacilityRequest.class)))
                 .thenThrow(new com.example.syndicatelending.common.application.exception.ResourceNotFoundException(
                         "Facility not found"));
 
@@ -134,6 +136,22 @@ class FacilityControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void バージョンが異なる場合は楽観的排他制御でエラーになる() throws Exception {
+        Long facilityId = 1L;
+        UpdateFacilityRequest updateRequest = createValidUpdateFacilityRequest();
+        updateRequest.setVersion(1L); // 古いバージョン
+
+        when(facilityService.updateFacility(eq(facilityId), any(UpdateFacilityRequest.class)))
+                .thenThrow(new com.example.syndicatelending.common.application.exception.BusinessRuleViolationException(
+                        "Facility has been modified by another user"));
+
+        mockMvc.perform(put("/api/v1/facilities/" + facilityId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isBadRequest());
     }
 
     // Delete Tests
@@ -182,6 +200,35 @@ class FacilityControllerTest {
         pie3.setShare(Percentage.of(BigDecimal.valueOf(0.25))); // 25%
 
         List<CreateFacilityRequest.SharePieRequest> sharePies = Arrays.asList(pie1, pie2, pie3);
+        request.setSharePies(sharePies);
+
+        return request;
+    }
+
+    private UpdateFacilityRequest createValidUpdateFacilityRequest() {
+        UpdateFacilityRequest request = new UpdateFacilityRequest();
+        request.setSyndicateId(1L);
+        request.setCommitment(Money.of(BigDecimal.valueOf(5000000)));
+        request.setCurrency("USD");
+        request.setStartDate(LocalDate.of(2025, 1, 1));
+        request.setEndDate(LocalDate.of(2026, 1, 1));
+        request.setInterestTerms("LIBOR + 2%");
+        request.setVersion(1L); // デフォルトバージョン
+
+        // 合計100%のSharePie
+        UpdateFacilityRequest.SharePieRequest pie1 = new UpdateFacilityRequest.SharePieRequest();
+        pie1.setInvestorId(1L);
+        pie1.setShare(Percentage.of(BigDecimal.valueOf(0.4))); // 40%
+
+        UpdateFacilityRequest.SharePieRequest pie2 = new UpdateFacilityRequest.SharePieRequest();
+        pie2.setInvestorId(2L);
+        pie2.setShare(Percentage.of(BigDecimal.valueOf(0.35))); // 35%
+
+        UpdateFacilityRequest.SharePieRequest pie3 = new UpdateFacilityRequest.SharePieRequest();
+        pie3.setInvestorId(3L);
+        pie3.setShare(Percentage.of(BigDecimal.valueOf(0.25))); // 25%
+
+        List<UpdateFacilityRequest.SharePieRequest> sharePies = Arrays.asList(pie1, pie2, pie3);
         request.setSharePies(sharePies);
 
         return request;

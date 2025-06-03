@@ -1,6 +1,7 @@
 package com.example.syndicatelending.party.service;
 
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
@@ -59,6 +60,30 @@ public class PartyService {
         company.setAddress(request.getAddress());
         company.setCountry(request.getCountry());
         return companyRepository.save(company);
+    }
+
+    // ==============================================================
+    // 楽観的排他制御対応の更新メソッド
+    // ==============================================================
+
+    public Company updateCompany(Long id, UpdateCompanyRequest request) {
+        Company existingCompany = getCompanyById(id);
+
+        // バージョンチェック（楽観的排他制御）
+        if (!existingCompany.getVersion().equals(request.getVersion())) {
+            throw new BusinessRuleViolationException(
+                    "Company has been modified by another user (optimistic locking conflict). " +
+                            "Expected version: " + request.getVersion() +
+                            ", Current version: " + existingCompany.getVersion());
+        }
+
+        existingCompany.setCompanyName(request.getCompanyName());
+        existingCompany.setRegistrationNumber(request.getRegistrationNumber());
+        existingCompany.setIndustry(request.getIndustry());
+        existingCompany.setAddress(request.getAddress());
+        existingCompany.setCountry(request.getCountry());
+
+        return companyRepository.save(existingCompany);
     }
 
     public void deleteCompany(Long id) {
@@ -150,6 +175,40 @@ public class PartyService {
         return borrowerRepository.save(borrower);
     }
 
+    // ==============================================================
+    // 楽観的排他制御対応の更新メソッド
+    // ==============================================================
+
+    public Borrower updateBorrower(Long id, UpdateBorrowerRequest request) {
+        Borrower existingBorrower = getBorrowerById(id);
+
+        // バージョンチェック（楽観的排他制御）
+        if (!existingBorrower.getVersion().equals(request.getVersion())) {
+            throw new BusinessRuleViolationException(
+                    "Borrower has been modified by another user (optimistic locking conflict). " +
+                            "Expected version: " + request.getVersion() +
+                            ", Current version: " + existingBorrower.getVersion());
+        }
+
+        // ビジネスバリデーション: 信用限度額の妥当性チェック
+        if (request.getCreditLimit() != null && request.getCreditRating() != null) {
+            if (request.getCreditLimit().isGreaterThan(request.getCreditRating().getLimit())) {
+                throw new BusinessRuleViolationException(
+                        "Credit limit cannot exceed rating limit (creditLimit: " + request.getCreditLimit()
+                                + ", ratingLimit: " + request.getCreditRating().getLimit() + ")");
+            }
+        }
+
+        existingBorrower.setName(request.getName());
+        existingBorrower.setEmail(request.getEmail());
+        existingBorrower.setPhoneNumber(request.getPhoneNumber());
+        existingBorrower.setCompanyId(request.getCompanyId());
+        existingBorrower.setCreditLimit(request.getCreditLimit());
+        existingBorrower.setCreditRating(request.getCreditRating());
+
+        return borrowerRepository.save(existingBorrower);
+    }
+
     public void deleteBorrower(Long id) {
         if (!borrowerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Borrower not found with ID: " + id);
@@ -219,6 +278,44 @@ public class PartyService {
         investor.setInvestmentCapacity(request.getInvestmentCapacity());
         investor.setInvestorType(request.getInvestorType());
         return investorRepository.save(investor);
+    }
+
+    // ==============================================================
+    // 楽観的排他制御対応の更新メソッド
+    // ==============================================================
+
+    public Investor updateInvestor(Long id, UpdateInvestorRequest request) {
+        Investor existingInvestor = getInvestorById(id);
+
+        // バージョンチェック（楽観的排他制御）
+        if (!existingInvestor.getVersion().equals(request.getVersion())) {
+            throw new BusinessRuleViolationException(
+                    "Investor has been modified by another user (optimistic locking conflict). " +
+                            "Expected version: " + request.getVersion() +
+                            ", Current version: " + existingInvestor.getVersion());
+        }
+
+        // 企業IDが指定されている場合の存在チェック
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
+                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+            }
+        }
+
+        existingInvestor.setName(request.getName());
+        existingInvestor.setEmail(request.getEmail());
+        existingInvestor.setPhoneNumber(request.getPhoneNumber());
+        existingInvestor.setCompanyId(request.getCompanyId());
+        existingInvestor.setInvestmentCapacity(request.getInvestmentCapacity());
+        existingInvestor.setInvestorType(request.getInvestorType());
+
+        return investorRepository.save(existingInvestor);
     }
 
     public void deleteInvestor(Long id) {

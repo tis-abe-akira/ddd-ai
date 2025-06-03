@@ -1,6 +1,7 @@
 package com.example.syndicatelending.party.service;
 
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
@@ -426,5 +427,127 @@ class PartyServiceTest {
                 assertTrue(exception.getMessage().contains("Investor not found"));
                 verify(investorRepository).existsById(investorId);
                 verify(investorRepository, never()).deleteById(investorId);
+        }
+
+        // =====================================
+        // 楽観的排他制御のテストケース
+        // =====================================
+
+        @Test
+        void 企業を楽観的ロッキングで正常に更新できる() {
+                Long companyId = 1L;
+                UpdateCompanyRequest request = new UpdateCompanyRequest(
+                                "Updated Company",
+                                "REG123",
+                                Industry.IT,
+                                "Address",
+                                Country.JAPAN,
+                                1L);
+
+                Company existingCompany = new Company("Original Company", "REG123", Industry.IT, "Address",
+                                Country.JAPAN);
+                existingCompany.setVersion(1L);
+
+                Company updatedCompany = new Company("Updated Company", "REG123", Industry.IT, "Address",
+                                Country.JAPAN);
+                updatedCompany.setVersion(2L);
+
+                when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+                when(companyRepository.save(any(Company.class))).thenReturn(updatedCompany);
+
+                Company result = partyService.updateCompany(companyId, request);
+
+                assertNotNull(result);
+                assertEquals("Updated Company", result.getCompanyName());
+                verify(companyRepository).findById(companyId);
+                verify(companyRepository).save(any(Company.class));
+        }
+
+        @Test
+        void 企業の楽観的ロッキングでバージョン不一致時に例外が発生する() {
+                Long companyId = 1L;
+                UpdateCompanyRequest request = new UpdateCompanyRequest(
+                                "Updated Company",
+                                "REG123",
+                                Industry.IT,
+                                "Address",
+                                Country.JAPAN,
+                                1L); // リクエストのバージョンは1
+
+                Company existingCompany = new Company("Original Company", "REG123", Industry.IT, "Address",
+                                Country.JAPAN);
+                existingCompany.setVersion(2L); // 実際のバージョンは2（不一致）
+
+                when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+
+                BusinessRuleViolationException exception = assertThrows(
+                                BusinessRuleViolationException.class,
+                                () -> partyService.updateCompany(companyId, request));
+
+                assertTrue(exception.getMessage().contains("optimistic locking"));
+                verify(companyRepository).findById(companyId);
+                verify(companyRepository, never()).save(any(Company.class));
+        }
+
+        @Test
+        void 借り手を楽観的ロッキングで正常に更新できる() {
+                Long borrowerId = 1L;
+                UpdateBorrowerRequest request = new UpdateBorrowerRequest(
+                                "Test Borrower",
+                                "borrower@test.com",
+                                "+81-3-1234-5678",
+                                null, // companyId
+                                Money.of(new BigDecimal("2000000")),
+                                CreditRating.AA,
+                                1L); // version
+
+                Borrower existingBorrower = new Borrower("Test Borrower", "borrower@test.com", "+81-3-1234-5678", null,
+                                Money.of(new BigDecimal("1000000")), CreditRating.AA);
+                existingBorrower.setVersion(1L);
+
+                Borrower updatedBorrower = new Borrower("Test Borrower", "borrower@test.com", "+81-3-1234-5678", null,
+                                Money.of(new BigDecimal("2000000")), CreditRating.AA);
+                updatedBorrower.setVersion(2L);
+
+                when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(existingBorrower));
+                when(borrowerRepository.save(any(Borrower.class))).thenReturn(updatedBorrower);
+
+                Borrower result = partyService.updateBorrower(borrowerId, request);
+
+                assertNotNull(result);
+                assertEquals(Money.of(new BigDecimal("2000000")), result.getCreditLimit());
+                verify(borrowerRepository).findById(borrowerId);
+                verify(borrowerRepository).save(any(Borrower.class));
+        }
+
+        @Test
+        void 投資家を楽観的ロッキングで正常に更新できる() {
+                Long investorId = 1L;
+                UpdateInvestorRequest request = new UpdateInvestorRequest(
+                                "Test Investor",
+                                "investor@test.com",
+                                "+81-3-1234-5678",
+                                null, // companyId
+                                BigDecimal.valueOf(5000000),
+                                InvestorType.BANK,
+                                1L); // version
+
+                Investor existingInvestor = new Investor("Test Investor", "investor@test.com", "+81-3-1234-5678", null,
+                                BigDecimal.valueOf(3000000), InvestorType.BANK);
+                existingInvestor.setVersion(1L);
+
+                Investor updatedInvestor = new Investor("Test Investor", "investor@test.com", "+81-3-1234-5678", null,
+                                BigDecimal.valueOf(5000000), InvestorType.BANK);
+                updatedInvestor.setVersion(2L);
+
+                when(investorRepository.findById(investorId)).thenReturn(Optional.of(existingInvestor));
+                when(investorRepository.save(any(Investor.class))).thenReturn(updatedInvestor);
+
+                Investor result = partyService.updateInvestor(investorId, request);
+
+                assertNotNull(result);
+                assertEquals(BigDecimal.valueOf(5000000), result.getInvestmentCapacity());
+                verify(investorRepository).findById(investorId);
+                verify(investorRepository).save(any(Investor.class));
         }
 }

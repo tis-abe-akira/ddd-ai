@@ -36,6 +36,10 @@ public class Syndicate {
     @Column(name = "updated_at", nullable = false)
     private java.time.LocalDateTime updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     public Syndicate() {
     }
 
@@ -112,6 +116,14 @@ public class Syndicate {
 
     public void setUpdatedAt(java.time.LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     @Override

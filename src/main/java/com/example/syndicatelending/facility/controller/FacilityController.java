@@ -1,6 +1,7 @@
 package com.example.syndicatelending.facility.controller;
 
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
+import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.service.FacilityService;
 import org.springframework.data.domain.Page;
@@ -36,7 +37,7 @@ public class FacilityController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Facility> updateFacility(@PathVariable Long id, @RequestBody CreateFacilityRequest request) {
+    public ResponseEntity<Facility> updateFacility(@PathVariable Long id, @RequestBody UpdateFacilityRequest request) {
         Facility updatedFacility = facilityService.updateFacility(id, request);
         return ResponseEntity.ok(updatedFacility);
     }

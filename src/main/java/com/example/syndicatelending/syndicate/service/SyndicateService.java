@@ -2,6 +2,7 @@ package com.example.syndicatelending.syndicate.service;
 
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
+import com.example.syndicatelending.syndicate.dto.UpdateSyndicateRequest;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.party.entity.Investor;
@@ -68,6 +69,32 @@ public class SyndicateService {
         existingSyndicate.setLeadBankId(updatedSyndicate.getLeadBankId());
         existingSyndicate.setBorrowerId(updatedSyndicate.getBorrowerId());
         existingSyndicate.setMemberInvestorIds(updatedSyndicate.getMemberInvestorIds());
+
+        return syndicateRepository.save(existingSyndicate);
+    }
+
+    public Syndicate updateSyndicate(Long id, UpdateSyndicateRequest request) {
+        Syndicate existingSyndicate = getSyndicateById(id);
+
+        // バージョンチェック（楽観的排他制御）
+        if (!existingSyndicate.getVersion().equals(request.getVersion())) {
+            throw new BusinessRuleViolationException(
+                    "Syndicate has been modified by another user. Expected version: " + request.getVersion() +
+                            ", Current version: " + existingSyndicate.getVersion());
+        }
+
+        // LEAD_BANK資格チェック
+        Long leadBankId = request.getLeadBankId();
+        Investor leadBank = investorRepository.findById(leadBankId)
+                .orElseThrow(() -> new BusinessRuleViolationException("指定されたリードバンクが存在しません: id=" + leadBankId));
+        if (leadBank.getInvestorType() != InvestorType.LEAD_BANK) {
+            throw new BusinessRuleViolationException("指定されたリードバンクはLEAD_BANKの資格を持っていません: id=" + leadBankId);
+        }
+
+        existingSyndicate.setName(request.getName());
+        existingSyndicate.setLeadBankId(request.getLeadBankId());
+        existingSyndicate.setBorrowerId(request.getBorrowerId());
+        existingSyndicate.setMemberInvestorIds(request.getMemberInvestorIds());
 
         return syndicateRepository.save(existingSyndicate);
     }

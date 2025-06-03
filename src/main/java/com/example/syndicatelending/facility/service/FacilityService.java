@@ -1,11 +1,13 @@
 package com.example.syndicatelending.facility.service;
 
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
+import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -70,13 +72,20 @@ public class FacilityService {
     }
 
     @Transactional
-    public Facility updateFacility(Long id, CreateFacilityRequest request) {
+    public Facility updateFacility(Long id, UpdateFacilityRequest request) {
         Optional<Facility> existingFacility = facilityRepository.findById(id);
         if (existingFacility.isEmpty()) {
             throw new ResourceNotFoundException("Facility not found with id: " + id);
         }
 
         Facility facility = existingFacility.get();
+
+        // 楽観的排他制御: バージョンチェック
+        if (!facility.getVersion().equals(request.getVersion())) {
+            throw new BusinessRuleViolationException(
+                    "Facility has been modified by another user. Expected version: " +
+                            request.getVersion() + ", but current version is: " + facility.getVersion());
+        }
 
         // 基本情報を更新
         facility.setSyndicateId(request.getSyndicateId());
@@ -89,7 +98,7 @@ public class FacilityService {
         // SharePieの更新（既存を削除して新規作成）
         facility.getSharePies().clear();
         List<SharePie> newSharePies = new ArrayList<>();
-        for (CreateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
+        for (UpdateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
             SharePie entity = new SharePie();
             entity.setInvestorId(pie.getInvestorId());
             entity.setShare(pie.getShare());
@@ -98,10 +107,36 @@ public class FacilityService {
         }
         facility.setSharePies(newSharePies);
 
-        // バリデーション実行
-        facilityValidator.validateCreateFacilityRequest(request);
+        // バリデーション実行（CreateFacilityRequestに変換）
+        CreateFacilityRequest validationRequest = convertToCreateRequest(request);
+        facilityValidator.validateCreateFacilityRequest(validationRequest);
 
         return facilityRepository.save(facility);
+    }
+
+    /**
+     * UpdateFacilityRequestをCreateFacilityRequestに変換（バリデーション用）
+     */
+    private CreateFacilityRequest convertToCreateRequest(UpdateFacilityRequest updateRequest) {
+        CreateFacilityRequest createRequest = new CreateFacilityRequest();
+        createRequest.setSyndicateId(updateRequest.getSyndicateId());
+        createRequest.setCommitment(updateRequest.getCommitment());
+        createRequest.setCurrency(updateRequest.getCurrency());
+        createRequest.setStartDate(updateRequest.getStartDate());
+        createRequest.setEndDate(updateRequest.getEndDate());
+        createRequest.setInterestTerms(updateRequest.getInterestTerms());
+
+        // SharePieRequestの変換
+        List<CreateFacilityRequest.SharePieRequest> sharePies = new ArrayList<>();
+        for (UpdateFacilityRequest.SharePieRequest updatePie : updateRequest.getSharePies()) {
+            CreateFacilityRequest.SharePieRequest createPie = new CreateFacilityRequest.SharePieRequest();
+            createPie.setInvestorId(updatePie.getInvestorId());
+            createPie.setShare(updatePie.getShare());
+            sharePies.add(createPie);
+        }
+        createRequest.setSharePies(sharePies);
+
+        return createRequest;
     }
 
     @Transactional
