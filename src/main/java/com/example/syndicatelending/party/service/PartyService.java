@@ -69,13 +69,8 @@ public class PartyService {
     public Company updateCompany(Long id, UpdateCompanyRequest request) {
         Company existingCompany = getCompanyById(id);
 
-        // バージョンチェック（楽観的排他制御）
-        if (!existingCompany.getVersion().equals(request.getVersion())) {
-            throw new BusinessRuleViolationException(
-                    "Company has been modified by another user (optimistic locking conflict). " +
-                            "Expected version: " + request.getVersion() +
-                            ", Current version: " + existingCompany.getVersion());
-        }
+        // Spring Data JPAが自動的に楽観的ロックをチェック
+        existingCompany.setVersion(request.getVersion());
 
         existingCompany.setCompanyName(request.getCompanyName());
         existingCompany.setRegistrationNumber(request.getRegistrationNumber());
@@ -182,13 +177,8 @@ public class PartyService {
     public Borrower updateBorrower(Long id, UpdateBorrowerRequest request) {
         Borrower existingBorrower = getBorrowerById(id);
 
-        // バージョンチェック（楽観的排他制御）
-        if (!existingBorrower.getVersion().equals(request.getVersion())) {
-            throw new BusinessRuleViolationException(
-                    "Borrower has been modified by another user (optimistic locking conflict). " +
-                            "Expected version: " + request.getVersion() +
-                            ", Current version: " + existingBorrower.getVersion());
-        }
+        // Spring Data JPAが自動的に楽観的ロックをチェック
+        existingBorrower.setVersion(request.getVersion());
 
         // ビジネスバリデーション: 信用限度額の妥当性チェック
         if (request.getCreditLimit() != null && request.getCreditRating() != null) {
@@ -287,13 +277,8 @@ public class PartyService {
     public Investor updateInvestor(Long id, UpdateInvestorRequest request) {
         Investor existingInvestor = getInvestorById(id);
 
-        // バージョンチェック（楽観的排他制御）
-        if (!existingInvestor.getVersion().equals(request.getVersion())) {
-            throw new BusinessRuleViolationException(
-                    "Investor has been modified by another user (optimistic locking conflict). " +
-                            "Expected version: " + request.getVersion() +
-                            ", Current version: " + existingInvestor.getVersion());
-        }
+        // Spring Data JPAが自動的に楽観的ロックをチェック
+        existingInvestor.setVersion(request.getVersion());
 
         // 企業IDが指定されている場合の存在チェック
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {

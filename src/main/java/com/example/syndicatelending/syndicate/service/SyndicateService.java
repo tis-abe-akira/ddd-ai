@@ -76,12 +76,8 @@ public class SyndicateService {
     public Syndicate updateSyndicate(Long id, UpdateSyndicateRequest request) {
         Syndicate existingSyndicate = getSyndicateById(id);
 
-        // バージョンチェック（楽観的排他制御）
-        if (!existingSyndicate.getVersion().equals(request.getVersion())) {
-            throw new BusinessRuleViolationException(
-                    "Syndicate has been modified by another user. Expected version: " + request.getVersion() +
-                            ", Current version: " + existingSyndicate.getVersion());
-        }
+        // Spring Data JPAが自動的に楽観的ロックをチェック
+        existingSyndicate.setVersion(request.getVersion());
 
         // LEAD_BANK資格チェック
         Long leadBankId = request.getLeadBankId();

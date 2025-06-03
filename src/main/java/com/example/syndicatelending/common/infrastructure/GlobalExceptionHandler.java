@@ -4,6 +4,7 @@ import com.example.syndicatelending.common.application.exception.BusinessRuleVio
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException; // Bean Validationエラー
@@ -34,63 +35,92 @@ public class GlobalExceptionHandler {
         }
 
         // Getters (for JSON serialization)
-        public int getStatus() { return status; }
-        public String getError() { return error; }
-        public String getMessage() { return message; }
+        public int getStatus() {
+            return status;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public String getMessage() {
+            return message;
+        }
     }
 
     /**
      * ResourceNotFoundExceptionを処理 (HTTP 404 Not Found)
      */
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex,
+            WebRequest request) {
         HttpStatus status = HttpStatus.NOT_FOUND;
         log.warn("Resource Not Found: {}", ex.getMessage()); // Warnレベルでログ出力
 
         ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),
                 status.getReasonPhrase(),
-                ex.getMessage()
-        );
+                ex.getMessage());
         return new ResponseEntity<>(errorResponse, status);
     }
 
     /**
-     * BusinessRuleViolationExceptionを処理 (HTTP 400 Bad Request または 422 Unprocessable Entity)
+     * BusinessRuleViolationExceptionを処理 (HTTP 400 Bad Request または 422 Unprocessable
+     * Entity)
      * 業務ルール違反はクライアント側の入力や状態に起因することが多いため400系が適切。
      * 400 (Bad Request) または 422 (Unprocessable Entity) が考えられます。
      * ここでは400を使用します。
      */
     @ExceptionHandler(BusinessRuleViolationException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessRuleViolationException(BusinessRuleViolationException ex, WebRequest request) {
+    public ResponseEntity<ErrorResponse> handleBusinessRuleViolationException(BusinessRuleViolationException ex,
+            WebRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST; // Or HttpStatus.UNPROCESSABLE_ENTITY (422)
         log.warn("Business Rule Violation: {}", ex.getMessage()); // Warnレベルでログ出力
 
-         ErrorResponse errorResponse = new ErrorResponse(
+        ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),
                 status.getReasonPhrase(),
-                ex.getMessage()
+                ex.getMessage());
+        return new ResponseEntity<>(errorResponse, status);
+    }
+
+    /**
+     * Bean Validation失敗 (MethodArgumentNotValidException) を処理 (HTTP 400 Bad
+     * Request)
+     * Controllerの@Validアノテーションによるバリデーションエラー
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+            WebRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        String errorMessage = "Validation failed: " + ex.getBindingResult().getFieldError().getDefaultMessage(); // Simple
+                                                                                                                 // message
+
+        log.warn("Validation failed: {}", ex.getMessage()); // Warnレベルでログ出力
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                status.value(),
+                status.getReasonPhrase(),
+                errorMessage // More detailed error info could be included from BindingResult
         );
         return new ResponseEntity<>(errorResponse, status);
     }
 
-     /**
-     * Bean Validation失敗 (MethodArgumentNotValidException) を処理 (HTTP 400 Bad Request)
-     * Controllerの@Validアノテーションによるバリデーションエラー
+    /**
+     * 楽観的ロック失敗 (OptimisticLockingFailureException) を処理 (HTTP 409 Conflict)
+     * Spring Data JPAによる自動楽観的ロック制御の失敗
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, WebRequest request) {
-         HttpStatus status = HttpStatus.BAD_REQUEST;
-         String errorMessage = "Validation failed: " + ex.getBindingResult().getFieldError().getDefaultMessage(); // Simple message
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailureException(OptimisticLockingFailureException ex,
+            WebRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT; // 409 Conflict が適切
+        log.warn("Optimistic Locking Failure: {}", ex.getMessage()); // Warnレベルでログ出力
 
-         log.warn("Validation failed: {}", ex.getMessage()); // Warnレベルでログ出力
-
-         ErrorResponse errorResponse = new ErrorResponse(
-             status.value(),
-             status.getReasonPhrase(),
-             errorMessage // More detailed error info could be included from BindingResult
-         );
-         return new ResponseEntity<>(errorResponse, status);
+        ErrorResponse errorResponse = new ErrorResponse(
+                status.value(),
+                status.getReasonPhrase(),
+                "The resource has been modified by another user. Please reload and try again.");
+        return new ResponseEntity<>(errorResponse, status);
     }
 
     /**
@@ -102,7 +132,7 @@ public class GlobalExceptionHandler {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         log.error("An unexpected error occurred", ex); // Errorレベルでスタックトレース込みでログ出力
 
-         ErrorResponse errorResponse = new ErrorResponse(
+        ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),
                 status.getReasonPhrase(),
                 "An internal server error occurred. Please try again later." // ユーザーには一般的なメッセージ
@@ -110,6 +140,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, status);
     }
 
-    // 他にもSpringが投げる様々な例外（例: HttpMessageNotReadableException, NoHandlerFoundExceptionなど）
+    // 他にもSpringが投げる様々な例外（例: HttpMessageNotReadableException,
+    // NoHandlerFoundExceptionなど）
     // をハンドリングすることも可能ですが、まずは主要なものから。
 }

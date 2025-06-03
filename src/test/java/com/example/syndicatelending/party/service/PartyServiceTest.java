@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -479,14 +480,17 @@ class PartyServiceTest {
                 existingCompany.setVersion(2L); // 実際のバージョンは2（不一致）
 
                 when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+                // Spring Data JPAのOptimisticLockingFailureExceptionをシミュレート
+                when(companyRepository.save(any(Company.class)))
+                                .thenThrow(new OptimisticLockingFailureException("Version mismatch"));
 
-                BusinessRuleViolationException exception = assertThrows(
-                                BusinessRuleViolationException.class,
+                OptimisticLockingFailureException exception = assertThrows(
+                                OptimisticLockingFailureException.class,
                                 () -> partyService.updateCompany(companyId, request));
 
-                assertTrue(exception.getMessage().contains("optimistic locking"));
+                assertEquals("Version mismatch", exception.getMessage());
                 verify(companyRepository).findById(companyId);
-                verify(companyRepository, never()).save(any(Company.class));
+                verify(companyRepository).save(any(Company.class));
         }
 
         @Test

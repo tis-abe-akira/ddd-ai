@@ -6,12 +6,14 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.entity.InvestorType;
+import com.example.syndicatelending.syndicate.dto.UpdateSyndicateRequest;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -168,5 +170,33 @@ class SyndicateServiceTest {
 
         verify(syndicateRepository).existsById(syndicateId);
         verify(syndicateRepository, never()).deleteById(syndicateId);
+    }
+
+    @Test
+    void updateSyndicate楽観的ロックでバージョン不一致時に例外が発生する() {
+        // Given
+        Long syndicateId = 1L;
+        UpdateSyndicateRequest request = new UpdateSyndicateRequest("Original Syndicate", 1L, 1L, List.of(1L, 2L), 1L);
+
+        Syndicate existingSyndicate = new Syndicate("Original Syndicate", 1L, 1L, List.of(1L, 2L));
+        existingSyndicate.setId(syndicateId);
+        existingSyndicate.setVersion(2L); // 実際のバージョンは2（不一致）
+
+        Investor leadBank = new Investor("Lead Bank", "lead@example.com", "123-456-7890", null,
+                BigDecimal.valueOf(10000000), InvestorType.LEAD_BANK);
+        leadBank.setId(1L);
+
+        when(syndicateRepository.findById(syndicateId)).thenReturn(Optional.of(existingSyndicate));
+        when(investorRepository.findById(1L)).thenReturn(Optional.of(leadBank));
+        // Spring Data JPAのOptimisticLockingFailureExceptionをシミュレート
+        when(syndicateRepository.save(any(Syndicate.class)))
+                .thenThrow(new OptimisticLockingFailureException("Version mismatch"));
+
+        // When & Then
+        assertThrows(OptimisticLockingFailureException.class,
+                () -> syndicateService.updateSyndicate(syndicateId, request));
+
+        verify(syndicateRepository).findById(syndicateId);
+        verify(syndicateRepository).save(any(Syndicate.class));
     }
 }
