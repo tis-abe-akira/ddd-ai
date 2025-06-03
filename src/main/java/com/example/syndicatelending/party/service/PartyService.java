@@ -52,6 +52,17 @@ public class PartyService {
         return companyRepository.findAll(pageable);
     }
 
+    /**
+     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
+     * Companyの更新メソッド。
+     * 
+     * @deprecated
+     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
+     *             代わりに、updateCompany(Long id, UpdateCompanyRequest request)を使用してください。
+     * @param id
+     * @param request
+     * @return
+     */
     public Company updateCompany(Long id, CreateCompanyRequest request) {
         Company company = getCompanyById(id); // ResourceNotFoundExceptionをスロー
         company.setCompanyName(request.getCompanyName());
@@ -69,16 +80,19 @@ public class PartyService {
     public Company updateCompany(Long id, UpdateCompanyRequest request) {
         Company existingCompany = getCompanyById(id);
 
-        // Spring Data JPAが自動的に楽観的ロックをチェック
-        existingCompany.setVersion(request.getVersion());
+        Company entityToSave = new Company();
 
-        existingCompany.setCompanyName(request.getCompanyName());
-        existingCompany.setRegistrationNumber(request.getRegistrationNumber());
-        existingCompany.setIndustry(request.getIndustry());
-        existingCompany.setAddress(request.getAddress());
-        existingCompany.setCountry(request.getCountry());
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
 
-        return companyRepository.save(existingCompany);
+        entityToSave.setCompanyName(request.getCompanyName());
+        entityToSave.setRegistrationNumber(request.getRegistrationNumber());
+        entityToSave.setIndustry(request.getIndustry());
+        entityToSave.setAddress(request.getAddress());
+        entityToSave.setCountry(request.getCountry());
+        entityToSave.setCreatedAt(existingCompany.getCreatedAt());
+
+        return companyRepository.save(entityToSave);
     }
 
     public void deleteCompany(Long id) {
