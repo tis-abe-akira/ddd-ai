@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class FacilityService {
@@ -72,43 +71,38 @@ public class FacilityService {
 
     @Transactional
     public Facility updateFacility(Long id, UpdateFacilityRequest request) {
-        Optional<Facility> existingFacility = facilityRepository.findById(id);
-        if (existingFacility.isEmpty()) {
-            throw new ResourceNotFoundException("Facility not found with id: " + id);
-        }
+        Facility existingFacility = getFacilityById(id);
 
-        Facility facility = existingFacility.get();
+        // バリデーション実行（CreateFacilityRequestに変換）
+        CreateFacilityRequest validationRequest = convertToCreateRequest(request);
+        facilityValidator.validateCreateFacilityRequest(validationRequest);
 
-        // Spring Data JPAが自動的に楽観的ロックをチェック
-        facility.setVersion(request.getVersion());
+        Facility entityToSave = new Facility();
 
-        // 基本情報を更新
-        facility.setSyndicateId(request.getSyndicateId());
-        facility.setCommitment(request.getCommitment());
-        facility.setCurrency(request.getCurrency());
-        facility.setStartDate(request.getStartDate());
-        facility.setEndDate(request.getEndDate());
-        facility.setInterestTerms(request.getInterestTerms());
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
 
-        // SharePieの更新（既存を削除して新規作成）
-        facility.getSharePies().clear();
+        // 基本情報を設定
+        entityToSave.setSyndicateId(request.getSyndicateId());
+        entityToSave.setCommitment(request.getCommitment());
+        entityToSave.setCurrency(request.getCurrency());
+        entityToSave.setStartDate(request.getStartDate());
+        entityToSave.setEndDate(request.getEndDate());
+        entityToSave.setInterestTerms(request.getInterestTerms());
+        entityToSave.setCreatedAt(existingFacility.getCreatedAt());
 
+        // SharePieの設定
         List<SharePie> newSharePies = new ArrayList<>();
         for (UpdateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
             SharePie entity = new SharePie();
             entity.setInvestorId(pie.getInvestorId());
             entity.setShare(pie.getShare());
-            entity.setFacility(facility);
+            entity.setFacility(entityToSave);
             newSharePies.add(entity);
         }
-        facility.setSharePies(newSharePies);
+        entityToSave.setSharePies(newSharePies);
 
-        // バリデーション実行（CreateFacilityRequestに変換）
-        CreateFacilityRequest validationRequest = convertToCreateRequest(
-                request);
-        facilityValidator.validateCreateFacilityRequest(validationRequest);
-
-        return facilityRepository.save(facility);
+        return facilityRepository.save(entityToSave);
     }
 
     /**

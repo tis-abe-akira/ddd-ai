@@ -48,6 +48,18 @@ public class SyndicateService {
         return syndicateRepository.findAll(pageable);
     }
 
+    /**
+     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
+     * Syndicateの更新メソッド。
+     * 
+     * @deprecated
+     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
+     *             代わりに、updateSyndicate(Long id, UpdateSyndicateRequest
+     *             request)を使用してください。
+     * @param id
+     * @param updatedSyndicate
+     * @return
+     */
     public Syndicate updateSyndicate(Long id, Syndicate updatedSyndicate) {
         Syndicate existingSyndicate = getSyndicateById(id); // ResourceNotFoundExceptionをスロー
 
@@ -76,9 +88,6 @@ public class SyndicateService {
     public Syndicate updateSyndicate(Long id, UpdateSyndicateRequest request) {
         Syndicate existingSyndicate = getSyndicateById(id);
 
-        // Spring Data JPAが自動的に楽観的ロックをチェック
-        existingSyndicate.setVersion(request.getVersion());
-
         // LEAD_BANK資格チェック
         Long leadBankId = request.getLeadBankId();
         Investor leadBank = investorRepository.findById(leadBankId)
@@ -87,12 +96,24 @@ public class SyndicateService {
             throw new BusinessRuleViolationException("指定されたリードバンクはLEAD_BANKの資格を持っていません: id=" + leadBankId);
         }
 
-        existingSyndicate.setName(request.getName());
-        existingSyndicate.setLeadBankId(request.getLeadBankId());
-        existingSyndicate.setBorrowerId(request.getBorrowerId());
-        existingSyndicate.setMemberInvestorIds(request.getMemberInvestorIds());
+        // 名前変更時の重複チェック
+        if (!existingSyndicate.getName().equals(request.getName()) &&
+                syndicateRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Syndicate name already exists: " + request.getName());
+        }
 
-        return syndicateRepository.save(existingSyndicate);
+        Syndicate entityToSave = new Syndicate();
+
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setName(request.getName());
+        entityToSave.setLeadBankId(request.getLeadBankId());
+        entityToSave.setBorrowerId(request.getBorrowerId());
+        entityToSave.setMemberInvestorIds(request.getMemberInvestorIds());
+        entityToSave.setCreatedAt(existingSyndicate.getCreatedAt());
+
+        return syndicateRepository.save(entityToSave);
     }
 
     public void deleteSyndicate(Long id) {

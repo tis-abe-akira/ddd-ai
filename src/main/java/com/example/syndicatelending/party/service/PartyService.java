@@ -58,7 +58,8 @@ public class PartyService {
      * 
      * @deprecated
      *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
-     *             代わりに、updateCompany(Long id, UpdateCompanyRequest request)を使用してください。
+     *             代わりに、updateCompany(Long id, UpdateCompanyRequest
+     *             request)を使用してください。
      * @param id
      * @param request
      * @return
@@ -147,6 +148,18 @@ public class PartyService {
         return borrowerRepository.findAll(pageable);
     }
 
+    /**
+     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
+     * Borrowerの更新メソッド。
+     * 
+     * @deprecated
+     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
+     *             代わりに、updateBorrower(Long id, UpdateBorrowerRequest
+     *             request)を使用してください。
+     * @param id
+     * @param request
+     * @return
+     */
     public Borrower updateBorrower(Long id, CreateBorrowerRequest request) {
         Borrower borrower = getBorrowerById(id); // ResourceNotFoundExceptionをスロー
 
@@ -191,9 +204,6 @@ public class PartyService {
     public Borrower updateBorrower(Long id, UpdateBorrowerRequest request) {
         Borrower existingBorrower = getBorrowerById(id);
 
-        // Spring Data JPAが自動的に楽観的ロックをチェック
-        existingBorrower.setVersion(request.getVersion());
-
         // ビジネスバリデーション: 信用限度額の妥当性チェック
         if (request.getCreditLimit() != null && request.getCreditRating() != null) {
             if (request.getCreditLimit().isGreaterThan(request.getCreditRating().getLimit())) {
@@ -203,14 +213,33 @@ public class PartyService {
             }
         }
 
-        existingBorrower.setName(request.getName());
-        existingBorrower.setEmail(request.getEmail());
-        existingBorrower.setPhoneNumber(request.getPhoneNumber());
-        existingBorrower.setCompanyId(request.getCompanyId());
-        existingBorrower.setCreditLimit(request.getCreditLimit());
-        existingBorrower.setCreditRating(request.getCreditRating());
+        // 企業IDが指定されている場合の存在チェック
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
+                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+            }
+        }
 
-        return borrowerRepository.save(existingBorrower);
+        Borrower entityToSave = new Borrower();
+
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setName(request.getName());
+        entityToSave.setEmail(request.getEmail());
+        entityToSave.setPhoneNumber(request.getPhoneNumber());
+        entityToSave.setCompanyId(request.getCompanyId());
+        entityToSave.setCreditLimit(request.getCreditLimit());
+        entityToSave.setCreditRating(request.getCreditRating());
+        entityToSave.setCreatedAt(existingBorrower.getCreatedAt());
+
+        return borrowerRepository.save(entityToSave);
     }
 
     public void deleteBorrower(Long id) {
@@ -259,6 +288,18 @@ public class PartyService {
         return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
     }
 
+    /**
+     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
+     * Investorの更新メソッド。
+     * 
+     * @deprecated
+     *             このメソッドは楽観的排他制御を行っていないため、使用しないでください。
+     *             代わりに、updateInvestor(Long id, UpdateInvestorRequest
+     *             request)を使用してください。
+     * @param id
+     * @param request
+     * @return
+     */
     public Investor updateInvestor(Long id, CreateInvestorRequest request) {
         Investor investor = getInvestorById(id); // ResourceNotFoundExceptionをスロー
 
@@ -291,9 +332,6 @@ public class PartyService {
     public Investor updateInvestor(Long id, UpdateInvestorRequest request) {
         Investor existingInvestor = getInvestorById(id);
 
-        // Spring Data JPAが自動的に楽観的ロックをチェック
-        existingInvestor.setVersion(request.getVersion());
-
         // 企業IDが指定されている場合の存在チェック
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
             Long companyId;
@@ -307,14 +345,20 @@ public class PartyService {
             }
         }
 
-        existingInvestor.setName(request.getName());
-        existingInvestor.setEmail(request.getEmail());
-        existingInvestor.setPhoneNumber(request.getPhoneNumber());
-        existingInvestor.setCompanyId(request.getCompanyId());
-        existingInvestor.setInvestmentCapacity(request.getInvestmentCapacity());
-        existingInvestor.setInvestorType(request.getInvestorType());
+        Investor entityToSave = new Investor();
 
-        return investorRepository.save(existingInvestor);
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setName(request.getName());
+        entityToSave.setEmail(request.getEmail());
+        entityToSave.setPhoneNumber(request.getPhoneNumber());
+        entityToSave.setCompanyId(request.getCompanyId());
+        entityToSave.setInvestmentCapacity(request.getInvestmentCapacity());
+        entityToSave.setInvestorType(request.getInvestorType());
+        entityToSave.setCreatedAt(existingInvestor.getCreatedAt());
+
+        return investorRepository.save(entityToSave);
     }
 
     public void deleteInvestor(Long id) {

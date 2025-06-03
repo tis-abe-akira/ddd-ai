@@ -36,8 +36,26 @@ public class FacilityController {
         return ResponseEntity.ok(facility);
     }
 
+    /**
+     * このメソッドは非推奨にする。（理由は更新時の楽観的排他制御を行っていないため）
+     * Facilityの更新エンドポイント。
+     * 
+     * @deprecated
+     *             このエンドポイントは楽観的排他制御を行っていないため、使用しないでください。
+     *             代わりに、PUT /{id}/versionedを使用してください。
+     * @param id
+     * @param request
+     * @return
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Facility> updateFacility(@PathVariable Long id, @RequestBody UpdateFacilityRequest request) {
+        Facility updatedFacility = facilityService.updateFacility(id, request);
+        return ResponseEntity.ok(updatedFacility);
+    }
+
+    @PutMapping("/{id}/versioned")
+    public ResponseEntity<Facility> updateFacilityVersioned(@PathVariable Long id,
+            @RequestBody UpdateFacilityRequest request) {
         Facility updatedFacility = facilityService.updateFacility(id, request);
         return ResponseEntity.ok(updatedFacility);
     }

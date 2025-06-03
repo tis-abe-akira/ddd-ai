@@ -167,7 +167,7 @@ BORROWER_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/borrowers/$BORROWER_ID/
     "email": "fail-borrower@example.com",
     "phoneNumber": "123-456-7892",
     "companyId": '$COMPANY_ID',
-    "creditLimit": 8000000,
+    "creditLimit": 5000000,
     "creditRating": "BB",
     "version": '$BORROWER_VERSION'
   }' \
@@ -302,7 +302,7 @@ echo "=== 5. Facility Update テスト ==="
 echo "========================================"
 
 echo "--- 5-1. 正常なFacility更新 ---"
-FACILITY_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID" \
+FACILITY_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/versioned" \
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
@@ -333,7 +333,7 @@ fi
 
 echo ""
 echo "--- 5-2. 楽観的排他制御エラーテスト ---"
-FACILITY_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID" \
+FACILITY_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/versioned" \
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
@@ -362,11 +362,11 @@ fi
 
 echo ""
 echo "--- 5-3. 正しいVersionでの最終更新 ---"
-FACILITY_UPDATE_FINAL=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID" \
+FACILITY_UPDATE_FINAL=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/versioned" \
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
-    "commitment": 7000000,
+    "commitment": 5000000,
     "currency": "USD",
     "startDate": "2025-06-01",
     "endDate": "2026-06-01",
