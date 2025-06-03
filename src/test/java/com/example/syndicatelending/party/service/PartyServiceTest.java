@@ -231,4 +231,200 @@ class PartyServiceTest {
                 assertEquals(Money.of(60000000), result.getCreditLimit());
                 verify(borrowerRepository).save(any(Borrower.class));
         }
+
+        // Update Tests
+        @Test
+        void 企業を正常に更新できる() {
+                Long companyId = 1L;
+                CreateCompanyRequest request = new CreateCompanyRequest(
+                                "Updated Company", "REG123", Industry.FINANCE, "Osaka", Country.JAPAN);
+                Company existingCompany = new Company("Old Company", "REG123", Industry.IT, "Tokyo", Country.JAPAN);
+                existingCompany.setId(companyId);
+
+                when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+                when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+
+                Company result = partyService.updateCompany(companyId, request);
+
+                assertNotNull(result);
+                verify(companyRepository).findById(companyId);
+                verify(companyRepository).save(any(Company.class));
+        }
+
+        @Test
+        void 存在しない企業を更新しようとした場合は例外が発生する() {
+                Long companyId = 999L;
+                CreateCompanyRequest request = new CreateCompanyRequest(
+                                "Updated Company", "REG123", Industry.FINANCE, "Osaka", Country.JAPAN);
+
+                when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> partyService.updateCompany(companyId, request));
+
+                assertTrue(exception.getMessage().contains("Company not found"));
+                verify(companyRepository).findById(companyId);
+                verify(companyRepository, never()).save(any(Company.class));
+        }
+
+        @Test
+        void 借り手を正常に更新できる() {
+                Long borrowerId = 1L;
+                CreateBorrowerRequest request = new CreateBorrowerRequest(
+                                "Updated Borrower", "updated@example.com", "987-654-3210",
+                                null, Money.of(2000000), CreditRating.A);
+                Borrower existingBorrower = new Borrower(
+                                "Old Borrower", "old@example.com", "123-456-7890",
+                                null, Money.of(1000000), CreditRating.AA);
+                existingBorrower.setId(borrowerId);
+
+                when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(existingBorrower));
+                when(borrowerRepository.save(any(Borrower.class))).thenReturn(existingBorrower);
+
+                Borrower result = partyService.updateBorrower(borrowerId, request);
+
+                assertNotNull(result);
+                verify(borrowerRepository).findById(borrowerId);
+                verify(borrowerRepository).save(any(Borrower.class));
+        }
+
+        @Test
+        void 存在しない借り手を更新しようとした場合は例外が発生する() {
+                Long borrowerId = 999L;
+                CreateBorrowerRequest request = new CreateBorrowerRequest(
+                                "Updated Borrower", "updated@example.com", "987-654-3210",
+                                null, Money.of(2000000), CreditRating.A);
+
+                when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.empty());
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> partyService.updateBorrower(borrowerId, request));
+
+                assertTrue(exception.getMessage().contains("Borrower not found"));
+                verify(borrowerRepository).findById(borrowerId);
+                verify(borrowerRepository, never()).save(any(Borrower.class));
+        }
+
+        @Test
+        void 投資家を正常に更新できる() {
+                Long investorId = 1L;
+                CreateInvestorRequest request = new CreateInvestorRequest(
+                                "Updated Investor", "updated@example.com", "987-654-3210",
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
+                Investor existingInvestor = new Investor(
+                                "Old Investor", "old@example.com", "123-456-7890",
+                                null, BigDecimal.valueOf(5000000), InvestorType.BANK);
+                existingInvestor.setId(investorId);
+
+                when(investorRepository.findById(investorId)).thenReturn(Optional.of(existingInvestor));
+                when(investorRepository.save(any(Investor.class))).thenReturn(existingInvestor);
+
+                Investor result = partyService.updateInvestor(investorId, request);
+
+                assertNotNull(result);
+                verify(investorRepository).findById(investorId);
+                verify(investorRepository).save(any(Investor.class));
+        }
+
+        @Test
+        void 存在しない投資家を更新しようとした場合は例外が発生する() {
+                Long investorId = 999L;
+                CreateInvestorRequest request = new CreateInvestorRequest(
+                                "Updated Investor", "updated@example.com", "987-654-3210",
+                                null, BigDecimal.valueOf(10000000), InvestorType.INSURANCE);
+
+                when(investorRepository.findById(investorId)).thenReturn(Optional.empty());
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> partyService.updateInvestor(investorId, request));
+
+                assertTrue(exception.getMessage().contains("Investor not found"));
+                verify(investorRepository).findById(investorId);
+                verify(investorRepository, never()).save(any(Investor.class));
+        }
+
+        // Delete Tests
+        @Test
+        void 企業を正常に削除できる() {
+                Long companyId = 1L;
+
+                when(companyRepository.existsById(companyId)).thenReturn(true);
+
+                partyService.deleteCompany(companyId);
+
+                verify(companyRepository).existsById(companyId);
+                verify(companyRepository).deleteById(companyId);
+        }
+
+        @Test
+        void 存在しない企業を削除しようとした場合は例外が発生する() {
+                Long companyId = 999L;
+
+                when(companyRepository.existsById(companyId)).thenReturn(false);
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> partyService.deleteCompany(companyId));
+
+                assertTrue(exception.getMessage().contains("Company not found"));
+                verify(companyRepository).existsById(companyId);
+                verify(companyRepository, never()).deleteById(companyId);
+        }
+
+        @Test
+        void 借り手を正常に削除できる() {
+                Long borrowerId = 1L;
+
+                when(borrowerRepository.existsById(borrowerId)).thenReturn(true);
+
+                partyService.deleteBorrower(borrowerId);
+
+                verify(borrowerRepository).existsById(borrowerId);
+                verify(borrowerRepository).deleteById(borrowerId);
+        }
+
+        @Test
+        void 存在しない借り手を削除しようとした場合は例外が発生する() {
+                Long borrowerId = 999L;
+
+                when(borrowerRepository.existsById(borrowerId)).thenReturn(false);
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> partyService.deleteBorrower(borrowerId));
+
+                assertTrue(exception.getMessage().contains("Borrower not found"));
+                verify(borrowerRepository).existsById(borrowerId);
+                verify(borrowerRepository, never()).deleteById(borrowerId);
+        }
+
+        @Test
+        void 投資家を正常に削除できる() {
+                Long investorId = 1L;
+
+                when(investorRepository.existsById(investorId)).thenReturn(true);
+
+                partyService.deleteInvestor(investorId);
+
+                verify(investorRepository).existsById(investorId);
+                verify(investorRepository).deleteById(investorId);
+        }
+
+        @Test
+        void 存在しない投資家を削除しようとした場合は例外が発生する() {
+                Long investorId = 999L;
+
+                when(investorRepository.existsById(investorId)).thenReturn(false);
+
+                ResourceNotFoundException exception = assertThrows(
+                                ResourceNotFoundException.class,
+                                () -> partyService.deleteInvestor(investorId));
+
+                assertTrue(exception.getMessage().contains("Investor not found"));
+                verify(investorRepository).existsById(investorId);
+                verify(investorRepository, never()).deleteById(investorId);
+        }
 }

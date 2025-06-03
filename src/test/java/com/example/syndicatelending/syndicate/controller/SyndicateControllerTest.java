@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,7 +32,8 @@ class SyndicateControllerTest {
 
     @BeforeEach
     void setUp() {
-        sampleSyndicate = new Syndicate("団A", 1L, 1L, List.of(2L, 3L)); // name, leadBankId, borrowerId, memberInvestorIds
+        sampleSyndicate = new Syndicate("団A", 1L, 1L, List.of(2L, 3L)); // name, leadBankId, borrowerId,
+                                                                        // memberInvestorIds
         sampleSyndicate.setId(1L);
     }
 
@@ -65,5 +66,58 @@ class SyndicateControllerTest {
         mockMvc.perform(get("/api/v1/syndicates?page=0&size=10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].name").value("団A"));
+    }
+
+    // Update Tests
+    @Test
+    void updateSyndicate正常系() throws Exception {
+        Syndicate updatedSyndicate = new Syndicate("団A更新", 1L, 1L, List.of(2L, 3L, 4L));
+        updatedSyndicate.setId(1L);
+
+        when(syndicateService.updateSyndicate(any(Long.class), any(Syndicate.class))).thenReturn(updatedSyndicate);
+
+        mockMvc.perform(put("/api/v1/syndicates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{" +
+                        "\"name\":\"団A更新\"," +
+                        "\"leadBankId\":1," +
+                        "\"borrowerId\":1," +
+                        "\"memberInvestorIds\":[2,3,4]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("団A更新"))
+                .andExpect(jsonPath("$.memberInvestorIds.length()").value(3));
+    }
+
+    @Test
+    void updateSyndicate存在しないと404() throws Exception {
+        when(syndicateService.updateSyndicate(any(Long.class), any(Syndicate.class)))
+                .thenThrow(new com.example.syndicatelending.common.application.exception.ResourceNotFoundException(
+                        "Syndicate not found"));
+
+        mockMvc.perform(put("/api/v1/syndicates/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{" +
+                        "\"name\":\"団B\"," +
+                        "\"leadBankId\":1," +
+                        "\"borrowerId\":1," +
+                        "\"memberInvestorIds\":[2,3]}"))
+                .andExpect(status().isNotFound());
+    }
+
+    // Delete Tests
+    @Test
+    void deleteSyndicate正常系() throws Exception {
+        mockMvc.perform(delete("/api/v1/syndicates/1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteSyndicate存在しないと404() throws Exception {
+        doThrow(new com.example.syndicatelending.common.application.exception.ResourceNotFoundException(
+                "Syndicate not found"))
+                .when(syndicateService).deleteSyndicate(999L);
+
+        mockMvc.perform(delete("/api/v1/syndicates/999"))
+                .andExpect(status().isNotFound());
     }
 }

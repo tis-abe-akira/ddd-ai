@@ -4,6 +4,7 @@ import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.domain.model.PercentageAttributeConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "facility_share_pies")
@@ -23,6 +24,23 @@ public class SharePie {
     @JoinColumn(name = "facility_id", nullable = false)
     @JsonIgnore
     private Facility facility;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
     // getter/setter
     public Long getId() {
@@ -55,5 +73,21 @@ public class SharePie {
 
     public void setFacility(Facility facility) {
         this.facility = facility;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

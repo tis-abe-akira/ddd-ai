@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,5 +102,71 @@ class SyndicateServiceTest {
         Syndicate result = syndicateService.createSyndicate(s);
         assertEquals("団D", result.getName());
         verify(syndicateRepository).save(any(Syndicate.class));
+    }
+
+    // Update Tests
+    @Test
+    void updateSyndicate正常系() {
+        Long syndicateId = 1L;
+        Syndicate existingSyndicate = new Syndicate("団A", 1L, 1L, List.of(2L, 3L));
+        existingSyndicate.setId(syndicateId);
+
+        Syndicate updateData = new Syndicate("団A更新", 1L, 1L, List.of(2L, 3L, 4L));
+
+        // Lead bank mock setup
+        Investor leadBank = new Investor("Lead Bank", "lead@example.com", "123-456-7890",
+                null, BigDecimal.valueOf(10000000), InvestorType.LEAD_BANK);
+
+        when(syndicateRepository.findById(syndicateId)).thenReturn(Optional.of(existingSyndicate));
+        when(syndicateRepository.existsByName("団A更新")).thenReturn(false);
+        when(investorRepository.findById(1L)).thenReturn(Optional.of(leadBank));
+        when(syndicateRepository.save(any(Syndicate.class))).thenReturn(existingSyndicate);
+
+        Syndicate result = syndicateService.updateSyndicate(syndicateId, updateData);
+
+        assertNotNull(result);
+        verify(syndicateRepository).findById(syndicateId);
+        verify(investorRepository).findById(1L);
+        verify(syndicateRepository).save(any(Syndicate.class));
+    }
+
+    @Test
+    void updateSyndicate存在しないと例外() {
+        Long syndicateId = 999L;
+        Syndicate updateData = new Syndicate("団B", 1L, 1L, List.of(2L, 3L));
+
+        when(syndicateRepository.findById(syndicateId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> syndicateService.updateSyndicate(syndicateId, updateData));
+
+        verify(syndicateRepository).findById(syndicateId);
+        verify(syndicateRepository, never()).save(any(Syndicate.class));
+    }
+
+    // Delete Tests
+    @Test
+    void deleteSyndicate正常系() {
+        Long syndicateId = 1L;
+
+        when(syndicateRepository.existsById(syndicateId)).thenReturn(true);
+
+        syndicateService.deleteSyndicate(syndicateId);
+
+        verify(syndicateRepository).existsById(syndicateId);
+        verify(syndicateRepository).deleteById(syndicateId);
+    }
+
+    @Test
+    void deleteSyndicate存在しないと例外() {
+        Long syndicateId = 999L;
+
+        when(syndicateRepository.existsById(syndicateId)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> syndicateService.deleteSyndicate(syndicateId));
+
+        verify(syndicateRepository).existsById(syndicateId);
+        verify(syndicateRepository, never()).deleteById(syndicateId);
     }
 }

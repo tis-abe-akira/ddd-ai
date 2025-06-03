@@ -1,6 +1,7 @@
 package com.example.syndicatelending.facility.service;
 
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.domain.FacilityValidator;
@@ -66,6 +67,76 @@ class FacilityServiceTest {
 
         verify(facilityValidator).validateCreateFacilityRequest(request);
         verify(facilityRepository, never()).save(any(Facility.class));
+    }
+
+    @Test
+    void 正常にFacilityが更新される() {
+        // Given
+        Long facilityId = 1L;
+        CreateFacilityRequest request = createValidFacilityRequest();
+        request.setSyndicateId(1L);
+        request.setCommitment(Money.of(BigDecimal.valueOf(6000000))); // 更新: Commitmentを6000000に
+
+        Facility existingFacility = new Facility();
+        existingFacility.setId(facilityId);
+        when(facilityRepository.findById(facilityId)).thenReturn(java.util.Optional.of(existingFacility));
+        when(facilityRepository.save(any(Facility.class))).thenReturn(existingFacility);
+
+        // When
+        facilityService.updateFacility(facilityId, request);
+
+        // Then
+        verify(facilityValidator).validateCreateFacilityRequest(any(CreateFacilityRequest.class));
+        verify(facilityRepository).findById(facilityId);
+        verify(facilityRepository).save(any(Facility.class));
+    }
+
+    @Test
+    void 存在しないFacilityを更新しようとした場合はエラーになる() {
+        // Given
+        Long facilityId = 1L;
+        CreateFacilityRequest request = createValidFacilityRequest();
+
+        when(facilityRepository.findById(facilityId)).thenReturn(java.util.Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> facilityService.updateFacility(facilityId, request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Facility not found");
+
+        verify(facilityRepository).findById(facilityId);
+        verify(facilityRepository, never()).save(any(Facility.class));
+    }
+
+    @Test
+    void 正常にFacilityが削除される() {
+        // Given
+        Long facilityId = 1L;
+
+        when(facilityRepository.existsById(facilityId)).thenReturn(true);
+
+        // When
+        facilityService.deleteFacility(facilityId);
+
+        // Then
+        verify(facilityRepository).existsById(facilityId);
+        verify(facilityRepository).deleteById(facilityId);
+    }
+
+    @Test
+    void 存在しないFacilityを削除しようとした場合はエラーになる() {
+        // Given
+        Long facilityId = 1L;
+
+        when(facilityRepository.existsById(facilityId)).thenReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> facilityService.deleteFacility(facilityId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Facility not found");
+
+        verify(facilityRepository).existsById(facilityId);
+        verify(facilityRepository, never()).deleteById(facilityId);
     }
 
     private CreateFacilityRequest createValidFacilityRequest() {
