@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -66,12 +70,16 @@ class FacilityControllerTest {
         Facility facility = new Facility();
         facility.setId(1L);
         List<Facility> facilities = List.of(facility);
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Facility> facilityPage = new PageImpl<>(facilities, pageable, facilities.size());
 
-        when(facilityService.getAllFacilities()).thenReturn(facilities);
+        when(facilityService.getAllFacilities(any(Pageable.class))).thenReturn(facilityPage);
 
         mockMvc.perform(get("/api/v1/facilities"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].id").value(1));
     }
 
     @Test
