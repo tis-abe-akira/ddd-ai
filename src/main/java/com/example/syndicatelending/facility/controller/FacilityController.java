@@ -3,10 +3,10 @@ package com.example.syndicatelending.facility.controller;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.service.FacilityService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/facilities")
@@ -24,8 +24,8 @@ public class FacilityController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Facility>> getAllFacilities() {
-        List<Facility> facilities = facilityService.getAllFacilities();
+    public ResponseEntity<Page<Facility>> getAllFacilities(Pageable pageable) {
+        Page<Facility> facilities = facilityService.getAllFacilities(pageable);
         return ResponseEntity.ok(facilities);
     }
 

@@ -7,6 +7,8 @@ import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +58,10 @@ public class FacilityService {
 
     public List<Facility> getAllFacilities() {
         return facilityRepository.findAll();
+    }
+
+    public Page<Facility> getAllFacilities(Pageable pageable) {
+        return facilityRepository.findAll(pageable);
     }
 
     public Facility getFacilityById(Long id) {
