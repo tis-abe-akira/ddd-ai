@@ -9,6 +9,7 @@
 | `requirements.md` | ビジネス要件とユースケース | 低（要件変更時のみ） | PO/BA |
 | `techContext.md` | 技術スタック・環境設定 | 中（技術変更時） | TL/Arch |
 | `architecture.md` | アーキテクチャ設計指針 | 中（設計見直し時） | Arch/Sr.Dev |
+| `implementation-standards.md` | 実装標準・コーディング規約 | 中（標準見直し時） | Tech Lead |
 | `progress.md` | 開発進捗と実装状況 | 高（開発進捗時） | 開発チーム |
 
 ## コード生成・開発時の参照順序
@@ -22,7 +23,10 @@
 ### 3. 設計パターン確認
 `architecture.md` でコード構造と設計パターンを確認
 
-### 4. 実装状況確認
+### 4. 実装標準確認
+`implementation-standards.md` でコーディング規約と実装パターンを確認
+
+### 5. 実装状況確認
 `progress.md` で既存実装と開発状況を確認
 
 ## 判断基準と優先順位
@@ -31,7 +35,8 @@
 1. **requirements.md**（要件）が最優先
 2. **techContext.md**（技術制約）
 3. **architecture.md**（設計）
-4. **progress.md**（実装）
+4. **implementation-standards.md**（実装標準）
+5. **progress.md**（実装）
 
 ## 開発時の注意事項
 
@@ -60,4 +65,5 @@
 - **requirements.md**: 要件変更承認時（プロダクトオーナー判断）
 - **techContext.md**: 新技術導入時、環境変更時
 - **architecture.md**: 設計見直し時、大きなリファクタリング後
+- **implementation-standards.md**: 実装パターン変更時、コーディング規約更新時
 - **progress.md**: 機能完成時、マイルストーン達成時
