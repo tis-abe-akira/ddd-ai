@@ -15,6 +15,7 @@ sequenceDiagram
     participant InvestorRepo as InvestorRepository
     participant FacilityRepo as FacilityRepository
     participant SharePieRepo as SharePieRepository
+    participant FacilityInvestmentRepo as FacilityInvestmentRepository
     participant DB as データベース
 
     Client->>Controller: POST /api/v1/facilities
@@ -38,6 +39,9 @@ sequenceDiagram
     FacilityRepo->>DB: INSERT INTO facility
     Service->>SharePieRepo: saveAll(sharePies)
     SharePieRepo->>DB: INSERT INTO share_pie
+    Service->>Service: FacilityInvestment自動生成
+    Service->>FacilityInvestmentRepo: saveAll(facilityInvestments)
+    FacilityInvestmentRepo->>DB: INSERT INTO transaction (FacilityInvestment)
     Service-->>Controller: Facility Entity
     Controller-->>Client: HTTP 200 OK + Facility JSON
 ```
@@ -68,9 +72,16 @@ sequenceDiagram
 #### 3.2 SharePieエンティティ作成
 - **投資家ごとの持分比率**: investorId, share, facilityId
 
+#### 3.3 FacilityInvestment自動生成
+- **投資家ごとの投資記録**: SharePie比率に基づいて按分計算
+- **按分計算**: commitment × share比率 → Money型で設定
+- **borrowerId取得**: Facility → Syndicate → BorrowerIdの関連で取得
+- **取引情報**: transactionType="FACILITY_INVESTMENT", transactionDate=現在日付
+
 ### 4. データ永続化
 - **Facility保存**: `FacilityRepository.save()` でfacilityテーブルに保存
 - **SharePie保存**: `SharePieRepository.saveAll()` でshare_pieテーブルに一括保存
+- **FacilityInvestment保存**: `FacilityInvestmentRepository.saveAll()` でtransactionテーブルに一括保存
 - **トランザクション**: `@Transactional` により全体が単一トランザクションで実行
 
 ### 5. レスポンス返却
@@ -106,8 +117,28 @@ erDiagram
         Long investorId FK
         Percentage share
     }
+    Transaction {
+        Long id PK
+        Long facilityId FK
+        Long borrowerId FK
+        LocalDate transactionDate
+        String transactionType
+        Money amount
+    }
+    FacilityInvestment {
+        Long id PK
+        Long facilityId FK
+        Long investorId FK
+        Long borrowerId FK
+        LocalDate transactionDate
+        String transactionType
+        Money amount
+    }
     Facility ||--o{ SharePie : "has shares"
+    Facility ||--o{ FacilityInvestment : "generates investments"
     SharePie }|--|| Investor : "investor"
+    FacilityInvestment }|--|| Investor : "made by"
+    FacilityInvestment ||--|| Transaction : "is-a"
     Facility }|--|| Syndicate : "syndicate"
 ```
 
@@ -118,9 +149,14 @@ erDiagram
 - **早期リターン**: エラー発生時は即座に例外をスロー
 
 ### 2. トランザクション管理
-- **単一トランザクション**: Facility作成とSharePie作成を一つのトランザクションで実行
+- **単一トランザクション**: Facility作成、SharePie作成、FacilityInvestment作成を一つのトランザクションで実行
 - **ロールバック**: エラー発生時は全ての変更をロールバック
+
+### 3. FacilityInvestment自動生成
+- **業務的意味**: 投資家がFacilityに対して行った投資を記録
+- **按分計算**: 各投資家の投資額 = Facility総額 × その投資家のSharePie比率
+- **取引記録**: Transactionテーブルに投資記録として保存
 
 ---
 
-**注記**: この処理フローは現在の実装に基づいており、将来的に複雑なバリデーションやイベント処理が追加される可能性があります。
+**注記**: この処理フローは現在の実装に基づいており、将来的に複雑なバリデーションやイベント処理が追加される可能性があります。FacilityInvestment自動生成機能により、Facility組成と同時に投資家の投資記録が自動的に作成されます。
