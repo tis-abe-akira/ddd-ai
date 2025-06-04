@@ -2,6 +2,7 @@ package com.example.syndicatelending.loan.service;
 
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
@@ -50,7 +51,7 @@ public class DrawdownService {
         drawdown.setFacilityId(request.getFacilityId());
         drawdown.setBorrowerId(request.getBorrowerId());
         drawdown.setTransactionDate(request.getDrawdownDate());
-        drawdown.setAmount(request.getAmount());
+        drawdown.setAmount(Money.of(request.getAmount()));
         drawdown.setLoanId(savedLoan.getId());
         drawdown.setCurrency(request.getCurrency());
         drawdown.setPurpose(request.getPurpose());

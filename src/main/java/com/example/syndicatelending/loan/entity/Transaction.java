@@ -1,7 +1,8 @@
 package com.example.syndicatelending.loan.entity;
 
+import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -26,7 +27,8 @@ public abstract class Transaction {
     private String transactionType;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    @Convert(converter = MoneyAttributeConverter.class)
+    private Money amount;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -90,11 +92,11 @@ public abstract class Transaction {
         this.transactionType = transactionType;
     }
 
-    public BigDecimal getAmount() {
+    public Money getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(Money amount) {
         this.amount = amount;
     }
 

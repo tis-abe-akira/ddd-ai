@@ -38,6 +38,12 @@ class FacilityServiceTest {
     @Mock
     private com.example.syndicatelending.facility.repository.SharePieRepository sharePieRepository;
 
+    @Mock
+    private com.example.syndicatelending.facility.repository.FacilityInvestmentRepository facilityInvestmentRepository;
+
+    @Mock
+    private com.example.syndicatelending.syndicate.repository.SyndicateRepository syndicateRepository;
+
     @InjectMocks
     private FacilityService facilityService;
 
@@ -48,7 +54,16 @@ class FacilityServiceTest {
 
         Facility savedFacility = new Facility();
         savedFacility.setId(1L);
+        savedFacility.setSyndicateId(1L);
+        savedFacility.setCommitment(Money.of(BigDecimal.valueOf(5000000)));
+        savedFacility.setSharePies(Arrays.asList()); // SharePieのモック設定
         when(facilityRepository.save(any(Facility.class))).thenReturn(savedFacility);
+
+        // Syndicateのモック設定
+        com.example.syndicatelending.syndicate.entity.Syndicate syndicate = 
+            new com.example.syndicatelending.syndicate.entity.Syndicate();
+        syndicate.setBorrowerId(100L); // borrowerIdを設定
+        when(syndicateRepository.findById(1L)).thenReturn(java.util.Optional.of(syndicate));
 
         // When
         facilityService.createFacility(request);
@@ -56,6 +71,8 @@ class FacilityServiceTest {
         // Then
         verify(facilityValidator).validateCreateFacilityRequest(request);
         verify(facilityRepository).save(any(Facility.class));
+        verify(syndicateRepository).findById(1L); // Syndicate取得確認
+        verify(facilityInvestmentRepository).saveAll(any(List.class)); // FacilityInvestment保存確認
     }
 
     @Test
