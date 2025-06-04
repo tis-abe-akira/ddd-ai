@@ -50,7 +50,8 @@ echo "=== 1. Company Update テスト ==="
 echo "========================================"
 
 echo "--- 1-1. 正常なCompany更新 ---"
-COMPANY_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/parties/companies/$COMPANY_ID/versioned" \
+# Company更新
+COMPANY_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/parties/companies/$COMPANY_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "Updated Test Company",
@@ -77,7 +78,7 @@ fi
 
 echo ""
 echo "--- 1-2. 楽観的排他制御エラーテスト（古いVersionを使用） ---"
-COMPANY_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/companies/$COMPANY_ID/versioned" \
+COMPANY_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/companies/$COMPANY_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "This Should Fail",
@@ -102,7 +103,7 @@ fi
 
 echo ""
 echo "--- 1-3. 正しいVersionでの再更新 ---"
-COMPANY_UPDATE_RETRY=$(curl -s -X PUT "$API_URL/parties/companies/$COMPANY_ID/versioned" \
+COMPANY_UPDATE_RETRY=$(curl -s -X PUT "$API_URL/parties/companies/$COMPANY_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "Final Updated Test Company",
@@ -132,7 +133,7 @@ echo "=== 2. Borrower Update テスト ==="
 echo "========================================"
 
 echo "--- 2-1. 正常なBorrower更新 ---"
-BORROWER_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/parties/borrowers/$BORROWER_ID/versioned" \
+BORROWER_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/parties/borrowers/$BORROWER_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Updated Test Borrower",
@@ -160,7 +161,7 @@ fi
 
 echo ""
 echo "--- 2-2. 楽観的排他制御エラーテスト ---"
-BORROWER_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/borrowers/$BORROWER_ID/versioned" \
+BORROWER_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/borrowers/$BORROWER_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "This Should Fail Borrower",
@@ -190,7 +191,7 @@ echo "=== 3. Investor Update テスト ==="
 echo "========================================"
 
 echo "--- 3-1. 正常なInvestor更新 ---"
-INVESTOR_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/parties/investors/$INVESTOR_ID/versioned" \
+INVESTOR_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/parties/investors/$INVESTOR_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Updated Test Investor",
@@ -218,7 +219,7 @@ fi
 
 echo ""
 echo "--- 3-2. 楽観的排他制御エラーテスト ---"
-INVESTOR_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/investors/$INVESTOR_ID/versioned" \
+INVESTOR_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/parties/investors/$INVESTOR_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "This Should Fail Investor",
@@ -248,7 +249,7 @@ echo "=== 4. Syndicate Update テスト ==="
 echo "========================================"
 
 echo "--- 4-1. 正常なSyndicate更新 ---"
-SYNDICATE_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/syndicates/$SYNDICATE_ID/versioned" \
+SYNDICATE_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/syndicates/$SYNDICATE_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Updated Test Syndicate",
@@ -274,7 +275,7 @@ fi
 
 echo ""
 echo "--- 4-2. 楽観的排他制御エラーテスト ---"
-SYNDICATE_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/syndicates/$SYNDICATE_ID/versioned" \
+SYNDICATE_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/syndicates/$SYNDICATE_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "This Should Fail Syndicate",
@@ -302,7 +303,7 @@ echo "=== 5. Facility Update テスト ==="
 echo "========================================"
 
 echo "--- 5-1. 正常なFacility更新 ---"
-FACILITY_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/versioned" \
+FACILITY_UPDATE_SUCCESS=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
@@ -333,7 +334,7 @@ fi
 
 echo ""
 echo "--- 5-2. 楽観的排他制御エラーテスト ---"
-FACILITY_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/versioned" \
+FACILITY_UPDATE_ERROR=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
@@ -362,11 +363,11 @@ fi
 
 echo ""
 echo "--- 5-3. 正しいVersionでの最終更新 ---"
-FACILITY_UPDATE_FINAL=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID/versioned" \
+FACILITY_UPDATE_FINAL=$(curl -s -X PUT "$API_URL/facilities/$FACILITY_ID" \
   -H "Content-Type: application/json" \
   -d '{
     "syndicateId": '$SYNDICATE_ID',
-    "commitment": 7000000,
+    "commitment": 11000000,
     "currency": "USD",
     "startDate": "2025-06-01",
     "endDate": "2026-06-01",
