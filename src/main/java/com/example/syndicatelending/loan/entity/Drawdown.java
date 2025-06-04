@@ -1,5 +1,6 @@
 package com.example.syndicatelending.loan.entity;
 
+import com.example.syndicatelending.transaction.entity.Transaction;
 import jakarta.persistence.*;
 
 @Entity

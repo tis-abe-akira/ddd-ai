@@ -1,6 +1,6 @@
 package com.example.syndicatelending.loan.repository;
 
-import com.example.syndicatelending.loan.entity.Transaction;
+import com.example.syndicatelending.transaction.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

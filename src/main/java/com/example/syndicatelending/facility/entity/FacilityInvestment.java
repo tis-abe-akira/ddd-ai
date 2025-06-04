@@ -1,6 +1,6 @@
 package com.example.syndicatelending.facility.entity;
 
-import com.example.syndicatelending.loan.entity.Transaction;
+import com.example.syndicatelending.transaction.entity.Transaction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;

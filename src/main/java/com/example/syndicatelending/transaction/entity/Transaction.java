@@ -1,4 +1,4 @@
-package com.example.syndicatelending.loan.entity;
+package com.example.syndicatelending.transaction.entity;
 
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
