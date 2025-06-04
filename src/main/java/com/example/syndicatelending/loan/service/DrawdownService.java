@@ -3,6 +3,7 @@ package com.example.syndicatelending.loan.service;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
@@ -17,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -27,10 +27,10 @@ public class DrawdownService {
     private final FacilityRepository facilityRepository;
     private final BorrowerRepository borrowerRepository;
 
-    public DrawdownService(DrawdownRepository drawdownRepository, 
-                          LoanRepository loanRepository,
-                          FacilityRepository facilityRepository,
-                          BorrowerRepository borrowerRepository) {
+    public DrawdownService(DrawdownRepository drawdownRepository,
+            LoanRepository loanRepository,
+            FacilityRepository facilityRepository,
+            BorrowerRepository borrowerRepository) {
         this.drawdownRepository = drawdownRepository;
         this.loanRepository = loanRepository;
         this.facilityRepository = facilityRepository;
@@ -81,27 +81,29 @@ public class DrawdownService {
     }
 
     private void validateDrawdownRequest(CreateDrawdownRequest request) {
-        // Facilityの存在確認
         Facility facility = facilityRepository.findById(request.getFacilityId())
-                .orElseThrow(() -> new ResourceNotFoundException("Facility not found with id: " + request.getFacilityId()));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Facility not found with id: " + request.getFacilityId()));
 
-        // Borrowerの存在確認
         if (!borrowerRepository.existsById(request.getBorrowerId())) {
             throw new ResourceNotFoundException("Borrower not found with id: " + request.getBorrowerId());
         }
 
         // 金額の妥当性チェック
-        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+        Money amount = Money.of(request.getAmount());
+        if (amount.isZero() || !amount.isPositiveOrZero()) {
             throw new BusinessRuleViolationException("Drawdown amount must be positive");
         }
 
         // Facilityの利用可能残高チェック（簡易版）
-        if (request.getAmount().compareTo(facility.getCommitment().getAmount()) > 0) {
+        Money facilityCommitment = facility.getCommitment();
+        if (amount.isGreaterThan(facilityCommitment)) {
             throw new BusinessRuleViolationException("Drawdown amount exceeds facility commitment");
         }
 
         // 金利の妥当性チェック
-        if (request.getAnnualInterestRate().compareTo(BigDecimal.ZERO) < 0) {
+        Percentage interestRate = Percentage.of(request.getAnnualInterestRate());
+        if (interestRate.getValue().compareTo(java.math.BigDecimal.ZERO) < 0) {
             throw new BusinessRuleViolationException("Interest rate cannot be negative");
         }
 
@@ -115,9 +117,9 @@ public class DrawdownService {
         Loan loan = new Loan();
         loan.setFacilityId(request.getFacilityId());
         loan.setBorrowerId(request.getBorrowerId());
-        loan.setPrincipalAmount(request.getAmount());
-        loan.setOutstandingBalance(request.getAmount()); // 初期残高は元本と同じ
-        loan.setAnnualInterestRate(request.getAnnualInterestRate());
+        loan.setPrincipalAmount(Money.of(request.getAmount()));
+        loan.setOutstandingBalance(Money.of(request.getAmount())); // 初期残高は元本と同じ
+        loan.setAnnualInterestRate(Percentage.of(request.getAnnualInterestRate()));
         loan.setDrawdownDate(request.getDrawdownDate());
         loan.setRepaymentPeriodMonths(request.getRepaymentPeriodMonths());
         loan.setRepaymentCycle(request.getRepaymentCycle());
