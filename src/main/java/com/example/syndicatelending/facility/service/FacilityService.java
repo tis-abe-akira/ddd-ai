@@ -145,7 +145,34 @@ public class FacilityService {
         }
         entityToSave.setSharePies(newSharePies);
 
-        return facilityRepository.save(entityToSave);
+        Facility savedFacility = facilityRepository.save(entityToSave);
+
+        // 既存のFacilityInvestmentを削除
+        facilityInvestmentRepository.deleteByFacilityId(id);
+
+        // 新しいFacilityInvestmentを生成・保存
+        List<FacilityInvestment> newInvestments = new ArrayList<>();
+        Money newCommitment = savedFacility.getCommitment();
+        
+        // Facility → Syndicate → BorrowerIdを取得
+        Syndicate syndicate = syndicateRepository.findById(savedFacility.getSyndicateId())
+                .orElseThrow(() -> new ResourceNotFoundException("Syndicate not found with id: " + savedFacility.getSyndicateId()));
+        Long borrowerId = syndicate.getBorrowerId();
+        
+        for (SharePie pie : savedFacility.getSharePies()) {
+            FacilityInvestment investment = new FacilityInvestment();
+            investment.setFacilityId(savedFacility.getId());
+            investment.setInvestorId(pie.getInvestorId());
+            investment.setBorrowerId(borrowerId);
+            // 按分金額計算: Money × Percentage.value → Money
+            investment.setAmount(newCommitment.multiply(pie.getShare().getValue()));
+            investment.setTransactionType("FACILITY_INVESTMENT");
+            investment.setTransactionDate(LocalDate.now());
+            newInvestments.add(investment);
+        }
+        facilityInvestmentRepository.saveAll(newInvestments);
+
+        return savedFacility;
     }
 
     @Transactional
