@@ -63,6 +63,25 @@ erDiagram
         Long facilityId FK
     }
 
+    Transaction {
+        Long id PK
+        Long facilityId FK
+        Long borrowerId FK
+        LocalDate transactionDate
+        String transactionType
+        Money amount
+    }
+
+    FacilityInvestment {
+        Long id PK
+        Long facilityId FK
+        Long investorId FK
+        Long borrowerId FK
+        LocalDate transactionDate
+        String transactionType
+        Money amount
+    }
+
     %% 関係性
     Syndicate ||--|| Borrower : "has borrower"
     Syndicate ||--|| Investor : "has lead bank"
@@ -70,6 +89,10 @@ erDiagram
     Facility ||--|| Syndicate : "belongs to"
     SharePie }|--|| Facility : "defines shares for"
     SharePie }|--|| Investor : "investor share"
+    Transaction ||--|| Facility : "related to"
+    Transaction ||--|| Borrower : "involves"
+    FacilityInvestment ||--|| Transaction : "is-a"
+    FacilityInvestment ||--|| Investor : "made by"
 ```
 
 ### 1.2 Value Objects
@@ -436,6 +459,6 @@ mindmap
 ---
 
 **注記**: 
-- 現在実装済み: Company, Borrower, Investor, Syndicate, Facility, SharePie
-- 将来実装予定: Loan, Transaction階層, AmountPie, マスタデータ
+- 現在実装済み: Company, Borrower, Investor, Syndicate, Facility, SharePie, Transaction, FacilityInvestment
+- 将来実装予定: Loan, 他のTransaction階層, AmountPie, マスタデータ
 - 共通フィールド（created_at, updated_at, version）は図から省略

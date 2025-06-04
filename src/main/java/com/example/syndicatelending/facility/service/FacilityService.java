@@ -7,7 +7,13 @@ import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.facility.repository.SharePieRepository;
+import com.example.syndicatelending.facility.repository.FacilityInvestmentRepository;
+import com.example.syndicatelending.facility.entity.FacilityInvestment;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
+import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
+import com.example.syndicatelending.syndicate.entity.Syndicate;
+import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,12 +28,17 @@ public class FacilityService {
     private final FacilityRepository facilityRepository;
     private final FacilityValidator facilityValidator;
     private final SharePieRepository sharePieRepository;
+    private final FacilityInvestmentRepository facilityInvestmentRepository;
+    private final SyndicateRepository syndicateRepository;
 
     public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
-            SharePieRepository sharePieRepository) {
+            SharePieRepository sharePieRepository, FacilityInvestmentRepository facilityInvestmentRepository,
+            SyndicateRepository syndicateRepository) {
         this.facilityRepository = facilityRepository;
         this.facilityValidator = facilityValidator;
         this.sharePieRepository = sharePieRepository;
+        this.facilityInvestmentRepository = facilityInvestmentRepository;
+        this.syndicateRepository = syndicateRepository;
     }
 
     @Transactional
@@ -56,8 +67,32 @@ public class FacilityService {
         // 3. バリデーション実行
         facilityValidator.validateCreateFacilityRequest(request);
 
-        // 4. 保存（cascadeによりSharePieも一緒に保存される）
-        return facilityRepository.save(facility);
+        // 4. Facility保存（cascadeによりSharePieも一緒に保存される）
+        Facility savedFacility = facilityRepository.save(facility);
+
+        // 5. FacilityInvestment生成・保存
+        List<FacilityInvestment> investments = new ArrayList<>();
+        Money commitment = savedFacility.getCommitment();
+        
+        // Facility → Syndicate → BorrowerIdを取得
+        Syndicate syndicate = syndicateRepository.findById(savedFacility.getSyndicateId())
+                .orElseThrow(() -> new ResourceNotFoundException("Syndicate not found with id: " + savedFacility.getSyndicateId()));
+        Long borrowerId = syndicate.getBorrowerId();
+        
+        for (SharePie pie : savedFacility.getSharePies()) {
+            FacilityInvestment investment = new FacilityInvestment();
+            investment.setFacilityId(savedFacility.getId());
+            investment.setInvestorId(pie.getInvestorId());
+            investment.setBorrowerId(borrowerId); // Syndicateから取得したborrowerIdを設定
+            // 按分金額計算: Money × Percentage.value → Money
+            investment.setAmount(commitment.multiply(pie.getShare().getValue()));
+            investment.setTransactionType("FACILITY_INVESTMENT");
+            investment.setTransactionDate(LocalDate.now());
+            investments.add(investment);
+        }
+        facilityInvestmentRepository.saveAll(investments);
+
+        return savedFacility;
     }
 
     public List<Facility> getAllFacilities() {
@@ -110,7 +145,34 @@ public class FacilityService {
         }
         entityToSave.setSharePies(newSharePies);
 
-        return facilityRepository.save(entityToSave);
+        Facility savedFacility = facilityRepository.save(entityToSave);
+
+        // 既存のFacilityInvestmentを削除
+        facilityInvestmentRepository.deleteByFacilityId(id);
+
+        // 新しいFacilityInvestmentを生成・保存
+        List<FacilityInvestment> newInvestments = new ArrayList<>();
+        Money newCommitment = savedFacility.getCommitment();
+        
+        // Facility → Syndicate → BorrowerIdを取得
+        Syndicate syndicate = syndicateRepository.findById(savedFacility.getSyndicateId())
+                .orElseThrow(() -> new ResourceNotFoundException("Syndicate not found with id: " + savedFacility.getSyndicateId()));
+        Long borrowerId = syndicate.getBorrowerId();
+        
+        for (SharePie pie : savedFacility.getSharePies()) {
+            FacilityInvestment investment = new FacilityInvestment();
+            investment.setFacilityId(savedFacility.getId());
+            investment.setInvestorId(pie.getInvestorId());
+            investment.setBorrowerId(borrowerId);
+            // 按分金額計算: Money × Percentage.value → Money
+            investment.setAmount(newCommitment.multiply(pie.getShare().getValue()));
+            investment.setTransactionType("FACILITY_INVESTMENT");
+            investment.setTransactionDate(LocalDate.now());
+            newInvestments.add(investment);
+        }
+        facilityInvestmentRepository.saveAll(newInvestments);
+
+        return savedFacility;
     }
 
     @Transactional

@@ -9,7 +9,8 @@
 - **参加者管理**: 企業、借り手、投資家の情報管理
 - **シンジケート団組成**: リードバンクを中心とした投資家グループの管理
 - **融資枠管理**: ファシリティの作成と投資家間の持分比率管理
-- **取引処理**: ドローダウン、支払い、取引の記録・分配（将来実装予定）
+- **投資記録管理**: ファシリティ組成時の投資家投資記録自動生成
+- **取引処理**: ドローダウン、支払い、取引の記録・分配（一部実装済み）
 
 ## 🏗️ アーキテクチャ
 
@@ -57,10 +58,11 @@ mvn spring-boot:run
 | 参加者管理 | ✅ 完了 | Company, Borrower, Investor の CRUD操作 |
 | シンジケート管理 | ✅ 完了 | シンジケート団の組成・管理 |
 | 融資枠管理 | ✅ 完了 | Facility作成、SharePie（持分比率）管理 |
-| 取引処理 | 🚧 未実装 | Drawdown, Payment, Trade等の取引機能 |
+| 投資記録管理 | ✅ 完了 | FacilityInvestment自動生成（Facility組成時） |
+| 取引処理 | 🔄 一部実装 | FacilityInvestment完了、Drawdown等は未実装 |
 | レポーティング | 🚧 未実装 | 各種レポート・分析機能 |
 
-**開発完了度**: 約75%（基本的なシンジケートローン管理機能）
+**開発完了度**: 約80%（基本的なシンジケートローン管理機能 + 投資記録管理）
 
 ## 🛠️ 技術スタック
 
@@ -120,7 +122,7 @@ mvn jacoco:report
 
 #### 融資枠管理
 - `GET /api/v1/facilities` - ファシリティ一覧
-- `POST /api/v1/facilities` - ファシリティ作成
+- `POST /api/v1/facilities` - ファシリティ作成（FacilityInvestment自動生成）
 - `PUT /api/v1/facilities/{id}` - ファシリティ更新
 
 詳細なAPI仕様は [Swagger UI](http://localhost:8080/swagger-ui.html) で確認できます。
