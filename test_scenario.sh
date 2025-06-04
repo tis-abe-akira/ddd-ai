@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 # 事前に: サーバーが http://localhost:8080 で起動していること
 # jqコマンドが必要です（brew install jq などでインストール）
 

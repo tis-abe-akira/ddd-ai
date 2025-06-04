@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 # Update scenario test script
 # 事前に: test_scenario.sh を実行してデータが作成されていること
 # サーバーが http://localhost:8080 で起動していること

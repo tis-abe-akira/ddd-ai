@@ -35,6 +35,9 @@ class FacilityServiceTest {
     @Mock
     private FacilityValidator facilityValidator;
 
+    @Mock
+    private com.example.syndicatelending.facility.repository.SharePieRepository sharePieRepository;
+
     @InjectMocks
     private FacilityService facilityService;
 
