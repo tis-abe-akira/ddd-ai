@@ -6,6 +6,7 @@ import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.facility.repository.SharePieRepository;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 
 import org.springframework.data.domain.Page;
@@ -20,10 +21,13 @@ import java.util.List;
 public class FacilityService {
     private final FacilityRepository facilityRepository;
     private final FacilityValidator facilityValidator;
+    private final SharePieRepository sharePieRepository;
 
-    public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator) {
+    public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
+            SharePieRepository sharePieRepository) {
         this.facilityRepository = facilityRepository;
         this.facilityValidator = facilityValidator;
+        this.sharePieRepository = sharePieRepository;
     }
 
     @Transactional
@@ -73,9 +77,8 @@ public class FacilityService {
     public Facility updateFacility(Long id, UpdateFacilityRequest request) {
         Facility existingFacility = getFacilityById(id);
 
-        // バリデーション実行（CreateFacilityRequestに変換）
-        CreateFacilityRequest validationRequest = convertToCreateRequest(request);
-        facilityValidator.validateCreateFacilityRequest(validationRequest);
+        // バリデーション実行（UpdateFacilityRequestを直接使用）
+        facilityValidator.validateUpdateFacilityRequest(request, id);
 
         Facility entityToSave = new Facility();
 
@@ -91,7 +94,12 @@ public class FacilityService {
         entityToSave.setInterestTerms(request.getInterestTerms());
         entityToSave.setCreatedAt(existingFacility.getCreatedAt());
 
-        // SharePieの設定
+        // 既存のSharePieエンティティをクリア
+        existingFacility.getSharePies().clear();
+        // SharePieRepositoryを用いて、既存のSharePie(Facilityに紐づく)を明示的に削除する。
+        sharePieRepository.deleteByFacility_Id(id);
+
+        // 新しいSharePieエンティティを作成して追加
         List<SharePie> newSharePies = new ArrayList<>();
         for (UpdateFacilityRequest.SharePieRequest pie : request.getSharePies()) {
             SharePie entity = new SharePie();
@@ -103,31 +111,6 @@ public class FacilityService {
         entityToSave.setSharePies(newSharePies);
 
         return facilityRepository.save(entityToSave);
-    }
-
-    /**
-     * UpdateFacilityRequestをCreateFacilityRequestに変換（バリデーション用）
-     */
-    private CreateFacilityRequest convertToCreateRequest(UpdateFacilityRequest updateRequest) {
-        CreateFacilityRequest createRequest = new CreateFacilityRequest();
-        createRequest.setSyndicateId(updateRequest.getSyndicateId());
-        createRequest.setCommitment(updateRequest.getCommitment());
-        createRequest.setCurrency(updateRequest.getCurrency());
-        createRequest.setStartDate(updateRequest.getStartDate());
-        createRequest.setEndDate(updateRequest.getEndDate());
-        createRequest.setInterestTerms(updateRequest.getInterestTerms());
-
-        // SharePieRequestの変換
-        List<CreateFacilityRequest.SharePieRequest> sharePies = new ArrayList<>();
-        for (UpdateFacilityRequest.SharePieRequest updatePie : updateRequest.getSharePies()) {
-            CreateFacilityRequest.SharePieRequest createPie = new CreateFacilityRequest.SharePieRequest();
-            createPie.setInvestorId(updatePie.getInvestorId());
-            createPie.setShare(updatePie.getShare());
-            sharePies.add(createPie);
-        }
-        createRequest.setSharePies(sharePies);
-
-        return createRequest;
     }
 
     @Transactional

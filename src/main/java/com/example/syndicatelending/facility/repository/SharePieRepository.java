@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface SharePieRepository extends JpaRepository<SharePie, Long> {
     List<SharePie> findByFacility_Id(Long facilityId);
+
+    void deleteByFacility_Id(Long facilityId);
 }

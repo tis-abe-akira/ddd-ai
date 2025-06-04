@@ -4,6 +4,7 @@ import com.example.syndicatelending.common.application.exception.BusinessRuleVio
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
+import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.party.entity.Borrower;
@@ -15,6 +16,7 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,8 +59,58 @@ public class FacilityValidator {
 
         validateInvestorsExistAndBelongToSyndicate(request, syndicate);
         validateSharePieDuplication(request);
-        validateCreditLimit(request, syndicate);
+        validateCreditLimit(request, syndicate, null); // 新規作成時は除外IDなし
         validateSharePiePercentage(request);
+    }
+
+    /**
+     * Facility更新リクエストの総合バリデーション
+     */
+    public void validateUpdateFacilityRequest(CreateFacilityRequest request, Long excludeFacilityId) {
+        validateBasicInputs(request);
+        validateSyndicateExists(request.getSyndicateId());
+
+        Syndicate syndicate = syndicateRepository.findById(request.getSyndicateId())
+                .orElseThrow(() -> new BusinessRuleViolationException("Syndicateが見つかりません"));
+
+        validateInvestorsExistAndBelongToSyndicate(request, syndicate);
+        validateSharePieDuplication(request);
+        validateCreditLimit(request, syndicate, excludeFacilityId); // 更新時は自分自身を除外
+        validateSharePiePercentage(request);
+    }
+
+    /**
+     * Facility更新リクエストの総合バリデーション（UpdateFacilityRequest用）
+     */
+    public void validateUpdateFacilityRequest(UpdateFacilityRequest request, Long excludeFacilityId) {
+        // UpdateFacilityRequestをCreateFacilityRequestに変換してバリデーション
+        CreateFacilityRequest createRequest = convertToCreateRequest(request);
+        validateUpdateFacilityRequest(createRequest, excludeFacilityId);
+    }
+
+    /**
+     * UpdateFacilityRequestをCreateFacilityRequestに変換（バリデーション用）
+     */
+    private CreateFacilityRequest convertToCreateRequest(UpdateFacilityRequest updateRequest) {
+        CreateFacilityRequest createRequest = new CreateFacilityRequest();
+        createRequest.setSyndicateId(updateRequest.getSyndicateId());
+        createRequest.setCommitment(updateRequest.getCommitment());
+        createRequest.setCurrency(updateRequest.getCurrency());
+        createRequest.setStartDate(updateRequest.getStartDate());
+        createRequest.setEndDate(updateRequest.getEndDate());
+        createRequest.setInterestTerms(updateRequest.getInterestTerms());
+
+        // SharePieRequestの変換
+        List<CreateFacilityRequest.SharePieRequest> sharePies = new ArrayList<>();
+        for (UpdateFacilityRequest.SharePieRequest updatePie : updateRequest.getSharePies()) {
+            CreateFacilityRequest.SharePieRequest createPie = new CreateFacilityRequest.SharePieRequest();
+            createPie.setInvestorId(updatePie.getInvestorId());
+            createPie.setShare(updatePie.getShare());
+            sharePies.add(createPie);
+        }
+        createRequest.setSharePies(sharePies);
+
+        return createRequest;
     }
 
     /**
@@ -131,7 +183,7 @@ public class FacilityValidator {
     /**
      * BorrowerのCreditLimitチェック
      */
-    private void validateCreditLimit(CreateFacilityRequest request, Syndicate syndicate) {
+    private void validateCreditLimit(CreateFacilityRequest request, Syndicate syndicate, Long excludeFacilityId) {
         Borrower borrower = borrowerRepository.findById(syndicate.getBorrowerId())
                 .orElseThrow(() -> new BusinessRuleViolationException(
                         "指定されたSyndicateにBorrowerが関連付けられていません"));
@@ -145,6 +197,14 @@ public class FacilityValidator {
 
         // 既存Facility合計 + 新規CommitmentがCreditLimit以下かチェック
         List<Facility> existingFacilities = facilityRepository.findBySyndicateId(request.getSyndicateId());
+
+        // 更新時は自分自身を除外
+        if (excludeFacilityId != null) {
+            existingFacilities = existingFacilities.stream()
+                    .filter(facility -> !facility.getId().equals(excludeFacilityId))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
         Money totalExistingCommitment = existingFacilities.stream()
                 .map(Facility::getCommitment)
                 .reduce(Money.zero(), Money::add);

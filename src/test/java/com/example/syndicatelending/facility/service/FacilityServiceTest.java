@@ -90,7 +90,7 @@ class FacilityServiceTest {
         facilityService.updateFacility(facilityId, request);
 
         // Then
-        verify(facilityValidator).validateCreateFacilityRequest(any(CreateFacilityRequest.class));
+        verify(facilityValidator).validateUpdateFacilityRequest(eq(request), eq(facilityId));
         verify(facilityRepository).findById(facilityId);
         verify(facilityRepository).save(any(Facility.class));
     }
