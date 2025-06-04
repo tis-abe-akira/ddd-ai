@@ -1,6 +1,7 @@
 package com.example.syndicatelending.party.service;
 
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
@@ -9,8 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * Party管理サービス（統合サービス）。
@@ -51,6 +50,35 @@ public class PartyService {
     @Transactional(readOnly = true)
     public Page<Company> getAllCompanies(Pageable pageable) {
         return companyRepository.findAll(pageable);
+    }
+
+    // ==============================================================
+    // 楽観的排他制御対応の更新メソッド
+    // ==============================================================
+
+    public Company updateCompany(Long id, UpdateCompanyRequest request) {
+        Company existingCompany = getCompanyById(id);
+
+        Company entityToSave = new Company();
+
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setCompanyName(request.getCompanyName());
+        entityToSave.setRegistrationNumber(request.getRegistrationNumber());
+        entityToSave.setIndustry(request.getIndustry());
+        entityToSave.setAddress(request.getAddress());
+        entityToSave.setCountry(request.getCountry());
+        entityToSave.setCreatedAt(existingCompany.getCreatedAt());
+
+        return companyRepository.save(entityToSave);
+    }
+
+    public void deleteCompany(Long id) {
+        if (!companyRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Company not found with ID: " + id);
+        }
+        companyRepository.deleteById(id);
     }
 
     // Borrower operations
@@ -98,6 +126,58 @@ public class PartyService {
         return borrowerRepository.findAll(pageable);
     }
 
+    // ==============================================================
+    // 楽観的排他制御対応の更新メソッド
+    // ==============================================================
+
+    public Borrower updateBorrower(Long id, UpdateBorrowerRequest request) {
+        Borrower existingBorrower = getBorrowerById(id);
+
+        // ビジネスバリデーション: 信用限度額の妥当性チェック
+        if (request.getCreditLimit() != null && request.getCreditRating() != null) {
+            if (request.getCreditLimit().isGreaterThan(request.getCreditRating().getLimit())) {
+                throw new BusinessRuleViolationException(
+                        "Credit limit cannot exceed rating limit (creditLimit: " + request.getCreditLimit()
+                                + ", ratingLimit: " + request.getCreditRating().getLimit() + ")");
+            }
+        }
+
+        // 企業IDが指定されている場合の存在チェック
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
+                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+            }
+        }
+
+        Borrower entityToSave = new Borrower();
+
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setName(request.getName());
+        entityToSave.setEmail(request.getEmail());
+        entityToSave.setPhoneNumber(request.getPhoneNumber());
+        entityToSave.setCompanyId(request.getCompanyId());
+        entityToSave.setCreditLimit(request.getCreditLimit());
+        entityToSave.setCreditRating(request.getCreditRating());
+        entityToSave.setCreatedAt(existingBorrower.getCreatedAt());
+
+        return borrowerRepository.save(entityToSave);
+    }
+
+    public void deleteBorrower(Long id) {
+        if (!borrowerRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Borrower not found with ID: " + id);
+        }
+        borrowerRepository.deleteById(id);
+    }
+
     // Investor operations
     public Investor createInvestor(CreateInvestorRequest request) {
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
@@ -135,6 +215,49 @@ public class PartyService {
     @Transactional(readOnly = true)
     public Page<Investor> getActiveInvestors(Pageable pageable) {
         return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
+    }
+
+    // ==============================================================
+    // 楽観的排他制御対応の更新メソッド
+    // ==============================================================
+
+    public Investor updateInvestor(Long id, UpdateInvestorRequest request) {
+        Investor existingInvestor = getInvestorById(id);
+
+        // 企業IDが指定されている場合の存在チェック
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            Long companyId;
+            try {
+                companyId = Long.parseLong(request.getCompanyId());
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
+            }
+            if (!companyRepository.existsById(companyId)) {
+                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+            }
+        }
+
+        Investor entityToSave = new Investor();
+
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setName(request.getName());
+        entityToSave.setEmail(request.getEmail());
+        entityToSave.setPhoneNumber(request.getPhoneNumber());
+        entityToSave.setCompanyId(request.getCompanyId());
+        entityToSave.setInvestmentCapacity(request.getInvestmentCapacity());
+        entityToSave.setInvestorType(request.getInvestorType());
+        entityToSave.setCreatedAt(existingInvestor.getCreatedAt());
+
+        return investorRepository.save(entityToSave);
+    }
+
+    public void deleteInvestor(Long id) {
+        if (!investorRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Investor not found with ID: " + id);
+        }
+        investorRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)

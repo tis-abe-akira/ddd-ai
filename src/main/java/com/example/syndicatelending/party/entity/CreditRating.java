@@ -28,9 +28,4 @@ public enum CreditRating {
             return true;
         return creditLimit.isLessThan(limit) || creditLimit.equals(limit);
     }
-
-    // BigDecimal互換のためのオーバーロード（既存呼び出しのため）
-    public boolean isLimitSatisfied(BigDecimal creditLimit) {
-        return isLimitSatisfied(creditLimit == null ? null : Money.of(creditLimit));
-    }
 }

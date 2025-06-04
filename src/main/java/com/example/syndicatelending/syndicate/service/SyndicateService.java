@@ -2,6 +2,7 @@ package com.example.syndicatelending.syndicate.service;
 
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
+import com.example.syndicatelending.syndicate.dto.UpdateSyndicateRequest;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.party.entity.Investor;
@@ -45,5 +46,50 @@ public class SyndicateService {
 
     public Page<Syndicate> getAllSyndicates(Pageable pageable) {
         return syndicateRepository.findAll(pageable);
+    }
+
+    /**
+     * Syndicateの更新メソッド。
+     * 
+     * @param id
+     * @param updatedSyndicate
+     * @return
+     */
+    public Syndicate updateSyndicate(Long id, UpdateSyndicateRequest request) {
+        Syndicate existingSyndicate = getSyndicateById(id);
+
+        // LEAD_BANK資格チェック
+        Long leadBankId = request.getLeadBankId();
+        Investor leadBank = investorRepository.findById(leadBankId)
+                .orElseThrow(() -> new BusinessRuleViolationException("指定されたリードバンクが存在しません: id=" + leadBankId));
+        if (leadBank.getInvestorType() != InvestorType.LEAD_BANK) {
+            throw new BusinessRuleViolationException("指定されたリードバンクはLEAD_BANKの資格を持っていません: id=" + leadBankId);
+        }
+
+        // 名前変更時の重複チェック
+        if (!existingSyndicate.getName().equals(request.getName()) &&
+                syndicateRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Syndicate name already exists: " + request.getName());
+        }
+
+        Syndicate entityToSave = new Syndicate();
+
+        entityToSave.setId(id);
+        entityToSave.setVersion(request.getVersion());
+
+        entityToSave.setName(request.getName());
+        entityToSave.setLeadBankId(request.getLeadBankId());
+        entityToSave.setBorrowerId(request.getBorrowerId());
+        entityToSave.setMemberInvestorIds(request.getMemberInvestorIds());
+        entityToSave.setCreatedAt(existingSyndicate.getCreatedAt());
+
+        return syndicateRepository.save(entityToSave);
+    }
+
+    public void deleteSyndicate(Long id) {
+        if (!syndicateRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Syndicate not found with ID: " + id);
+        }
+        syndicateRepository.deleteById(id);
     }
 }

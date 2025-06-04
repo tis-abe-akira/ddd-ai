@@ -42,6 +42,10 @@ public class Borrower {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     public Borrower() {
     }
 
@@ -55,12 +59,6 @@ public class Borrower {
         this.creditRating = creditRating;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-    }
-
-    // BigDecimal互換のためのオーバーロード
-    public Borrower(String name, String email, String phoneNumber, String companyId,
-            java.math.BigDecimal creditLimit, CreditRating creditRating) {
-        this(name, email, phoneNumber, companyId, creditLimit == null ? null : Money.of(creditLimit), creditRating);
     }
 
     @PreUpdate
@@ -147,18 +145,11 @@ public class Borrower {
         this.updatedAt = updatedAt;
     }
 
-    // BigDecimalとの互換性のためのメソッド
-    public java.math.BigDecimal getCreditLimitAsBigDecimal() {
-        return creditLimit == null ? null : creditLimit.getAmount();
+    public Long getVersion() {
+        return version;
     }
 
-    public void setCreditLimit(java.math.BigDecimal creditLimit) {
-        setCreditLimit(creditLimit == null ? null : Money.of(creditLimit));
-    }
-
-    // APIレスポンス用: 金額のみ返すgetter
-    @com.fasterxml.jackson.annotation.JsonProperty("creditLimit")
-    public java.math.BigDecimal getCreditLimitAmount() {
-        return creditLimit == null ? null : creditLimit.getAmount();
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

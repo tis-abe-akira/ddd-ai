@@ -19,6 +19,10 @@ public class Syndicate {
     @Column(name = "lead_bank_id")
     private Long leadBankId;
 
+    // 借り手（BorrowerのIDで管理）
+    @Column(name = "borrower_id")
+    private Long borrowerId;
+
     // メンバー（投資家IDのリスト、シンプルな形で実装）
     @ElementCollection
     @CollectionTable(name = "syndicate_members", joinColumns = @JoinColumn(name = "syndicate_id"))
@@ -32,12 +36,17 @@ public class Syndicate {
     @Column(name = "updated_at", nullable = false)
     private java.time.LocalDateTime updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     public Syndicate() {
     }
 
-    public Syndicate(String name, Long leadBankId, List<Long> memberInvestorIds) {
+    public Syndicate(String name, Long leadBankId, Long borrowerId, List<Long> memberInvestorIds) {
         this.name = name;
         this.leadBankId = leadBankId;
+        this.borrowerId = borrowerId;
         if (memberInvestorIds != null) {
             this.memberInvestorIds = memberInvestorIds;
         }
@@ -77,6 +86,14 @@ public class Syndicate {
         this.leadBankId = leadBankId;
     }
 
+    public Long getBorrowerId() {
+        return borrowerId;
+    }
+
+    public void setBorrowerId(Long borrowerId) {
+        this.borrowerId = borrowerId;
+    }
+
     public List<Long> getMemberInvestorIds() {
         return memberInvestorIds;
     }
@@ -99,6 +116,14 @@ public class Syndicate {
 
     public void setUpdatedAt(java.time.LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     @Override

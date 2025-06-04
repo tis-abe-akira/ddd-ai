@@ -12,8 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * Party REST Controller（統合コントローラー）。
  */
@@ -50,6 +48,21 @@ public class PartyController {
         return ResponseEntity.ok(companies);
     }
 
+    @PutMapping("/companies/{id}")
+    @Operation(summary = "Update company by ID with optimistic locking")
+    public ResponseEntity<Company> updateCompany(@PathVariable Long id,
+            @Valid @RequestBody UpdateCompanyRequest request) {
+        Company updatedCompany = partyService.updateCompany(id, request);
+        return ResponseEntity.ok(updatedCompany);
+    }
+
+    @DeleteMapping("/companies/{id}")
+    @Operation(summary = "Delete company by ID")
+    public ResponseEntity<Void> deleteCompany(@PathVariable Long id) {
+        partyService.deleteCompany(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // Borrower endpoints
     @PostMapping("/borrowers")
     @Operation(summary = "Create a new borrower")
@@ -70,6 +83,21 @@ public class PartyController {
     public ResponseEntity<Page<Borrower>> getAllBorrowers(Pageable pageable) {
         Page<Borrower> borrowers = partyService.getAllBorrowers(pageable);
         return ResponseEntity.ok(borrowers);
+    }
+
+    @PutMapping("/borrowers/{id}")
+    @Operation(summary = "Update borrower by ID with optimistic locking")
+    public ResponseEntity<Borrower> updateBorrower(@PathVariable Long id,
+            @Valid @RequestBody UpdateBorrowerRequest request) {
+        Borrower updatedBorrower = partyService.updateBorrower(id, request);
+        return ResponseEntity.ok(updatedBorrower);
+    }
+
+    @DeleteMapping("/borrowers/{id}")
+    @Operation(summary = "Delete borrower by ID")
+    public ResponseEntity<Void> deleteBorrower(@PathVariable Long id) {
+        partyService.deleteBorrower(id);
+        return ResponseEntity.noContent().build();
     }
 
     // Investor endpoints
@@ -99,6 +127,21 @@ public class PartyController {
     public ResponseEntity<Page<Investor>> getActiveInvestors(Pageable pageable) {
         Page<Investor> activeInvestors = partyService.getActiveInvestors(pageable);
         return ResponseEntity.ok(activeInvestors);
+    }
+
+    @PutMapping("/investors/{id}")
+    @Operation(summary = "Update investor by ID with optimistic locking")
+    public ResponseEntity<Investor> updateInvestor(@PathVariable Long id,
+            @Valid @RequestBody UpdateInvestorRequest request) {
+        Investor updatedInvestor = partyService.updateInvestor(id, request);
+        return ResponseEntity.ok(updatedInvestor);
+    }
+
+    @DeleteMapping("/investors/{id}")
+    @Operation(summary = "Delete investor by ID")
+    public ResponseEntity<Void> deleteInvestor(@PathVariable Long id) {
+        partyService.deleteInvestor(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/investors/search")
