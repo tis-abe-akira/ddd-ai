@@ -9,7 +9,6 @@ import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
 import com.example.syndicatelending.loan.entity.Drawdown;
 import com.example.syndicatelending.loan.entity.Loan;
-import com.example.syndicatelending.loan.entity.RepaymentMethod;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
@@ -115,21 +114,15 @@ public class DrawdownService {
     }
 
     private Loan createLoan(CreateDrawdownRequest request) {
-        Loan loan = new Loan();
-        loan.setFacilityId(request.getFacilityId());
-        loan.setBorrowerId(request.getBorrowerId());
-        loan.setPrincipalAmount(Money.of(request.getAmount()));
-        loan.setOutstandingBalance(Money.of(request.getAmount())); // 初期残高は元本と同じ
-        loan.setAnnualInterestRate(Percentage.of(request.getAnnualInterestRate()));
-        loan.setDrawdownDate(request.getDrawdownDate());
-        loan.setRepaymentPeriodMonths(request.getRepaymentPeriodMonths());
-        loan.setRepaymentCycle(request.getRepaymentCycle());
-        loan.setRepaymentMethod(request.getRepaymentMethod());
-        loan.setCurrency(request.getCurrency());
-
-        // 支払いスケジュールを自動生成
-        loan.generatePaymentSchedule();
-
-        return loan;
+        return new Loan(
+                request.getFacilityId(),
+                request.getBorrowerId(),
+                Money.of(request.getAmount()),
+                Percentage.of(request.getAnnualInterestRate()),
+                request.getDrawdownDate(),
+                request.getRepaymentPeriodMonths(),
+                request.getRepaymentCycle(),
+                request.getRepaymentMethod(),
+                request.getCurrency());
     }
 }

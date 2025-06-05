@@ -28,6 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -165,6 +166,102 @@ class DrawdownServiceIntegrationTest {
         assertEquals(loan.getPrincipalAmount(), lastPayment.getPrincipalPayment());
         assertTrue(lastPayment.getInterestPayment().isGreaterThan(Money.zero()));
         assertEquals(Money.zero(), lastPayment.getRemainingBalance());
+    }
+
+    @Test
+    void testAnnualInterestRatePrecisionLoss() {
+        // テストデータ準備
+        TestDataHelper helper = new TestDataHelper();
+        Long facilityId = helper.createTestFacilityWithBorrower();
+
+        // 精度損失が発生する可能性のある利率でドローダウンリクエスト作成
+        CreateDrawdownRequest request = new CreateDrawdownRequest();
+        request.setFacilityId(facilityId);
+        request.setBorrowerId(helper.borrowerId);
+        request.setAmount(new BigDecimal("1000000")); // 100万円
+        request.setCurrency("JPY");
+        request.setPurpose("Test precision loss");
+        request.setAnnualInterestRate(new BigDecimal("0.024")); // 2.4% - 問題の利率
+        request.setDrawdownDate(LocalDate.now());
+        request.setRepaymentPeriodMonths(12);
+        request.setRepaymentCycle("MONTHLY");
+        request.setRepaymentMethod(RepaymentMethod.EQUAL_INSTALLMENT);
+
+        // ドローダウン実行
+        Drawdown drawdown = drawdownService.createDrawdown(request);
+
+        // 結果検証
+        assertNotNull(drawdown);
+        Loan loan = loanRepository.findById(drawdown.getLoanId()).orElse(null);
+        assertNotNull(loan);
+
+        // 年利率が正確に保存されているかを確認
+        BigDecimal expectedRate = new BigDecimal("0.024");
+        BigDecimal actualRate = loan.getAnnualInterestRate().getValue();
+
+        System.out.println("Expected rate: " + expectedRate);
+        System.out.println("Actual rate: " + actualRate);
+        System.out.println("Expected scale: " + expectedRate.scale());
+        System.out.println("Actual scale: " + actualRate.scale());
+
+        // 精度を確認
+        assertEquals(expectedRate.setScale(4, RoundingMode.HALF_UP),
+                actualRate.setScale(4, RoundingMode.HALF_UP),
+                "Annual interest rate should be preserved with proper precision");
+
+        // より厳密な検証：実際の値が期待値と一致するか
+        assertTrue(expectedRate.compareTo(actualRate) == 0,
+                "Annual interest rate should be exactly " + expectedRate + " but was " + actualRate);
+    }
+
+    @Test
+    void testVariousDecimalPrecisionValues() {
+        // テストデータ準備
+        TestDataHelper helper = new TestDataHelper();
+        Long facilityId = helper.createTestFacilityWithBorrower();
+
+        // 様々な精度の利率をテスト
+        BigDecimal[] testRates = {
+                new BigDecimal("0.024"), // 2.4% - 報告された問題の値
+                new BigDecimal("0.0245"), // 2.45% - 小数点以下4桁
+                new BigDecimal("0.02456"), // 2.456% - 小数点以下5桁（4桁に丸められるはず）
+                new BigDecimal("0.1234"), // 12.34% - 小数点以下4桁
+                new BigDecimal("0.00001") // 0.001% - 非常に小さい値
+        };
+
+        for (int i = 0; i < testRates.length; i++) {
+            BigDecimal testRate = testRates[i];
+
+            CreateDrawdownRequest request = new CreateDrawdownRequest();
+            request.setFacilityId(facilityId);
+            request.setBorrowerId(helper.borrowerId);
+            request.setAmount(new BigDecimal("1000000"));
+            request.setCurrency("JPY");
+            request.setPurpose("Test precision for rate " + testRate);
+            request.setAnnualInterestRate(testRate);
+            request.setDrawdownDate(LocalDate.now());
+            request.setRepaymentPeriodMonths(12);
+            request.setRepaymentCycle("MONTHLY");
+            request.setRepaymentMethod(RepaymentMethod.EQUAL_INSTALLMENT);
+
+            // ドローダウン実行
+            Drawdown drawdown = drawdownService.createDrawdown(request);
+            Loan loan = loanRepository.findById(drawdown.getLoanId()).orElse(null);
+            assertNotNull(loan, "Loan should be created for test rate " + testRate);
+
+            BigDecimal actualRate = loan.getAnnualInterestRate().getValue();
+            BigDecimal expectedRate = testRate.setScale(4, RoundingMode.HALF_UP);
+
+            System.out.println("Test " + (i + 1) + ":");
+            System.out.println("  Input rate: " + testRate + " (scale: " + testRate.scale() + ")");
+            System.out.println("  Expected rate: " + expectedRate + " (scale: " + expectedRate.scale() + ")");
+            System.out.println("  Actual rate: " + actualRate + " (scale: " + actualRate.scale() + ")");
+            System.out.println();
+
+            // スケール4での比較
+            assertEquals(expectedRate, actualRate.setScale(4, RoundingMode.HALF_UP),
+                    "Rate " + testRate + " should be preserved with 4 decimal places");
+        }
     }
 
     /**

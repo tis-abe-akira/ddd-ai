@@ -46,7 +46,7 @@ public class Loan {
     private Money outstandingBalance;
 
     /** 年利率（%） */
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 38, scale = 4)
     @Convert(converter = PercentageAttributeConverter.class)
     private Percentage annualInterestRate;
 
@@ -103,6 +103,34 @@ public class Loan {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 主要プロパティを全て受け取るコンストラクタ。
+     * 支払いスケジュールも自動生成する。
+     */
+    public Loan(Long facilityId, Long borrowerId, Money principalAmount, Percentage annualInterestRate,
+            LocalDate drawdownDate, Integer repaymentPeriodMonths, String repaymentCycle,
+            RepaymentMethod repaymentMethod, String currency) {
+        this.facilityId = facilityId;
+        this.borrowerId = borrowerId;
+        this.principalAmount = principalAmount;
+        this.outstandingBalance = principalAmount; // 初期残高は元本と同じ
+        this.annualInterestRate = annualInterestRate;
+        this.drawdownDate = drawdownDate;
+        this.repaymentPeriodMonths = repaymentPeriodMonths;
+        this.repaymentCycle = repaymentCycle;
+        this.repaymentMethod = repaymentMethod;
+        this.currency = currency;
+        // 支払いスケジュール自動生成
+        generatePaymentSchedule();
+    }
+
+    /**
+     * JPA用のデフォルトコンストラクタ（必須）
+     */
+    protected Loan() {
+        // for JPA
     }
 
     // Getters and Setters

@@ -18,13 +18,17 @@ class LoanPaymentScheduleTest {
     @Test
     void 元利均等返済のスケジュール生成ができること() {
         // Given: 元利均等返済のローン
-        Loan loan = new Loan();
-        loan.setPrincipalAmount(Money.of(new BigDecimal("1000000"))); // 100万円
-        loan.setAnnualInterestRate(Percentage.of(new BigDecimal("0.05"))); // 年利5%
-        loan.setDrawdownDate(LocalDate.of(2024, 1, 1));
-        loan.setRepaymentPeriodMonths(12); // 12ヶ月
-        loan.setRepaymentMethod(RepaymentMethod.EQUAL_INSTALLMENT);
-        loan.setCurrency("JPY");
+        Loan loan = new Loan(
+                1L, // facilityId
+                1L, // borrowerId
+                Money.of(new BigDecimal("1000000")), // 100万円
+                Percentage.of(new BigDecimal("0.05")), // 年利5%
+                LocalDate.of(2024, 1, 1), // drawdownDate
+                12, // 12ヶ月
+                "MONTHLY", // repaymentCycle
+                RepaymentMethod.EQUAL_INSTALLMENT,
+                "JPY"
+        );
 
         // When: 支払いスケジュールを生成
         loan.generatePaymentSchedule();
@@ -57,13 +61,16 @@ class LoanPaymentScheduleTest {
     @Test
     void バレット返済のスケジュール生成ができること() {
         // Given: バレット返済のローン
-        Loan loan = new Loan();
-        loan.setPrincipalAmount(Money.of(new BigDecimal("1000000"))); // 100万円
-        loan.setAnnualInterestRate(Percentage.of(new BigDecimal("0.05"))); // 年利5%
-        loan.setDrawdownDate(LocalDate.of(2024, 1, 1));
-        loan.setRepaymentPeriodMonths(6); // 6ヶ月
-        loan.setRepaymentMethod(RepaymentMethod.BULLET_PAYMENT);
-        loan.setCurrency("JPY");
+        Loan loan = new Loan(
+                1L, 1L,
+                Money.of(new BigDecimal("1000000")),
+                Percentage.of(new BigDecimal("0.05")),
+                LocalDate.of(2024, 1, 1),
+                6,
+                "MONTHLY",
+                RepaymentMethod.BULLET_PAYMENT,
+                "JPY"
+        );
 
         // When: 支払いスケジュールを生成
         loan.generatePaymentSchedule();
@@ -91,13 +98,16 @@ class LoanPaymentScheduleTest {
     @Test
     void 無利息ローンでも正しく計算されること() {
         // Given: 無利息のローン
-        Loan loan = new Loan();
-        loan.setPrincipalAmount(Money.of(new BigDecimal("1200000"))); // 120万円
-        loan.setAnnualInterestRate(Percentage.of(BigDecimal.ZERO)); // 年利0%
-        loan.setDrawdownDate(LocalDate.of(2024, 1, 1));
-        loan.setRepaymentPeriodMonths(12); // 12ヶ月
-        loan.setRepaymentMethod(RepaymentMethod.EQUAL_INSTALLMENT);
-        loan.setCurrency("JPY");
+        Loan loan = new Loan(
+                1L, 1L,
+                Money.of(new BigDecimal("1200000")),
+                Percentage.of(BigDecimal.ZERO),
+                LocalDate.of(2024, 1, 1),
+                12,
+                "MONTHLY",
+                RepaymentMethod.EQUAL_INSTALLMENT,
+                "JPY"
+        );
 
         // When: 支払いスケジュールを生成
         loan.generatePaymentSchedule();
@@ -117,15 +127,16 @@ class LoanPaymentScheduleTest {
     @Test
     void スケジュール再生成で既存の明細がクリアされること() {
         // Given: 既にスケジュールが生成されているローン
-        Loan loan = new Loan();
-        loan.setPrincipalAmount(Money.of(new BigDecimal("1000000")));
-        loan.setAnnualInterestRate(Percentage.of(new BigDecimal("0.05")));
-        loan.setDrawdownDate(LocalDate.of(2024, 1, 1));
-        loan.setRepaymentPeriodMonths(6);
-        loan.setRepaymentMethod(RepaymentMethod.EQUAL_INSTALLMENT);
-        loan.setCurrency("JPY");
-
-        loan.generatePaymentSchedule();
+        Loan loan = new Loan(
+                1L, 1L,
+                Money.of(new BigDecimal("1000000")),
+                Percentage.of(new BigDecimal("0.05")),
+                LocalDate.of(2024, 1, 1),
+                6,
+                "MONTHLY",
+                RepaymentMethod.EQUAL_INSTALLMENT,
+                "JPY"
+        );
         assertEquals(6, loan.getPaymentDetails().size(), "最初に6回の支払いが生成されること");
 
         // When: 返済期間を変更して再生成
