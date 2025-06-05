@@ -1,8 +1,12 @@
 package com.example.syndicatelending.loan.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
@@ -58,9 +62,14 @@ public class Loan {
     @Column(nullable = false)
     private String repaymentCycle;
 
-    /** 返済方法（例: 元利均等、元金均等等） */
+    /** 返済方法（元利均等、バレット返済等） */
     @Column(nullable = false)
-    private String repaymentMethod;
+    @Enumerated(EnumType.STRING)
+    private RepaymentMethod repaymentMethod;
+
+    /** 支払い詳細リスト */
+    @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     /** 通貨コード（例: JPY, USD等） */
     @Column(nullable = false)
@@ -169,12 +178,20 @@ public class Loan {
         this.repaymentCycle = repaymentCycle;
     }
 
-    public String getRepaymentMethod() {
+    public RepaymentMethod getRepaymentMethod() {
         return repaymentMethod;
     }
 
-    public void setRepaymentMethod(String repaymentMethod) {
+    public void setRepaymentMethod(RepaymentMethod repaymentMethod) {
         this.repaymentMethod = repaymentMethod;
+    }
+
+    public List<PaymentDetail> getPaymentDetails() {
+        return paymentDetails;
+    }
+
+    public void setPaymentDetails(List<PaymentDetail> paymentDetails) {
+        this.paymentDetails = paymentDetails;
     }
 
     public String getCurrency() {
@@ -207,5 +224,161 @@ public class Loan {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    /**
+     * 支払いスケジュールを生成します。
+     * <p>
+     * 返済方法に基づいて適切な支払い詳細を生成し、既存の支払い詳細をクリアしてから新しいものを設定します。
+     * </p>
+     */
+    public void generatePaymentSchedule() {
+        // 既存の支払い詳細をクリア
+        this.paymentDetails.clear();
+
+        // 返済方法に基づいて支払いスケジュールを生成
+        List<PaymentDetail> newPaymentDetails;
+        switch (this.repaymentMethod) {
+            case EQUAL_INSTALLMENT:
+                newPaymentDetails = generateEqualInstallmentSchedule();
+                break;
+            case BULLET_PAYMENT:
+                newPaymentDetails = generateBulletPaymentSchedule();
+                break;
+            default:
+                throw new IllegalStateException("サポートされていない返済方法です: " + this.repaymentMethod);
+        }
+
+        // 生成された支払い詳細を設定
+        this.paymentDetails.addAll(newPaymentDetails);
+    }
+
+    /**
+     * 元利均等返済の支払いスケジュールを生成します。
+     *
+     * @return 支払い詳細のリスト
+     */
+    private List<PaymentDetail> generateEqualInstallmentSchedule() {
+        List<PaymentDetail> details = new ArrayList<>();
+
+        // 月利を計算
+        BigDecimal monthlyRate = this.annualInterestRate.getValue().divide(new BigDecimal("12"), 10,
+                RoundingMode.HALF_UP);
+
+        // 毎月の支払額を計算（元利均等）
+        BigDecimal principalBd = this.principalAmount.getAmount();
+        int numberOfPayments = this.repaymentPeriodMonths;
+
+        BigDecimal monthlyPayment = calculateEqualInstallmentPayment(principalBd, monthlyRate, numberOfPayments);
+
+        BigDecimal remainingBalance = principalBd;
+        LocalDate paymentDate = this.drawdownDate.plusMonths(1);
+
+        for (int i = 1; i <= numberOfPayments; i++) {
+            // 利息部分を計算
+            BigDecimal interestPayment = remainingBalance.multiply(monthlyRate).setScale(0, RoundingMode.HALF_UP);
+
+            // 元本部分を計算
+            BigDecimal principalPayment = monthlyPayment.subtract(interestPayment);
+
+            // 最終回の調整
+            if (i == numberOfPayments) {
+                principalPayment = remainingBalance;
+                monthlyPayment = principalPayment.add(interestPayment);
+            }
+
+            // 残高を更新
+            remainingBalance = remainingBalance.subtract(principalPayment);
+
+            // PaymentDetailを作成
+            PaymentDetail detail = new PaymentDetail(
+                    this,
+                    i,
+                    Money.of(principalPayment),
+                    Money.of(interestPayment),
+                    paymentDate,
+                    Money.of(remainingBalance));
+
+            details.add(detail);
+            paymentDate = paymentDate.plusMonths(1);
+        }
+
+        return details;
+    }
+
+    /**
+     * バレット返済の支払いスケジュールを生成します。
+     *
+     * @return 支払い詳細のリスト
+     */
+    private List<PaymentDetail> generateBulletPaymentSchedule() {
+        List<PaymentDetail> details = new ArrayList<>();
+
+        // 月利を計算
+        BigDecimal monthlyRate = this.annualInterestRate.getValue().divide(new BigDecimal("12"), 10,
+                RoundingMode.HALF_UP);
+        BigDecimal principalBd = this.principalAmount.getAmount();
+
+        LocalDate paymentDate = this.drawdownDate.plusMonths(1);
+
+        // 利息のみの支払い（最終回を除く）
+        for (int i = 1; i < this.repaymentPeriodMonths; i++) {
+            BigDecimal interestPayment = principalBd.multiply(monthlyRate).setScale(0, RoundingMode.HALF_UP);
+
+            PaymentDetail detail = new PaymentDetail(
+                    this,
+                    i,
+                    Money.zero(),
+                    Money.of(interestPayment),
+                    paymentDate,
+                    this.principalAmount // 残高は元本と同じ
+            );
+
+            details.add(detail);
+            paymentDate = paymentDate.plusMonths(1);
+        }
+
+        // 最終回：元本 + 利息
+        if (this.repaymentPeriodMonths > 0) {
+            BigDecimal finalInterestPayment = principalBd.multiply(monthlyRate).setScale(0, RoundingMode.HALF_UP);
+
+            PaymentDetail finalDetail = new PaymentDetail(
+                    this,
+                    this.repaymentPeriodMonths,
+                    this.principalAmount, // 元本全額
+                    Money.of(finalInterestPayment),
+                    paymentDate,
+                    Money.zero() // 最終的な残高は0
+            );
+
+            details.add(finalDetail);
+        }
+
+        return details;
+    }
+
+    /**
+     * 元利均等返済の月次支払額を計算します。
+     *
+     * @param principal        元本金額
+     * @param monthlyRate      月利
+     * @param numberOfPayments 支払回数
+     * @return 月次支払額
+     */
+    private BigDecimal calculateEqualInstallmentPayment(BigDecimal principal, BigDecimal monthlyRate,
+            int numberOfPayments) {
+        if (monthlyRate.compareTo(BigDecimal.ZERO) == 0) {
+            // 無利息の場合
+            return principal.divide(new BigDecimal(numberOfPayments), 0, RoundingMode.HALF_UP);
+        }
+
+        // PMT計算式: P * r * (1 + r)^n / ((1 + r)^n - 1)
+        BigDecimal onePlusRate = BigDecimal.ONE.add(monthlyRate);
+        BigDecimal onePlusRatePowerN = onePlusRate.pow(numberOfPayments);
+
+        BigDecimal numerator = principal.multiply(monthlyRate).multiply(onePlusRatePowerN);
+        BigDecimal denominator = onePlusRatePowerN.subtract(BigDecimal.ONE);
+
+        return numerator.divide(denominator, 0, RoundingMode.HALF_UP);
     }
 }

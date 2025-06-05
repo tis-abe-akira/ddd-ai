@@ -9,6 +9,7 @@ import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
 import com.example.syndicatelending.loan.entity.Drawdown;
 import com.example.syndicatelending.loan.entity.Loan;
+import com.example.syndicatelending.loan.entity.RepaymentMethod;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
@@ -125,6 +126,10 @@ public class DrawdownService {
         loan.setRepaymentCycle(request.getRepaymentCycle());
         loan.setRepaymentMethod(request.getRepaymentMethod());
         loan.setCurrency(request.getCurrency());
+
+        // 支払いスケジュールを自動生成
+        loan.generatePaymentSchedule();
+
         return loan;
     }
 }
