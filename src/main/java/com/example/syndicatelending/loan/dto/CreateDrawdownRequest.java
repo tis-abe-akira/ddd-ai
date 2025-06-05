@@ -3,6 +3,7 @@ package com.example.syndicatelending.loan.dto;
 import com.example.syndicatelending.loan.entity.RepaymentMethod;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class CreateDrawdownRequest {
     private Long facilityId;
@@ -17,6 +18,9 @@ public class CreateDrawdownRequest {
     private Integer repaymentPeriodMonths; // 返済期間（月数）
     private String repaymentCycle; // 返済サイクル（例: "MONTHLY"）
     private RepaymentMethod repaymentMethod; // 返済方法（例: EQUAL_INSTALLMENT, BULLET）
+
+    // 投資家ごとのAmountPie（任意指定）
+    private List<AmountPieDto> amountPies;
 
     public Long getFacilityId() {
         return facilityId;
@@ -96,5 +100,13 @@ public class CreateDrawdownRequest {
 
     public void setRepaymentMethod(RepaymentMethod repaymentMethod) {
         this.repaymentMethod = repaymentMethod;
+    }
+
+    public List<AmountPieDto> getAmountPies() {
+        return amountPies;
+    }
+
+    public void setAmountPies(List<AmountPieDto> amountPies) {
+        this.amountPies = amountPies;
     }
 }

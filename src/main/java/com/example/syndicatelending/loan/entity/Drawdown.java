@@ -1,7 +1,9 @@
 package com.example.syndicatelending.loan.entity;
 
 import com.example.syndicatelending.transaction.entity.Transaction;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "drawdown")
@@ -15,6 +17,10 @@ public class Drawdown extends Transaction {
 
     @Column(nullable = false)
     private String purpose;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "drawdown", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<AmountPie> amountPies;
 
     public Drawdown() {
         super();
@@ -43,5 +49,13 @@ public class Drawdown extends Transaction {
 
     public void setPurpose(String purpose) {
         this.purpose = purpose;
+    }
+
+    public List<AmountPie> getAmountPies() {
+        return amountPies;
+    }
+
+    public void setAmountPies(List<AmountPie> amountPies) {
+        this.amountPies = amountPies;
     }
 }
