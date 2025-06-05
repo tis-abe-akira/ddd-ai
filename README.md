@@ -10,7 +10,8 @@
 - **シンジケート団組成**: リードバンクを中心とした投資家グループの管理
 - **融資枠管理**: ファシリティの作成と投資家間の持分比率管理
 - **投資記録管理**: ファシリティ組成時の投資家投資記録自動生成
-- **取引処理**: ドローダウン、支払い、取引の記録・分配（一部実装済み）
+- **ドローダウン処理**: 融資実行、ローン作成、返済スケジュール自動生成
+- **取引処理**: 支払い、取引の記録・分配（一部実装済み）
 
 ## 🏗️ アーキテクチャ
 
@@ -26,6 +27,8 @@ Controller → Service → Repository → Entity
 - **Party**: 参加者管理（Company, Borrower, Investor）
 - **Syndicate**: シンジケート団管理
 - **Facility**: 融資枠管理
+- **Transaction**: 取引基底クラス
+- **Loan**: ローン・ドローダウン管理
 - **Common**: 共通Value Objects（Money, Percentage）
 
 ## 🚀 クイックスタート
@@ -59,10 +62,11 @@ mvn spring-boot:run
 | シンジケート管理 | ✅ 完了 | シンジケート団の組成・管理 |
 | 融資枠管理 | ✅ 完了 | Facility作成、SharePie（持分比率）管理 |
 | 投資記録管理 | ✅ 完了 | FacilityInvestment自動生成（Facility組成時） |
-| 取引処理 | 🔄 一部実装 | FacilityInvestment完了、Drawdown等は未実装 |
+| ドローダウン処理 | ✅ 完了 | Drawdown実行、Loan作成、返済スケジュール自動生成 |
+| 取引処理 | 🔄 一部実装 | Transaction基底クラス、Drawdown完了、Payment等は未実装 |
 | レポーティング | 🚧 未実装 | 各種レポート・分析機能 |
 
-**開発完了度**: 約80%（基本的なシンジケートローン管理機能 + 投資記録管理）
+**開発完了度**: 約85%（基本的なシンジケートローン管理機能 + ドローダウン処理）
 
 ## 🛠️ 技術スタック
 
@@ -125,6 +129,12 @@ mvn jacoco:report
 - `POST /api/v1/facilities` - ファシリティ作成（FacilityInvestment自動生成）
 - `PUT /api/v1/facilities/{id}` - ファシリティ更新
 
+#### ドローダウン処理
+- `POST /api/v1/loans/drawdowns` - ドローダウン実行（Loan自動生成）
+- `GET /api/v1/loans/drawdowns` - ドローダウン一覧
+- `GET /api/v1/loans/drawdowns/{id}` - ドローダウン詳細
+- `GET /api/v1/loans/drawdowns/facility/{facilityId}` - ファシリティ別ドローダウン一覧
+
 詳細なAPI仕様は [Swagger UI](http://localhost:8080/swagger-ui.html) で確認できます。
 
 ## 🎨 主要な設計パターン
@@ -146,9 +156,9 @@ mvn jacoco:report
 ## 🚧 今後の開発予定
 
 ### Phase 1: Transaction処理（優先度: High）
-- Drawdown（資金引き出し）機能
+- ✅ Drawdown（資金引き出し）機能
 - Payment処理（利息・元本・手数料支払い）
-- AmountPie（実際金額配分）管理
+- ✅ AmountPie（実際金額配分）管理
 
 ### Phase 2: 高度な機能（優先度: Medium）
 - レポーティング機能

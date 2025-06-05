@@ -1,188 +1,139 @@
-# Loan Bounded Context - Drawdown作成処理フロー
+# ドローダウン（Drawdown）機能の使用方法
 
 ## 概要
 
-Loan Bounded Contextにおけるドローダウン（資金引き出し）作成処理の流れを説明します。POSTエンドポイント `/api/v1/loans/drawdowns` を起点とした処理フローを詳述します。
+ドローダウンは、Facilityから資金を引き出す取引です。ドローダウン実行時には、Loanエンティティと返済スケジュールが自動生成されます。
 
-## シーケンス図
+## 機能の特徴
 
-```mermaid
-sequenceDiagram
-    participant Client as クライアント
-    participant Controller as DrawdownController
-    participant Service as DrawdownService
-    participant FacilityRepo as FacilityRepository
-    participant BorrowerRepo as BorrowerRepository
-    participant LoanRepo as LoanRepository
-    participant DrawdownRepo as DrawdownRepository
-    participant DB as データベース
+- **Loan自動生成**: ドローダウン実行時に対応するLoanエンティティが自動生成されます
+- **返済スケジュール自動計算**: 返済方法に基づいて返済スケジュールが自動生成されます
+  - 元利均等返済（EQUAL_INSTALLMENT）: 毎回の支払額（元本+利息）が一定
+  - バレット返済（BULLET_PAYMENT）: 期間中は利息のみ支払い、満期時に元本一括返済
+- **投資家別金額配分**: SharePieに基づいて投資家ごとのAmountPieが自動生成されます
 
-    Client->>Controller: POST /api/v1/loans/drawdowns
-    Note over Client,Controller: CreateDrawdownRequest
-    
-    Controller->>Service: createDrawdown(request)
-    
-    Note over Service: 1. バリデーション処理開始
-    Service->>Service: validateDrawdownRequest(request)
-    
-    Service->>FacilityRepo: findById(facilityId)
-    FacilityRepo->>DB: SELECT * FROM facilities WHERE id = ?
-    DB-->>FacilityRepo: Facility Entity
-    FacilityRepo-->>Service: Optional<Facility>
-    
-    alt Facility が存在しない場合
-        Service-->>Controller: ResourceNotFoundException
-        Controller-->>Client: HTTP 404 Not Found
-    end
-    
-    Service->>BorrowerRepo: existsById(borrowerId)
-    BorrowerRepo->>DB: SELECT COUNT(*) FROM borrowers WHERE id = ?
-    DB-->>BorrowerRepo: boolean
-    BorrowerRepo-->>Service: boolean
-    
-    alt Borrower が存在しない場合
-        Service-->>Controller: ResourceNotFoundException
-        Controller-->>Client: HTTP 404 Not Found
-    end
-    
-    Service->>Service: 金額・金利・返済期間バリデーション
-    
-    alt バリデーション失敗
-        Service-->>Controller: BusinessRuleViolationException
-        Controller-->>Client: HTTP 400 Bad Request
-    end
-    
-    Note over Service: 2. Loan エンティティ作成
-    Service->>Service: createLoan(request)
-    Service->>LoanRepo: save(loan)
-    LoanRepo->>DB: INSERT INTO loan (...)
-    DB-->>LoanRepo: Loan Entity (with ID)
-    LoanRepo-->>Service: Loan Entity
-    
-    Note over Service: 3. Drawdown エンティティ作成
-    Service->>Service: new Drawdown()
-    Note over Service: loanId, facilityId, borrowerId等設定
-    
-    Service->>DrawdownRepo: save(drawdown)
-    DrawdownRepo->>DB: INSERT INTO drawdown (...)<br/>INSERT INTO transaction (...)
-    Note over DB: JPA継承戦略(JOINED)により<br/>2テーブルに分けて保存
-    DB-->>DrawdownRepo: Drawdown Entity (with ID)
-    DrawdownRepo-->>Service: Drawdown Entity
-    
-    Service-->>Controller: Drawdown Entity
-    Controller-->>Client: HTTP 200 OK + Drawdown JSON
+## API仕様
+
+### ドローダウン実行
+
+- **エンドポイント**: `POST /api/v1/loans/drawdowns`
+- **リクエスト例**:
+
+```json
+{
+  "facilityId": 1,
+  "borrowerId": 1,
+  "amount": 10000000,
+  "currency": "JPY",
+  "purpose": "運転資金",
+  "annualInterestRate": 0.025,
+  "drawdownDate": "2025-06-01",
+  "repaymentPeriodMonths": 12,
+  "repaymentCycle": "MONTHLY",
+  "repaymentMethod": "EQUAL_INSTALLMENT"
+}
 ```
 
-## 処理の詳細説明
+- **レスポンス**: 作成されたDrawdownエンティティ（AmountPieを含む）
 
-### 1. エンドポイント受付
-- **URL**: `POST /api/v1/loans/drawdowns`
-- **Controller**: `DrawdownController.createDrawdown()`
-- **リクエスト**: `CreateDrawdownRequest` DTO
+### ドローダウン一覧取得
 
-### 2. バリデーション処理
-`DrawdownService.validateDrawdownRequest()` で以下をチェック：
+- **エンドポイント**: `GET /api/v1/loans/drawdowns`
+- **レスポンス**: Drawdownエンティティのリスト
 
-#### 2.1 参照整合性チェック
-- **Facility存在確認**: `FacilityRepository.findById()` でファシリティの存在を確認
-- **Borrower存在確認**: `BorrowerRepository.existsById()` で借り手の存在を確認
+### ドローダウン詳細取得
 
-#### 2.2 ビジネスルールチェック
-- **金額妥当性**: ドローダウン金額が正の値であることを確認
-- **融資枠チェック**: ドローダウン金額がファシリティのコミットメント額を超えないことを確認
-- **金利妥当性**: 年利が負の値でないことを確認
-- **返済期間妥当性**: 返済期間（月数）が正の値であることを確認
+- **エンドポイント**: `GET /api/v1/loans/drawdowns/{id}`
+- **レスポンス**: 指定されたIDのDrawdownエンティティ
 
-### 3. エンティティ作成処理
+### ファシリティ別ドローダウン一覧取得
 
-#### 3.1 Loan エンティティ作成
-`DrawdownService.createLoan()` で以下の情報を設定：
-- **基本情報**: facilityId, borrowerId, 通貨
-- **金額情報**: 元本金額、残高（初期値は元本と同じ）
-- **金利情報**: 年利
-- **返済情報**: 返済期間、返済サイクル、返済方法
-- **日付情報**: ドローダウン実行日
+- **エンドポイント**: `GET /api/v1/loans/drawdowns/facility/{facilityId}`
+- **レスポンス**: 指定されたファシリティIDに関連するDrawdownエンティティのリスト
 
-#### 3.2 Drawdown エンティティ作成
-`Transaction` を継承した `Drawdown` エンティティを作成：
-- **継承元フィールド**: facilityId, borrowerId, transactionDate, amount, transactionType
-- **固有フィールド**: loanId, currency, purpose
-- **継承戦略**: `@Inheritance(strategy = InheritanceType.JOINED)` により、`transaction` テーブルと `drawdown` テーブルに分けて保存
+### ページング対応ドローダウン一覧取得
 
-### 4. データ永続化
-- **Loan保存**: `LoanRepository.save()` でLoanテーブルに保存
-- **Drawdown保存**: `DrawdownRepository.save()` でTransaction/Drawdownテーブルに保存
-- **トランザクション**: `@Transactional` により全体が単一トランザクションで実行
+- **エンドポイント**: `GET /api/v1/loans/drawdowns/paged`
+- **パラメータ**:
+  - `page`: ページ番号（0から開始）
+  - `size`: ページサイズ
+  - `sort`: ソート条件（例: `id,desc`）
+- **レスポンス**: ページングされたDrawdownエンティティのリスト
 
-### 5. レスポンス返却
-- 作成された `Drawdown` エンティティをJSONとしてクライアントに返却
-- HTTPステータス: 200 OK
+## 処理フロー
 
-## エラーハンドリング
+1. クライアントがドローダウンリクエストを送信
+2. システムがFacilityの残高を確認し、引き出し可能か検証
+3. Loanエンティティが自動生成され、返済条件が設定される
+4. 返済スケジュール（PaymentDetail）が自動生成される
+5. 投資家ごとの金額配分（AmountPie）がSharePieに基づいて自動計算される
+6. Drawdownトランザクションが記録される
+7. 作成されたDrawdownエンティティがレスポンスとして返される
 
-### ResourceNotFoundException (HTTP 404)
-- Facility が存在しない場合
-- Borrower が存在しない場合
+## 返済スケジュール計算ロジック
 
-### BusinessRuleViolationException (HTTP 400)
-- ドローダウン金額が0以下の場合
-- ドローダウン金額がファシリティのコミットメント額を超える場合
-- 年利が負の値の場合
-- 返済期間が0以下の場合
+### 元利均等返済（EQUAL_INSTALLMENT）
 
-## データモデル関係
+毎回の支払額（元本+利息）が一定になるよう計算されます。
 
-```mermaid
-erDiagram
-    Transaction ||--o{ Drawdown : "継承"
-    Drawdown }|--|| Loan : "参照"
-    Loan }|--|| Facility : "参照"
-    Loan }|--|| Borrower : "参照"
-    
-    Transaction {
-        Long id PK
-        Long facilityId FK
-        Long borrowerId FK
-        LocalDate transactionDate
-        String transactionType
-        BigDecimal amount
-    }
-    
-    Drawdown {
-        Long loanId FK
-        String currency
-        String purpose
-    }
-    
-    Loan {
-        Long id PK
-        Long facilityId FK
-        Long borrowerId FK
-        BigDecimal principalAmount
-        BigDecimal outstandingBalance
-        BigDecimal annualInterestRate
-        LocalDate drawdownDate
-        Integer repaymentPeriodMonths
-        String repaymentCycle
-        String repaymentMethod
-        String currency
-    }
+1. 月利を計算: `annualInterestRate / 12`
+2. 毎月の支払額を計算: `P * r * (1 + r)^n / ((1 + r)^n - 1)`
+   - P: 元本金額
+   - r: 月利
+   - n: 支払回数
+3. 各回の支払いで、利息部分と元本部分を計算
+   - 利息部分: `残高 * 月利`
+   - 元本部分: `毎月の支払額 - 利息部分`
+4. 残高を更新: `残高 = 残高 - 元本部分`
+
+### バレット返済（BULLET_PAYMENT）
+
+期間中は利息のみ支払い、満期時に元本を一括返済します。
+
+1. 月利を計算: `annualInterestRate / 12`
+2. 毎月の利息支払額を計算: `元本 * 月利`
+3. 最終回のみ元本全額を返済
+
+## エラーケース
+
+- **Facility残高不足**: ドローダウン金額がFacilityの利用可能残高を超える場合
+- **金利不正**: 金利がマイナスの場合
+- **返済期間不正**: 返済期間が0以下の場合
+- **Facility/Borrower存在しない**: 指定されたFacilityIDまたはBorrowerIDが存在しない場合
+
+## 実装例
+
+```java
+// ドローダウン実行リクエスト作成
+CreateDrawdownRequest request = new CreateDrawdownRequest();
+request.setFacilityId(1L);
+request.setBorrowerId(1L);
+request.setAmount(new BigDecimal("10000000"));
+request.setCurrency("JPY");
+request.setPurpose("運転資金");
+request.setAnnualInterestRate(new BigDecimal("0.025"));
+request.setDrawdownDate(LocalDate.of(2025, 6, 1));
+request.setRepaymentPeriodMonths(12);
+request.setRepaymentCycle("MONTHLY");
+request.setRepaymentMethod(RepaymentMethod.EQUAL_INSTALLMENT);
+
+// APIリクエスト実行
+ResponseEntity<Drawdown> response = restTemplate.postForEntity(
+    "/api/v1/loans/drawdowns",
+    request,
+    Drawdown.class
+);
 ```
 
-## 主要な設計パターン
+## 関連エンティティ
 
-### 1. 継承戦略
-- **JOINED継承**: `Transaction` 基底クラスから `Drawdown` が継承
-- **テーブル分離**: `transaction` テーブルと `drawdown` テーブルに分けて保存
+- **Drawdown**: ドローダウン取引情報
+- **Loan**: ローン情報（元本、金利、返済条件など）
+- **PaymentDetail**: 返済スケジュール明細
+- **AmountPie**: 投資家ごとの金額配分
 
-### 2. バリデーション戦略
-- **段階的バリデーション**: 参照整合性 → ビジネスルール の順で実行
-- **早期リターン**: エラー発生時は即座に例外をスロー
+## 注意事項
 
-### 3. トランザクション管理
-- **単一トランザクション**: Loan作成とDrawdown作成を一つのトランザクションで実行
-- **ロールバック**: エラー発生時は全ての変更をロールバック
-
----
-
-**注記**: この処理フローは現在の実装に基づいており、将来的にAmountPie（金額配分）やイベント処理などの機能が追加される可能性があります。
+- ドローダウン実行後は、Loanエンティティと返済スケジュールが自動生成されます
+- 返済スケジュールは返済方法に基づいて自動計算されます
+- AmountPieはSharePieに基づいて自動生成されますが、明示的に指定することも可能です
