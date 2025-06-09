@@ -34,6 +34,7 @@ erDiagram
         String phoneNumber
         String companyId
         BigDecimal investmentCapacity
+        Money currentInvestmentAmount
         InvestorType investorType
         Boolean isActive
     }
@@ -120,6 +121,25 @@ erDiagram
         Long drawdownId FK
     }
 
+    Payment {
+        Long id PK
+        Long loanId FK
+        LocalDate paymentDate
+        Money totalAmount
+        Money principalAmount
+        Money interestAmount
+        String currency
+    }
+
+    PaymentDistribution {
+        Long id PK
+        Long investorId FK
+        Money principalAmount
+        Money interestAmount
+        String currency
+        Long paymentId FK
+    }
+
     %% 関係性
     Syndicate ||--|| Borrower : "has borrower"
     Syndicate ||--|| Investor : "has lead bank"
@@ -134,8 +154,12 @@ erDiagram
     Drawdown ||--|| Transaction : "is-a"
     Drawdown ||--|| Loan : "creates"
     Drawdown ||--o{ AmountPie : "has"
+    AmountPie }|--|| Investor : "allocated to"
     Loan ||--o{ PaymentDetail : "has"
     Loan ||--|| Facility : "derived from"
+    Payment ||--|| Loan : "repays"
+    Payment ||--o{ PaymentDistribution : "distributes to"
+    PaymentDistribution }|--|| Investor : "pays to"
 ```
 
 ### 1.2 Value Objects
@@ -466,6 +490,7 @@ mindmap
 ---
 
 **注記**: 
-- 現在実装済み: Company, Borrower, Investor, Syndicate, Facility, SharePie, Transaction, FacilityInvestment, Drawdown, Loan, PaymentDetail, AmountPie
-- 将来実装予定: Payment階層（InterestPayment, PrincipalPayment, FeePayment）, FacilityTrade, マスタデータ
+- 現在実装済み: Company, Borrower, Investor (投資額管理機能含む), Syndicate, Facility, SharePie, Transaction, FacilityInvestment, Drawdown, Loan, PaymentDetail, AmountPie, Payment, PaymentDistribution
+- 将来実装予定: Fee階層（FeePayment）, FacilityTrade, マスタデータ
 - 共通フィールド（created_at, updated_at, version）は図から省略
+- Payment/PaymentDistributionは元本・利息返済処理と投資家別配分を管理

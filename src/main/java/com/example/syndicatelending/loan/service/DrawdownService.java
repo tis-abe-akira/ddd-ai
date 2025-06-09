@@ -16,6 +16,8 @@ import com.example.syndicatelending.loan.entity.AmountPie;
 import com.example.syndicatelending.loan.dto.AmountPieDto;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.SharePieRepository;
+import com.example.syndicatelending.party.entity.Investor;
+import com.example.syndicatelending.party.repository.InvestorRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,17 +35,20 @@ public class DrawdownService {
     private final FacilityRepository facilityRepository;
     private final BorrowerRepository borrowerRepository;
     private final SharePieRepository sharePieRepository;
+    private final InvestorRepository investorRepository;
 
     public DrawdownService(DrawdownRepository drawdownRepository,
             LoanRepository loanRepository,
             FacilityRepository facilityRepository,
             BorrowerRepository borrowerRepository,
-            SharePieRepository sharePieRepository) {
+            SharePieRepository sharePieRepository,
+            InvestorRepository investorRepository) {
         this.drawdownRepository = drawdownRepository;
         this.loanRepository = loanRepository;
         this.facilityRepository = facilityRepository;
         this.borrowerRepository = borrowerRepository;
         this.sharePieRepository = sharePieRepository;
+        this.investorRepository = investorRepository;
     }
 
     @Transactional
@@ -107,7 +112,13 @@ public class DrawdownService {
         }
         drawdown.setAmountPies(amountPies);
 
-        return drawdownRepository.save(drawdown);
+        // 5. Drawdown保存
+        Drawdown savedDrawdown = drawdownRepository.save(drawdown);
+
+        // 6. Investor投資額の更新
+        updateInvestorAmounts(amountPies);
+
+        return savedDrawdown;
     }
 
     @Transactional(readOnly = true)
@@ -175,5 +186,17 @@ public class DrawdownService {
                 request.getRepaymentCycle(),
                 request.getRepaymentMethod(),
                 request.getCurrency());
+    }
+
+    private void updateInvestorAmounts(List<AmountPie> amountPies) {
+        for (AmountPie amountPie : amountPies) {
+            Investor investor = investorRepository.findById(amountPie.getInvestorId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Investor not found with id: " + amountPie.getInvestorId()));
+            
+            Money investmentAmount = Money.of(amountPie.getAmount());
+            investor.increaseInvestmentAmount(investmentAmount);
+            investorRepository.save(investor);
+        }
     }
 }
