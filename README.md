@@ -63,10 +63,12 @@ mvn spring-boot:run
 | 融資枠管理 | ✅ 完了 | Facility作成、SharePie（持分比率）管理 |
 | 投資記録管理 | ✅ 完了 | FacilityInvestment自動生成（Facility組成時） |
 | ドローダウン処理 | ✅ 完了 | Drawdown実行、Loan作成、返済スケジュール自動生成 |
-| 取引処理 | 🔄 一部実装 | Transaction基底クラス、Drawdown完了、Payment等は未実装 |
+| 支払い処理 | ✅ 完了 | Payment実行、元本・利息返済、投資家別配分管理 |
+| 投資額管理 | ✅ 完了 | Investor現在投資額の自動追跡（Drawdown増加・返済減少） |
+| 取引処理 | ✅ 85%実装 | Transaction基底クラス、Drawdown・Payment完了、Fee未実装 |
 | レポーティング | 🚧 未実装 | 各種レポート・分析機能 |
 
-**開発完了度**: 約85%（基本的なシンジケートローン管理機能 + ドローダウン処理）
+**開発完了度**: 約90%（基本的なシンジケートローン管理機能 + ドローダウン・支払い処理）
 
 ## 🛠️ 技術スタック
 

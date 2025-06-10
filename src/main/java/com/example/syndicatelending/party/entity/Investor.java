@@ -1,5 +1,6 @@
 package com.example.syndicatelending.party.entity;
 
+import com.example.syndicatelending.common.domain.model.Money;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +31,9 @@ public class Investor {
     @Column(name = "investment_capacity", precision = 19, scale = 2)
     private BigDecimal investmentCapacity;
 
+    @Column(name = "current_investment_amount", precision = 19, scale = 2)
+    private Money currentInvestmentAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "investor_type")
     private InvestorType investorType;
@@ -57,6 +61,7 @@ public class Investor {
         this.phoneNumber = phoneNumber;
         this.companyId = companyId;
         this.investmentCapacity = investmentCapacity != null ? investmentCapacity : BigDecimal.ZERO;
+        this.currentInvestmentAmount = Money.zero();
         this.investorType = investorType;
         this.isActive = true;
         this.createdAt = LocalDateTime.now();
@@ -154,6 +159,29 @@ public class Investor {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Money getCurrentInvestmentAmount() {
+        return currentInvestmentAmount;
+    }
+
+    public void setCurrentInvestmentAmount(Money currentInvestmentAmount) {
+        this.currentInvestmentAmount = currentInvestmentAmount;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void increaseInvestmentAmount(Money amount) {
+        if (amount != null && amount.isPositiveOrZero()) {
+            this.currentInvestmentAmount = this.currentInvestmentAmount.add(amount);
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    public void decreaseInvestmentAmount(Money amount) {
+        if (amount != null && amount.isPositiveOrZero()) {
+            this.currentInvestmentAmount = this.currentInvestmentAmount.subtract(amount);
+            this.updatedAt = LocalDateTime.now();
+        }
     }
 
     public Long getVersion() {
