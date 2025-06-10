@@ -71,13 +71,14 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
      * 
      * FIXED状態での2度目のドローダウンを防ぐビジネスルール制約。
      * Spring State Machineはガード条件が false を返す場合、
-     * 遷移を拒否し、例外をスローする。
+     * 遷移を拒否する。
      * 
      * @return ガード条件（DRAFT状態の場合のみ true）
      */
     private Guard<FacilityState, FacilityEvent> drawdownOnlyFromDraftGuard() {
         return context -> {
-            FacilityState currentState = context.getSource().getId();
+            // 現在の状態を取得
+            FacilityState currentState = context.getStateMachine().getState().getId();
             // DRAFT状態の場合のみドローダウンを許可
             return FacilityState.DRAFT.equals(currentState);
         };

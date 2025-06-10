@@ -15,9 +15,12 @@ import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
+import com.example.syndicatelending.facility.statemachine.FacilityEvent;
+import org.springframework.statemachine.StateMachine;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +58,9 @@ public class FacilityStateMachineTest {
 
     @Autowired
     private BorrowerRepository borrowerRepository;
+
+    @Autowired
+    private StateMachine<FacilityState, FacilityEvent> stateMachine;
 
     private Syndicate testSyndicate;
     private Facility testFacility;
@@ -103,6 +109,31 @@ public class FacilityStateMachineTest {
         testFacility.setEndDate(LocalDate.now().plusYears(1));
         testFacility.setInterestTerms("5% annual");
         testFacility = facilityRepository.save(testFacility);
+        
+        // StateMachineを各テスト前にリセット
+        resetStateMachine();
+    }
+    
+    @AfterEach
+    void tearDown() {
+        // StateMachineを各テスト後に停止
+        try {
+            stateMachine.stop();
+        } catch (Exception e) {
+            // StateMachineが既に停止している場合は無視
+        }
+    }
+    
+    private void resetStateMachine() {
+        try {
+            stateMachine.stop();
+        } catch (Exception e) {
+            // StateMachineが既に停止している場合は無視
+        }
+        // StateMachineを完全にリセット
+        stateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
+            access.resetStateMachine(null);
+        });
     }
 
     @Test
@@ -129,17 +160,18 @@ public class FacilityStateMachineTest {
     }
 
     @Test
-    void testFixFacilityFromNonDraftState() {
-        // 既にFIXED状態のFacilityをFIXEDにしようとする場合は何もしない（エラーにならない）
+    void testFixFacilityFromFixedStateThrowsException() {
+        // 既にFIXED状態のFacilityをFIXEDにしようとする場合は例外が発生する
         testFacility.setStatus(FacilityState.FIXED);
         facilityRepository.save(testFacility);
 
-        // 例外がスローされないことを確認
-        assertDoesNotThrow(() -> facilityService.fixFacility(testFacility.getId()));
+        // BusinessRuleViolationExceptionがスローされることを確認
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> facilityService.fixFacility(testFacility.getId())
+        );
         
-        // 状態がFIXEDのまま変わらないことを確認
-        Facility facility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, facility.getStatus());
+        assertTrue(exception.getMessage().contains("FIXED状態のFacilityに対して2度目のドローダウンはできません"));
     }
 
     @Test
@@ -211,5 +243,57 @@ public class FacilityStateMachineTest {
         request.setSharePies(sharePies);
 
         return request;
+    }
+
+    @Test
+    void testStateMachineConfigurationExists() {
+        // StateMachineが適切に設定されていることを確認
+        assertNotNull(stateMachine);
+        // 設定の存在を確認（詳細な状態テストは統合テストで行う）
+    }
+
+    @Test
+    void testMultipleDrawdownPrevention() {
+        // 1度目のfixFacility（ドローダウン）は成功
+        assertEquals(FacilityState.DRAFT, testFacility.getStatus());
+        
+        assertDoesNotThrow(() -> facilityService.fixFacility(testFacility.getId()));
+        
+        Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        
+        // 2度目のfixFacility（ドローダウン）は例外
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> facilityService.fixFacility(testFacility.getId())
+        );
+        
+        assertTrue(exception.getMessage().contains("FIXED状態のFacilityに対して2度目のドローダウンはできません"));
+    }
+
+    @Test
+    void testBusinessRuleIntegration() {
+        // ビジネスルールとStateMachineの統合テスト
+        
+        // 初期状態: DRAFT - 変更可能
+        assertTrue(testFacility.canBeModified());
+        assertFalse(testFacility.isFixed());
+        
+        // ドローダウン実行により状態変更
+        facilityService.fixFacility(testFacility.getId());
+        
+        // 更新後: FIXED - 変更不可
+        Facility facility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertFalse(facility.canBeModified());
+        assertTrue(facility.isFixed());
+        
+        // FIXED状態での更新はBusinessRuleViolationException
+        UpdateFacilityRequest request = createUpdateRequest();
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> facilityService.updateFacility(testFacility.getId(), request)
+        );
+        
+        assertTrue(exception.getMessage().contains("FIXED状態のFacilityは変更できません"));
     }
 }

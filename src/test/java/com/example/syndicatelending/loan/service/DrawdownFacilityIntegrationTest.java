@@ -178,15 +178,17 @@ public class DrawdownFacilityIntegrationTest {
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
         assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
 
-        // 2回目のDrawdownを試みる（FIXED状態でもDrawdownは可能であるべき）
+        // 2回目のDrawdownを試みる（FIXED状態では2度目のDrawdownは不可）
         CreateDrawdownRequest secondRequest = createDrawdownRequest();
         secondRequest.setAmount(new BigDecimal("300000.00"));
         
-        // 2回目のDrawdownも成功することを確認
-        assertDoesNotThrow(() -> {
-            Drawdown secondDrawdown = drawdownService.createDrawdown(secondRequest);
-            assertNotNull(secondDrawdown);
-        });
+        // 2回目のDrawdownは例外がスローされることを確認
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> drawdownService.createDrawdown(secondRequest)
+        );
+        
+        assertTrue(exception.getMessage().contains("FIXED状態のFacilityに対して2度目のドローダウンはできません"));
     }
 
     @Test
