@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build**: Maven
 - **Database**: H2 (インメモリ)
 - **Dependencies**: Spring Web, Data JPA, Validation, AOP, Lombok, JaCoCo, SpringDoc OpenAPI
+- **State Management**: Spring State Machine (Facility状態管理)
 
 ## アーキテクチャ
 実用的な3層アーキテクチャ（簡素化版）：
@@ -81,11 +82,15 @@ mvn test jacoco:report
 3. **Business ID**: エンティティはUUID自動生成、データベースは別途自動増分ID
 4. **金融計算**: BigDecimalベースの厳密な計算
 5. **統合サービス**: 機能単位での統合サービスで複雑さを削減
+6. **状態管理の導入**: Spring State MachineによるFacilityのライフサイクル管理
+   - **目的**: ドローダウン実行後のFacility変更禁止を厳密に制御
+   - **状態遷移**: DRAFT（変更可能） → FIXED（変更不可・確定済み）
+   - **ビジネスルール**: FIXED状態での2度目のドローダウンを防止
 
 ## 実装済み機能
 - ✅ **Party管理**: 企業・借り手・投資家のCRUD
 - ✅ **Syndicate管理**: シンジケート団の組成・管理
-- ✅ **Facility管理**: 融資枠作成、SharePie（持分比率）管理
+- ✅ **Facility管理**: 融資枠作成、SharePie（持分比率）管理、状態管理（State Machine）
 - ✅ **Loan管理**: ドローダウン実行、返済スケジュール自動生成
 - ✅ **Payment管理**: 元本・利息返済処理、投資家別配分管理
 - ✅ **Investor投資額管理**: 現在投資額の自動追跡（Drawdown増加・返済減少）
@@ -94,7 +99,35 @@ mvn test jacoco:report
 ## 主要なビジネスルール
 - **SharePie検証**: ファシリティの持分比率合計は100%必須
 - **ドローダウン制限**: 利用可能額を超えた引き出し不可
+- **Facility状態管理**: 
+  - DRAFT状態でのみ変更可能（持分比率変更、更新等）
+  - ドローダウン実行時にFIXED状態に自動遷移
+  - FIXED状態では2度目のドローダウン実行を禁止
 - **返済スケジュール**: 月次返済、利率計算自動化
 - **AmountPie生成**: ドローダウン時の投資家別配分額自動計算
 - **投資額自動管理**: Drawdown時増加、元本返済時減少（利息支払いは影響なし）
 - **PaymentDistribution生成**: 返済時の投資家別配分額自動計算（持分比率ベース）
+
+---
+
+## タスク完了時の文書更新確認プロセス
+
+**重要**: タスク完了時は必ず以下を確認し、ユーザーに質問する
+
+### 更新確認が必要なケース
+1. **アーキテクチャ変更**: 新しい技術・パターン・設計判断があった場合
+2. **機能追加**: 新しいモジュール・重要な機能が追加された場合  
+3. **ビジネスルール変更**: 重要なビジネスロジック・制約が変更された場合
+4. **技術スタック変更**: 新しいライブラリ・フレームワークが導入された場合
+
+### 更新対象ドキュメント
+- **CLAUDE.md**: プロジェクト全体への影響がある変更
+- **.clinerules-architecture.md**: アーキテクチャ設計・パターンの変更
+- **.clinerules-progress.md**: 実装進捗・完了機能の更新
+- **.clinerules-requirements.md**: 要件変更時
+- **.clinerules-techContext.md**: 技術スタック変更時
+
+### 確認質問の例
+「この実装により[変更内容]が追加されました。関連ドキュメント（CLAUDE.md、.clinerules等）の更新も必要でしょうか？」
+
+**このプロセスにより、ドキュメントと実装の整合性を常に保ち、プロジェクトの知識が確実に蓄積されます。**
