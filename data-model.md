@@ -82,6 +82,44 @@ erDiagram
         Money amount
     }
 
+    Drawdown {
+        Long id PK
+        Long loanId FK
+        String currency
+        String purpose
+    }
+
+    Loan {
+        Long id PK
+        Long facilityId FK
+        Long borrowerId FK
+        Money principalAmount
+        Money outstandingBalance
+        Percentage annualInterestRate
+        LocalDate drawdownDate
+        Integer repaymentPeriodMonths
+        String repaymentCycle
+        RepaymentMethod repaymentMethod
+    }
+
+    PaymentDetail {
+        Long id PK
+        Long loanId FK
+        Integer paymentNumber
+        Money principalPayment
+        Money interestPayment
+        LocalDate dueDate
+        Money remainingBalance
+    }
+
+    AmountPie {
+        Long id PK
+        Long investorId FK
+        BigDecimal amount
+        String currency
+        Long drawdownId FK
+    }
+
     %% 関係性
     Syndicate ||--|| Borrower : "has borrower"
     Syndicate ||--|| Investor : "has lead bank"
@@ -93,6 +131,11 @@ erDiagram
     Transaction ||--|| Borrower : "involves"
     FacilityInvestment ||--|| Transaction : "is-a"
     FacilityInvestment ||--|| Investor : "made by"
+    Drawdown ||--|| Transaction : "is-a"
+    Drawdown ||--|| Loan : "creates"
+    Drawdown ||--o{ AmountPie : "has"
+    Loan ||--o{ PaymentDetail : "has"
+    Loan ||--|| Facility : "derived from"
 ```
 
 ### 1.2 Value Objects
@@ -183,59 +226,28 @@ classDiagram
         CREDIT_UNION
         OTHER
     }
+
+    class RepaymentMethod {
+        <<enumeration>>
+        EQUAL_INSTALLMENT
+        BULLET_PAYMENT
+    }
 ```
 
 ## 2. 将来実装予定データモデル（概念レベル）
 
-### 2.1 Position階層とTransaction階層
+### 2.1 Transaction階層の拡張と支払い処理
 
 ```mermaid
 erDiagram
-    %% Position階層（抽象基底概念）
-    Position {
-        Long id PK
-        String positionType
-        Long syndicateId FK
-        Money amount
-        String currency
-    }
-
-    Facility {
-        Long id PK
-        Long syndicateId FK
-        Money commitment
-        String currency
-        LocalDate startDate
-        LocalDate endDate
-        String interestTerms
-    }
-
-    Loan {
-        Long id PK
-        Long facilityId FK
-        Money outstandingBalance
-        Money originalAmount
-        LocalDate drawdownDate
-        BigDecimal interestRate
-    }
-
-    %% Transaction階層（抽象基底概念）
+    %% Transaction階層（抽象基底概念）- 既に実装済みの部分は省略
     Transaction {
         Long id PK
         String transactionType
-        Long positionId FK
+        Long facilityId FK
         Money amount
         String currency
         LocalDate transactionDate
-        String description
-    }
-
-    Drawdown {
-        Long id PK
-        Long facilityId FK
-        Money amount
-        LocalDate drawdownDate
-        String purpose
     }
 
     Payment {
@@ -284,9 +296,6 @@ erDiagram
     }
 
     %% 継承関係
-    Position ||--o{ Facility : "is-a"
-    Position ||--o{ Loan : "is-a"
-    Transaction ||--o{ Drawdown : "is-a"
     Transaction ||--o{ Payment : "is-a"
     Payment ||--o{ InterestPayment : "is-a"
     Payment ||--o{ PrincipalPayment : "is-a"
@@ -294,19 +303,17 @@ erDiagram
     Transaction ||--o{ FacilityTrade : "is-a"
 
     %% 関係性
-    Facility ||--o{ Loan : "generates"
-    Facility ||--o{ Drawdown : "source of"
     Loan ||--o{ InterestPayment : "generates"
     Loan ||--o{ PrincipalPayment : "generates"
 ```
 
-### 2.2 配分管理（Share Pie vs Amount Pie）
+### 2.2 配分管理の拡張（Share Pie vs Amount Pie）
 
 ```mermaid
 erDiagram
     SharePie {
         Long id PK
-        Long positionId FK
+        Long facilityId FK
         Long investorId FK
         Percentage share
         LocalDate effectiveDate
@@ -320,7 +327,7 @@ erDiagram
         String distributionType
     }
 
-    Position ||--o{ SharePie : "has share distribution"
+    Facility ||--o{ SharePie : "has share distribution"
     Transaction ||--o{ AmountPie : "has amount distribution"
     SharePie }|--|| Investor : "investor share"
     AmountPie }|--|| Investor : "investor amount"
@@ -459,6 +466,6 @@ mindmap
 ---
 
 **注記**: 
-- 現在実装済み: Company, Borrower, Investor, Syndicate, Facility, SharePie, Transaction, FacilityInvestment
-- 将来実装予定: Loan, 他のTransaction階層, AmountPie, マスタデータ
+- 現在実装済み: Company, Borrower, Investor, Syndicate, Facility, SharePie, Transaction, FacilityInvestment, Drawdown, Loan, PaymentDetail, AmountPie
+- 将来実装予定: Payment階層（InterestPayment, PrincipalPayment, FeePayment）, FacilityTrade, マスタデータ
 - 共通フィールド（created_at, updated_at, version）は図から省略

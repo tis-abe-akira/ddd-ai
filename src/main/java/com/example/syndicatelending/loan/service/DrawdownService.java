@@ -12,13 +12,19 @@ import com.example.syndicatelending.loan.entity.Loan;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
+import com.example.syndicatelending.loan.entity.AmountPie;
+import com.example.syndicatelending.loan.dto.AmountPieDto;
+import com.example.syndicatelending.facility.entity.SharePie;
+import com.example.syndicatelending.facility.repository.SharePieRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Service
 public class DrawdownService {
@@ -26,15 +32,18 @@ public class DrawdownService {
     private final LoanRepository loanRepository;
     private final FacilityRepository facilityRepository;
     private final BorrowerRepository borrowerRepository;
+    private final SharePieRepository sharePieRepository;
 
     public DrawdownService(DrawdownRepository drawdownRepository,
             LoanRepository loanRepository,
             FacilityRepository facilityRepository,
-            BorrowerRepository borrowerRepository) {
+            BorrowerRepository borrowerRepository,
+            SharePieRepository sharePieRepository) {
         this.drawdownRepository = drawdownRepository;
         this.loanRepository = loanRepository;
         this.facilityRepository = facilityRepository;
         this.borrowerRepository = borrowerRepository;
+        this.sharePieRepository = sharePieRepository;
     }
 
     @Transactional
@@ -55,6 +64,48 @@ public class DrawdownService {
         drawdown.setLoanId(savedLoan.getId());
         drawdown.setCurrency(request.getCurrency());
         drawdown.setPurpose(request.getPurpose());
+
+        // 4. AmountPieの生成
+        List<AmountPie> amountPies = new ArrayList<>();
+        if (request.getAmountPies() != null && !request.getAmountPies().isEmpty()) {
+            // 明示的指定あり
+            BigDecimal total = request.getAmountPies().stream().map(AmountPieDto::getAmount).reduce(BigDecimal.ZERO,
+                    BigDecimal::add);
+            if (total.compareTo(request.getAmount()) != 0) {
+                throw new BusinessRuleViolationException("AmountPieの合計がDrawdown金額と一致しません");
+            }
+            for (AmountPieDto dto : request.getAmountPies()) {
+                AmountPie pie = new AmountPie();
+                pie.setInvestorId(dto.getInvestorId());
+                pie.setAmount(dto.getAmount());
+                pie.setCurrency(dto.getCurrency());
+                pie.setDrawdown(drawdown);
+                amountPies.add(pie);
+            }
+        } else {
+            // SharePieで按分
+            List<SharePie> sharePies = sharePieRepository.findByFacility_Id(request.getFacilityId());
+            BigDecimal total = BigDecimal.ZERO;
+            for (SharePie sharePie : sharePies) {
+                AmountPie pie = new AmountPie();
+                pie.setInvestorId(sharePie.getInvestorId());
+                BigDecimal investorAmount = request.getAmount().multiply(sharePie.getShare().getValue());
+                // Java 9以降の推奨方式で端数処理
+                investorAmount = investorAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+                pie.setAmount(investorAmount);
+                pie.setCurrency(request.getCurrency());
+                pie.setDrawdown(drawdown);
+                amountPies.add(pie);
+                total = total.add(investorAmount);
+            }
+            // 最後の投資家に端数調整
+            if (!amountPies.isEmpty()) {
+                AmountPie last = amountPies.get(amountPies.size() - 1);
+                BigDecimal diff = request.getAmount().subtract(total);
+                last.setAmount(last.getAmount().add(diff));
+            }
+        }
+        drawdown.setAmountPies(amountPies);
 
         return drawdownRepository.save(drawdown);
     }
@@ -114,17 +165,15 @@ public class DrawdownService {
     }
 
     private Loan createLoan(CreateDrawdownRequest request) {
-        Loan loan = new Loan();
-        loan.setFacilityId(request.getFacilityId());
-        loan.setBorrowerId(request.getBorrowerId());
-        loan.setPrincipalAmount(Money.of(request.getAmount()));
-        loan.setOutstandingBalance(Money.of(request.getAmount())); // 初期残高は元本と同じ
-        loan.setAnnualInterestRate(Percentage.of(request.getAnnualInterestRate()));
-        loan.setDrawdownDate(request.getDrawdownDate());
-        loan.setRepaymentPeriodMonths(request.getRepaymentPeriodMonths());
-        loan.setRepaymentCycle(request.getRepaymentCycle());
-        loan.setRepaymentMethod(request.getRepaymentMethod());
-        loan.setCurrency(request.getCurrency());
-        return loan;
+        return new Loan(
+                request.getFacilityId(),
+                request.getBorrowerId(),
+                Money.of(request.getAmount()),
+                Percentage.of(request.getAnnualInterestRate()),
+                request.getDrawdownDate(),
+                request.getRepaymentPeriodMonths(),
+                request.getRepaymentCycle(),
+                request.getRepaymentMethod(),
+                request.getCurrency());
     }
 }
