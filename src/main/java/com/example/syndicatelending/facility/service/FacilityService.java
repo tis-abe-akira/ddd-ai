@@ -13,6 +13,11 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
+import com.example.syndicatelending.facility.statemachine.FacilityState;
+import com.example.syndicatelending.facility.statemachine.FacilityEvent;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import org.springframework.statemachine.StateMachine;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
@@ -30,6 +35,9 @@ public class FacilityService {
     private final SharePieRepository sharePieRepository;
     private final FacilityInvestmentRepository facilityInvestmentRepository;
     private final SyndicateRepository syndicateRepository;
+    
+    @Autowired
+    private StateMachine<FacilityState, FacilityEvent> stateMachine;
 
     public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
             SharePieRepository sharePieRepository, FacilityInvestmentRepository facilityInvestmentRepository,
@@ -112,6 +120,12 @@ public class FacilityService {
     public Facility updateFacility(Long id, UpdateFacilityRequest request) {
         Facility existingFacility = getFacilityById(id);
 
+        // 状態チェック
+        if (!existingFacility.canBeModified()) {
+            throw new BusinessRuleViolationException(
+                "FIXED状態のFacilityは変更できません。現在の状態: " + existingFacility.getStatus());
+        }
+
         // バリデーション実行（UpdateFacilityRequestを直接使用）
         facilityValidator.validateUpdateFacilityRequest(request, id);
 
@@ -181,5 +195,40 @@ public class FacilityService {
             throw new ResourceNotFoundException("Facility not found with id: " + id);
         }
         facilityRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void fixFacility(Long facilityId) {
+        Facility facility = getFacilityById(facilityId);
+        
+        // 既にFIXED状態の場合はBusinessRuleViolationExceptionをスロー
+        if (facility.getStatus() == FacilityState.FIXED) {
+            throw new BusinessRuleViolationException(
+                "FIXED状態のFacilityに対して2度目のドローダウンはできません。現在の状態: " + facility.getStatus());
+        }
+        
+        if (facility.getStatus() != FacilityState.DRAFT) {
+            throw new BusinessRuleViolationException(
+                "DRAFT状態のFacilityのみFIXEDに変更できます。現在の状態: " + facility.getStatus());
+        }
+        
+        // State Machine実行 - 現在の状態を設定してからイベント送信
+        stateMachine.getExtendedState().getVariables().put("facilityId", facilityId);
+        
+        // State Machineを現在の状態に同期
+        stateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
+            access.resetStateMachine(null);
+        });
+        
+        // DRAFT状態からのイベント送信
+        boolean result = stateMachine.sendEvent(FacilityEvent.DRAWDOWN_EXECUTED);
+        if (!result) {
+            throw new BusinessRuleViolationException(
+                "状態遷移が失敗しました。DRAFT状態からのみドローダウンが可能です。");
+        }
+        
+        // 状態更新
+        facility.setStatus(FacilityState.FIXED);
+        facilityRepository.save(facility);
     }
 }
