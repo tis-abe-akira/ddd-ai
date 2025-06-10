@@ -1,4 +1,4 @@
-package com.example.syndicatelending.facility.statemachine;
+package com.example.syndicatelending.common.statemachine.facility;
 
 public enum FacilityState {
     DRAFT,      // 作成直後（変更可能）

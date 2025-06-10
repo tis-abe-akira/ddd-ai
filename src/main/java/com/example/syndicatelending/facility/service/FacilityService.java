@@ -13,8 +13,8 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
-import com.example.syndicatelending.facility.statemachine.FacilityState;
-import com.example.syndicatelending.facility.statemachine.FacilityEvent;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
+import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.beans.factory.annotation.Autowired;

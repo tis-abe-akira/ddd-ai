@@ -1,6 +1,6 @@
 package com.example.syndicatelending.loan.service;
 
-import com.example.syndicatelending.facility.statemachine.FacilityState;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;

@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
-import com.example.syndicatelending.facility.statemachine.FacilityState;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 
 @Entity
 @Table(name = "facilities")

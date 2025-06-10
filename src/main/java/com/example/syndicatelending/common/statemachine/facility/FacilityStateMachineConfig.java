@@ -1,4 +1,4 @@
-package com.example.syndicatelending.facility.statemachine;
+package com.example.syndicatelending.common.statemachine.facility;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.config.EnableStateMachine;

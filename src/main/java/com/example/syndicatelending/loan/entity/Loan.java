@@ -11,6 +11,7 @@ import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import com.example.syndicatelending.common.domain.model.PercentageAttributeConverter;
+import com.example.syndicatelending.common.statemachine.loan.LoanState;
 
 /**
  * ローン（貸付）エンティティ。
@@ -74,6 +75,11 @@ public class Loan {
     /** 通貨コード（例: JPY, USD等） */
     @Column(nullable = false)
     private String currency;
+
+    /** ローン状態 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private LoanState status = LoanState.DRAFT;
 
     /** レコード作成日時 */
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -252,6 +258,41 @@ public class Loan {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public LoanState getStatus() {
+        return status;
+    }
+
+    public void setStatus(LoanState status) {
+        this.status = status;
+    }
+
+    /**
+     * Loanが返済中かどうかを判定する
+     * 
+     * @return 返済中の場合 true
+     */
+    public boolean isActive() {
+        return LoanState.ACTIVE.equals(this.status);
+    }
+
+    /**
+     * Loanが遅延中かどうかを判定する
+     * 
+     * @return 遅延中の場合 true
+     */
+    public boolean isOverdue() {
+        return LoanState.OVERDUE.equals(this.status);
+    }
+
+    /**
+     * Loanが完済済みかどうかを判定する
+     * 
+     * @return 完済済みの場合 true
+     */
+    public boolean isCompleted() {
+        return LoanState.COMPLETED.equals(this.status);
     }
 
     /**

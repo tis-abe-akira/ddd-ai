@@ -1,7 +1,7 @@
 package com.example.syndicatelending.facility.service;
 
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
-import com.example.syndicatelending.facility.statemachine.FacilityState;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.facility.repository.SharePieRepository;
@@ -15,7 +15,7 @@ import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
-import com.example.syndicatelending.facility.statemachine.FacilityEvent;
+import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
 import org.springframework.statemachine.StateMachine;
 
 import org.junit.jupiter.api.Test;

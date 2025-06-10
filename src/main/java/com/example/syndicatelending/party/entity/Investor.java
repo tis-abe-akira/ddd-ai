@@ -1,6 +1,7 @@
 package com.example.syndicatelending.party.entity;
 
 import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,6 +41,10 @@ public class Investor {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private InvestorState status = InvestorState.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -190,5 +195,31 @@ public class Investor {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public InvestorState getStatus() {
+        return status;
+    }
+
+    public void setStatus(InvestorState status) {
+        this.status = status;
+    }
+
+    /**
+     * Investorが制限状態かどうかを判定する
+     * 
+     * @return 制限状態の場合 true
+     */
+    public boolean isRestricted() {
+        return InvestorState.RESTRICTED.equals(this.status);
+    }
+
+    /**
+     * 重要フィールドの変更が可能かどうかを判定する
+     * 
+     * @return 変更可能な場合 true
+     */
+    public boolean canModifyRestrictedFields() {
+        return InvestorState.ACTIVE.equals(this.status);
     }
 }
