@@ -4,6 +4,7 @@ import com.example.syndicatelending.common.application.exception.BusinessRuleVio
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
+import com.example.syndicatelending.common.statemachine.EntityStateService;
 import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
@@ -44,6 +45,9 @@ class FacilityServiceTest {
     @Mock
     private com.example.syndicatelending.syndicate.repository.SyndicateRepository syndicateRepository;
 
+    @Mock
+    private EntityStateService entityStateService;
+
     @InjectMocks
     private FacilityService facilityService;
 
@@ -73,6 +77,7 @@ class FacilityServiceTest {
         verify(facilityRepository).save(any(Facility.class));
         verify(syndicateRepository).findById(1L); // Syndicate取得確認
         verify(facilityInvestmentRepository).saveAll(any(List.class)); // FacilityInvestment保存確認
+        verify(entityStateService).onFacilityCreated(any(Facility.class)); // 状態遷移実行確認
     }
 
     @Test
@@ -89,6 +94,7 @@ class FacilityServiceTest {
 
         verify(facilityValidator).validateCreateFacilityRequest(request);
         verify(facilityRepository, never()).save(any(Facility.class));
+        verify(entityStateService, never()).onFacilityCreated(any(Facility.class)); // バリデーション失敗時は状態遷移なし
     }
 
     @Test

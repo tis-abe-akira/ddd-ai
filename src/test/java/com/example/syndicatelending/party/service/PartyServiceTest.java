@@ -4,6 +4,8 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
+import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.common.domain.model.Money;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,11 +42,18 @@ class PartyServiceTest {
         @Mock
         private InvestorRepository investorRepository;
 
+        @Mock
+        private FacilityRepository facilityRepository;
+
+        @Mock
+        private SyndicateRepository syndicateRepository;
+
         private PartyService partyService;
 
         @BeforeEach
         void setUp() {
-                partyService = new PartyService(companyRepository, borrowerRepository, investorRepository);
+                partyService = new PartyService(companyRepository, borrowerRepository, investorRepository, 
+                                               facilityRepository, syndicateRepository);
         }
 
         @Test

@@ -15,6 +15,7 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
+import com.example.syndicatelending.common.statemachine.EntityStateService;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,18 +36,20 @@ public class FacilityService {
     private final SharePieRepository sharePieRepository;
     private final FacilityInvestmentRepository facilityInvestmentRepository;
     private final SyndicateRepository syndicateRepository;
+    private final EntityStateService entityStateService;
     
     @Autowired
     private StateMachine<FacilityState, FacilityEvent> stateMachine;
 
     public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
             SharePieRepository sharePieRepository, FacilityInvestmentRepository facilityInvestmentRepository,
-            SyndicateRepository syndicateRepository) {
+            SyndicateRepository syndicateRepository, EntityStateService entityStateService) {
         this.facilityRepository = facilityRepository;
         this.facilityValidator = facilityValidator;
         this.sharePieRepository = sharePieRepository;
         this.facilityInvestmentRepository = facilityInvestmentRepository;
         this.syndicateRepository = syndicateRepository;
+        this.entityStateService = entityStateService;
     }
 
     @Transactional
@@ -99,6 +102,9 @@ public class FacilityService {
             investments.add(investment);
         }
         facilityInvestmentRepository.saveAll(investments);
+
+        // 【重要】Facility組成時のBorrower/Investor状態遷移実行
+        entityStateService.onFacilityCreated(savedFacility);
 
         return savedFacility;
     }
