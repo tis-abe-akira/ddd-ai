@@ -76,6 +76,12 @@ mvn test jacoco:report
   - Username: `sa` / Password: `password`
 - **JaCoCo Coverage**: `target/site/jacoco/index.html`（テスト後）
 
+## 主要API エンドポイント
+- **ドローダウン**: `POST /api/v1/loans/drawdowns` - ローンの引き出し実行
+- **支払い**: `POST /api/v1/loans/payments` - 元本・利息の返済処理
+- **支払い履歴**: `GET /api/v1/loans/payments/loan/{loanId}` - 特定ローンの支払い履歴
+- **ファシリティ**: `POST /api/v1/facilities` - 融資枠の作成・管理
+
 ## 重要な設計判断
 1. **アーキテクチャ簡素化**: CRUD中心機能では複雑なDDD構造より3層アーキテクチャが効率的
 2. **JPA Entity統合**: JPA EntityをドメインEntityとして直接使用し、マッピング層を省略
@@ -92,7 +98,8 @@ mvn test jacoco:report
 - ✅ **Syndicate管理**: シンジケート団の組成・管理
 - ✅ **Facility管理**: 融資枠作成、SharePie（持分比率）管理、状態管理（State Machine）
 - ✅ **Loan管理**: ドローダウン実行、返済スケジュール自動生成
-- ✅ **Payment管理**: 元本・利息返済処理、投資家別配分管理
+- ✅ **Payment管理**: 元本・利息返済処理、投資家別配分管理、REST API
+- ✅ **Loan状態管理**: 初回返済時のDRAFT→ACTIVE状態遷移（State Machine）
 - ✅ **Investor投資額管理**: 現在投資額の自動追跡（Drawdown増加・返済減少）
 - ✅ **共通基盤**: Money/Percentage値オブジェクト、例外処理
 
@@ -103,6 +110,10 @@ mvn test jacoco:report
   - DRAFT状態でのみ変更可能（持分比率変更、更新等）
   - ドローダウン実行時にFIXED状態に自動遷移
   - FIXED状態では2度目のドローダウン実行を禁止
+- **Loan状態管理**:
+  - ドローダウン直後はDRAFT状態（返済未開始）
+  - 初回返済実行時にACTIVE状態に自動遷移（State Machine）
+  - 元本・利息どちらの返済でも状態遷移が発生
 - **返済スケジュール**: 月次返済、利率計算自動化
 - **AmountPie生成**: ドローダウン時の投資家別配分額自動計算
 - **投資額自動管理**: Drawdown時増加、元本返済時減少（利息支払いは影響なし）
