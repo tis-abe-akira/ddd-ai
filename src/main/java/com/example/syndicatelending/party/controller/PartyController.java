@@ -173,4 +173,24 @@ public class PartyController {
         Page<Company> result = partyService.searchCompanies(name, industry, pageable);
         return ResponseEntity.ok(result);
     }
+
+    // ==============================================================
+    // canUpdate API エンドポイント
+    // ==============================================================
+
+    @GetMapping("/borrowers/{id}/can-update")
+    @Operation(summary = "Check if borrower can be updated", 
+               description = "Returns updateability information based on facility participation status")
+    public ResponseEntity<CanUpdateResponse> canUpdateBorrower(@PathVariable Long id) {
+        CanUpdateResponse response = partyService.canUpdateBorrower(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/investors/{id}/can-update")
+    @Operation(summary = "Check if investor can be updated", 
+               description = "Returns updateability information based on facility participation status")
+    public ResponseEntity<CanUpdateResponse> canUpdateInvestor(@PathVariable Long id) {
+        CanUpdateResponse response = partyService.canUpdateInvestor(id);
+        return ResponseEntity.ok(response);
+    }
 }

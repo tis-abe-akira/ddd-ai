@@ -218,7 +218,6 @@ class DrawdownServiceIntegrationTest {
     void testVariousDecimalPrecisionValues() {
         // テストデータ準備
         TestDataHelper helper = new TestDataHelper();
-        Long facilityId = helper.createTestFacilityWithBorrower();
 
         // 様々な精度の利率をテスト
         BigDecimal[] testRates = {
@@ -231,9 +230,12 @@ class DrawdownServiceIntegrationTest {
 
         for (int i = 0; i < testRates.length; i++) {
             BigDecimal testRate = testRates[i];
+            
+            // 各テストケースごとに新しいFacilityを作成（FIXED状態の制約を回避）
+            Long testFacilityId = helper.createTestFacilityWithBorrower();
 
             CreateDrawdownRequest request = new CreateDrawdownRequest();
-            request.setFacilityId(facilityId);
+            request.setFacilityId(testFacilityId);
             request.setBorrowerId(helper.borrowerId);
             request.setAmount(new BigDecimal("1000000"));
             request.setCurrency("JPY");
@@ -292,9 +294,9 @@ class DrawdownServiceIntegrationTest {
             borrower = borrowerRepository.save(borrower);
             this.borrowerId = borrower.getId();
 
-            // シンジケート作成
+            // シンジケート作成（一意の名前を生成）
             Syndicate syndicate = new Syndicate();
-            syndicate.setName("Test Syndicate");
+            syndicate.setName("Test Syndicate " + System.currentTimeMillis());
             syndicate.setLeadBankId(1L);
             syndicate.setBorrowerId(borrower.getId());
             syndicate.setMemberInvestorIds(Arrays.asList(1L, 2L));

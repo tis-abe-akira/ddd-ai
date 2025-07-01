@@ -2,6 +2,7 @@ package com.example.syndicatelending.party.entity;
 
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
+import com.example.syndicatelending.common.statemachine.party.BorrowerState;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -35,6 +36,10 @@ public class Borrower {
     @Enumerated(EnumType.STRING)
     @Column(name = "credit_rating")
     private CreditRating creditRating;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private BorrowerState status = BorrowerState.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -157,5 +162,31 @@ public class Borrower {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public BorrowerState getStatus() {
+        return status;
+    }
+
+    public void setStatus(BorrowerState status) {
+        this.status = status;
+    }
+
+    /**
+     * Borrowerが制限状態かどうかを判定する
+     * 
+     * @return 制限状態の場合 true
+     */
+    public boolean isRestricted() {
+        return BorrowerState.RESTRICTED.equals(this.status);
+    }
+
+    /**
+     * 重要フィールドの変更が可能かどうかを判定する
+     * 
+     * @return 変更可能な場合 true
+     */
+    public boolean canModifyRestrictedFields() {
+        return BorrowerState.ACTIVE.equals(this.status);
     }
 }

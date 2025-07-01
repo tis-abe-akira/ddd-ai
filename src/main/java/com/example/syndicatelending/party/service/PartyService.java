@@ -5,11 +5,15 @@ import com.example.syndicatelending.common.application.exception.BusinessRuleVio
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
+import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 /**
  * Party管理サービス（統合サービス）。
@@ -21,13 +25,19 @@ public class PartyService {
     private final CompanyRepository companyRepository;
     private final BorrowerRepository borrowerRepository;
     private final InvestorRepository investorRepository;
+    private final FacilityRepository facilityRepository;
+    private final SyndicateRepository syndicateRepository;
 
     public PartyService(CompanyRepository companyRepository,
             BorrowerRepository borrowerRepository,
-            InvestorRepository investorRepository) {
+            InvestorRepository investorRepository,
+            FacilityRepository facilityRepository,
+            SyndicateRepository syndicateRepository) {
         this.companyRepository = companyRepository;
         this.borrowerRepository = borrowerRepository;
         this.investorRepository = investorRepository;
+        this.facilityRepository = facilityRepository;
+        this.syndicateRepository = syndicateRepository;
     }
 
     // Company operations
@@ -133,6 +143,9 @@ public class PartyService {
     public Borrower updateBorrower(Long id, UpdateBorrowerRequest request) {
         Borrower existingBorrower = getBorrowerById(id);
 
+        // 【新規追加】Facility組成後の制約フィールド変更チェック
+        validateBorrowerRestrictedFields(id, existingBorrower, request);
+
         // ビジネスバリデーション: 信用限度額の妥当性チェック
         if (request.getCreditLimit() != null && request.getCreditRating() != null) {
             if (request.getCreditLimit().isGreaterThan(request.getCreditRating().getLimit())) {
@@ -224,6 +237,9 @@ public class PartyService {
     public Investor updateInvestor(Long id, UpdateInvestorRequest request) {
         Investor existingInvestor = getInvestorById(id);
 
+        // 【新規追加】Facility組成後の制約フィールド変更チェック
+        validateInvestorRestrictedFields(id, existingInvestor, request);
+
         // 企業IDが指定されている場合の存在チェック
         if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
             Long companyId;
@@ -305,6 +321,162 @@ public class PartyService {
             return investorRepository.findByInvestorType(investorType, pageable);
         } else {
             return investorRepository.findAll(pageable);
+        }
+    }
+
+    // ==============================================================
+    // Facility組成後の制約チェックメソッド
+    // ==============================================================
+
+    /**
+     * Borrower制約フィールドの変更チェック
+     * 
+     * RESTRICTED状態では以下フィールドの変更を禁止：
+     * - companyId
+     * - creditRating  
+     * - creditLimit
+     * 
+     * @param borrowerId Borrower ID
+     * @param existing 既存のBorrowerエンティティ
+     * @param request 更新リクエスト
+     * @throws BusinessRuleViolationException 制約フィールド変更時
+     */
+    private void validateBorrowerRestrictedFields(Long borrowerId, Borrower existing, UpdateBorrowerRequest request) {
+        // エンティティの状態チェック（StateMachine準拠）
+        if (existing.isRestricted()) {
+            // companyId変更チェック
+            if (!Objects.equals(existing.getCompanyId(), request.getCompanyId())) {
+                throw new BusinessRuleViolationException(
+                    "RESTRICTED状態のBorrowerはcompanyIdを変更できません。現在の値: " + existing.getCompanyId() + 
+                    ", 要求された値: " + request.getCompanyId() + ", 現在の状態: " + existing.getStatus());
+            }
+            
+            // creditRating変更チェック
+            if (!Objects.equals(existing.getCreditRating(), request.getCreditRating())) {
+                throw new BusinessRuleViolationException(
+                    "RESTRICTED状態のBorrowerはcreditRatingを変更できません。現在の値: " + existing.getCreditRating() + 
+                    ", 要求された値: " + request.getCreditRating() + ", 現在の状態: " + existing.getStatus());
+            }
+            
+            // creditLimit変更チェック
+            if (!Objects.equals(existing.getCreditLimit(), request.getCreditLimit())) {
+                throw new BusinessRuleViolationException(
+                    "RESTRICTED状態のBorrowerはcreditLimitを変更できません。現在の値: " + existing.getCreditLimit() + 
+                    ", 要求された値: " + request.getCreditLimit() + ", 現在の状態: " + existing.getStatus());
+            }
+        }
+    }
+
+    /**
+     * Investor制約フィールドの変更チェック
+     * 
+     * RESTRICTED状態では以下フィールドの変更を禁止：
+     * - companyId
+     * - investmentCapacity
+     * 
+     * @param investorId Investor ID
+     * @param existing 既存のInvestorエンティティ
+     * @param request 更新リクエスト
+     * @throws BusinessRuleViolationException 制約フィールド変更時
+     */
+    private void validateInvestorRestrictedFields(Long investorId, Investor existing, UpdateInvestorRequest request) {
+        // エンティティの状態チェック（StateMachine準拠）
+        if (existing.isRestricted()) {
+            // companyId変更チェック
+            if (!Objects.equals(existing.getCompanyId(), request.getCompanyId())) {
+                throw new BusinessRuleViolationException(
+                    "RESTRICTED状態のInvestorはcompanyIdを変更できません。現在の値: " + existing.getCompanyId() + 
+                    ", 要求された値: " + request.getCompanyId() + ", 現在の状態: " + existing.getStatus());
+            }
+            
+            // investmentCapacity変更チェック  
+            if (!Objects.equals(existing.getInvestmentCapacity(), request.getInvestmentCapacity())) {
+                throw new BusinessRuleViolationException(
+                    "RESTRICTED状態のInvestorはinvestmentCapacityを変更できません。現在の値: " + existing.getInvestmentCapacity() + 
+                    ", 要求された値: " + request.getInvestmentCapacity() + ", 現在の状態: " + existing.getStatus());
+            }
+        }
+    }
+
+    // ==============================================================
+    // canUpdate API メソッド
+    // ==============================================================
+
+    /**
+     * Borrowerの更新可能性をチェック
+     * 
+     * @param id Borrower ID
+     * @return 更新可能性情報
+     */
+    @Transactional(readOnly = true)
+    public CanUpdateResponse canUpdateBorrower(Long id) {
+        // Borrowerの存在チェックと取得
+        Borrower borrower = borrowerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + id));
+        
+        // エンティティ状態チェック（StateMachine準拠）
+        if (borrower.isRestricted()) {
+            // 制約あり：一部フィールドのみ変更可能
+            CanUpdateResponse.BorrowerFieldUpdateability fields = 
+                new CanUpdateResponse.BorrowerFieldUpdateability(
+                    false, // companyId: 変更不可
+                    false, // creditRating: 変更不可
+                    false  // creditLimit: 変更不可
+                );
+            
+            return new CanUpdateResponse(
+                true, // 一部フィールドは更新可能
+                "RESTRICTED状態のため、companyId, creditRating, creditLimitは変更できません。現在の状態: " + borrower.getStatus(), 
+                fields
+            );
+        } else {
+            // 制約なし：全フィールド変更可能
+            CanUpdateResponse.BorrowerFieldUpdateability fields = 
+                new CanUpdateResponse.BorrowerFieldUpdateability(
+                    true, // companyId: 変更可能
+                    true, // creditRating: 変更可能
+                    true  // creditLimit: 変更可能
+                );
+            
+            return new CanUpdateResponse(true, null, fields);
+        }
+    }
+
+    /**
+     * Investorの更新可能性をチェック
+     * 
+     * @param id Investor ID
+     * @return 更新可能性情報
+     */
+    @Transactional(readOnly = true)
+    public CanUpdateResponse canUpdateInvestor(Long id) {
+        // Investorの存在チェックと取得
+        Investor investor = investorRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Investor not found with ID: " + id));
+        
+        // エンティティ状態チェック（StateMachine準拠）
+        if (investor.isRestricted()) {
+            // 制約あり：一部フィールドのみ変更可能
+            CanUpdateResponse.InvestorFieldUpdateability fields = 
+                new CanUpdateResponse.InvestorFieldUpdateability(
+                    false, // companyId: 変更不可
+                    false  // investmentCapacity: 変更不可
+                );
+            
+            return new CanUpdateResponse(
+                true, // 一部フィールドは更新可能
+                "RESTRICTED状態のため、companyId, investmentCapacityは変更できません。現在の状態: " + investor.getStatus(), 
+                fields
+            );
+        } else {
+            // 制約なし：全フィールド変更可能
+            CanUpdateResponse.InvestorFieldUpdateability fields = 
+                new CanUpdateResponse.InvestorFieldUpdateability(
+                    true, // companyId: 変更可能
+                    true  // investmentCapacity: 変更可能
+                );
+            
+            return new CanUpdateResponse(true, null, fields);
         }
     }
 }

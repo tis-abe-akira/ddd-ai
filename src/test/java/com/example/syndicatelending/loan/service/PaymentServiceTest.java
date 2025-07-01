@@ -1,6 +1,7 @@
 package com.example.syndicatelending.loan.service;
 
 import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.statemachine.loan.LoanState;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
@@ -228,5 +229,83 @@ class PaymentServiceTest {
 
         assertEquals(expectedInvestor1Amount, investor1.getCurrentInvestmentAmount());
         assertEquals(expectedInvestor2Amount, investor2.getCurrentInvestmentAmount());
+    }
+
+    @Test
+    void 初回返済時にLoan状態がDRAFTからACTIVEに変更される() {
+        // ドローダウン直後はDRAFT状態
+        loan = loanRepository.findById(loan.getId()).orElseThrow();
+        assertEquals(LoanState.DRAFT, loan.getStatus());
+
+        // 初回返済リクエスト作成
+        CreatePaymentRequest paymentRequest = new CreatePaymentRequest();
+        paymentRequest.setLoanId(loan.getId());
+        paymentRequest.setPaymentDate(LocalDate.now());
+        paymentRequest.setPrincipalAmount(new BigDecimal("25000")); // 元本返済
+        paymentRequest.setInterestAmount(new BigDecimal("3000"));   // 利息支払い
+        paymentRequest.setCurrency("JPY");
+
+        // 初回返済実行
+        Payment payment = paymentService.processPayment(paymentRequest);
+        assertNotNull(payment);
+
+        // Loan状態がACTIVEに変更されていることを確認
+        loan = loanRepository.findById(loan.getId()).orElseThrow();
+        assertEquals(LoanState.ACTIVE, loan.getStatus());
+    }
+
+    @Test
+    void 二回目以降の返済ではLoan状態がACTIVEのまま維持される() {
+        // 初回返済でACTIVE状態にする
+        CreatePaymentRequest firstPayment = new CreatePaymentRequest();
+        firstPayment.setLoanId(loan.getId());
+        firstPayment.setPaymentDate(LocalDate.now());
+        firstPayment.setPrincipalAmount(new BigDecimal("25000"));
+        firstPayment.setInterestAmount(new BigDecimal("3000"));
+        firstPayment.setCurrency("JPY");
+
+        paymentService.processPayment(firstPayment);
+
+        // 状態確認
+        loan = loanRepository.findById(loan.getId()).orElseThrow();
+        assertEquals(LoanState.ACTIVE, loan.getStatus());
+
+        // 二回目の返済
+        CreatePaymentRequest secondPayment = new CreatePaymentRequest();
+        secondPayment.setLoanId(loan.getId());
+        secondPayment.setPaymentDate(LocalDate.now().plusDays(30));
+        secondPayment.setPrincipalAmount(new BigDecimal("25000"));
+        secondPayment.setInterestAmount(new BigDecimal("2500"));
+        secondPayment.setCurrency("JPY");
+
+        Payment payment2 = paymentService.processPayment(secondPayment);
+        assertNotNull(payment2);
+
+        // Loan状態がACTIVEのまま維持されていることを確認
+        loan = loanRepository.findById(loan.getId()).orElseThrow();
+        assertEquals(LoanState.ACTIVE, loan.getStatus());
+    }
+
+    @Test
+    void 利息のみの返済でもLoan状態がDRAFTからACTIVEに変更される() {
+        // ドローダウン直後はDRAFT状態
+        loan = loanRepository.findById(loan.getId()).orElseThrow();
+        assertEquals(LoanState.DRAFT, loan.getStatus());
+
+        // 利息のみの返済リクエスト作成
+        CreatePaymentRequest paymentRequest = new CreatePaymentRequest();
+        paymentRequest.setLoanId(loan.getId());
+        paymentRequest.setPaymentDate(LocalDate.now());
+        paymentRequest.setPrincipalAmount(BigDecimal.ZERO);        // 元本返済なし
+        paymentRequest.setInterestAmount(new BigDecimal("5000"));  // 利息のみ
+        paymentRequest.setCurrency("JPY");
+
+        // 利息のみ返済実行
+        Payment payment = paymentService.processPayment(paymentRequest);
+        assertNotNull(payment);
+
+        // Loan状態がACTIVEに変更されていることを確認
+        loan = loanRepository.findById(loan.getId()).orElseThrow();
+        assertEquals(LoanState.ACTIVE, loan.getStatus());
     }
 }

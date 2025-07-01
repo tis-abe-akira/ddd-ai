@@ -3,6 +3,8 @@ package com.example.syndicatelending.loan.service;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.statemachine.loan.LoanState;
+import com.example.syndicatelending.common.statemachine.loan.LoanEvent;
 import com.example.syndicatelending.loan.dto.CreatePaymentRequest;
 import com.example.syndicatelending.loan.entity.Payment;
 import com.example.syndicatelending.loan.entity.PaymentDistribution;
@@ -13,6 +15,9 @@ import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.loan.repository.AmountPieRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.InvestorRepository;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.statemachine.StateMachine;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +32,18 @@ public class PaymentService {
     private final LoanRepository loanRepository;
     private final AmountPieRepository amountPieRepository;
     private final InvestorRepository investorRepository;
+    private final StateMachine<LoanState, LoanEvent> loanStateMachine;
 
     public PaymentService(PaymentRepository paymentRepository,
                          LoanRepository loanRepository,
                          AmountPieRepository amountPieRepository,
-                         InvestorRepository investorRepository) {
+                         InvestorRepository investorRepository,
+                         @Qualifier("loanStateMachine") StateMachine<LoanState, LoanEvent> loanStateMachine) {
         this.paymentRepository = paymentRepository;
         this.loanRepository = loanRepository;
         this.amountPieRepository = amountPieRepository;
         this.investorRepository = investorRepository;
+        this.loanStateMachine = loanStateMachine;
     }
 
     @Transactional
@@ -71,6 +79,9 @@ public class PaymentService {
 
         // 6. Investor投資額の減少（元本部分のみ）
         updateInvestorAmountsForPayment(paymentDistributions);
+
+        // 7. Loan状態管理（初回返済時のDRAFT→ACTIVE遷移）
+        updateLoanStateForFirstPayment(loan);
 
         return savedPayment;
     }
@@ -166,6 +177,56 @@ public class PaymentService {
             // 元本部分のみ投資額から減算（利息は投資額に影響しない）
             investor.decreaseInvestmentAmount(distribution.getPrincipalAmount());
             investorRepository.save(investor);
+        }
+    }
+
+    /**
+     * 初回返済時のLoan状態管理
+     * DRAFT状態のLoanに対してFIRST_PAYMENTイベントを送信し、ACTIVE状態に遷移させる
+     * 
+     * @param loan 対象のLoanエンティティ
+     */
+    private void updateLoanStateForFirstPayment(Loan loan) {
+        // DRAFT状態の場合のみ初回返済として扱う
+        if (loan.getStatus() == LoanState.DRAFT) {
+            // 既存の支払い履歴を確認（今回の支払いを除く）
+            List<Payment> existingPayments = paymentRepository.findByLoanIdOrderByPaymentDateDesc(loan.getId());
+            
+            // 今回が初回返済（既存の支払いが1件以下）の場合
+            if (existingPayments.size() <= 1) {
+                if (executeLoanStateTransition(loan, LoanEvent.FIRST_PAYMENT)) {
+                    // エンティティ状態を更新
+                    loan.setStatus(LoanState.ACTIVE);
+                    loanRepository.save(loan);
+                }
+            }
+        }
+    }
+
+    /**
+     * Loan StateMachine遷移実行
+     * 
+     * @param loan Loanエンティティ
+     * @param event 発火イベント
+     * @return 遷移成功時 true
+     */
+    private boolean executeLoanStateTransition(Loan loan, LoanEvent event) {
+        try {
+            // StateMachineを現在状態に設定
+            loanStateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
+                access.resetStateMachine(null);
+            });
+
+            // 現在状態を設定
+            loanStateMachine.getExtendedState().getVariables().put("loanId", loan.getId());
+            
+            // イベント送信
+            return loanStateMachine.sendEvent(event);
+        } catch (Exception e) {
+            // 状態遷移失敗時はログに記録し、処理を継続
+            // （支払い処理自体は成功させる）
+            System.err.println("Loan state transition failed for ID: " + loan.getId() + ", error: " + e.getMessage());
+            return false;
         }
     }
 }

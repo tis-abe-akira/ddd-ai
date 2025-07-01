@@ -132,12 +132,35 @@ class DrawdownServiceInvestorAmountTest {
 
     @Test
     void 複数回のドローダウンで投資額が累積される() {
-        // 1回目のドローダウン
+        // 1回目のドローダウン（最初のFacility）
         CreateDrawdownRequest request1 = createDrawdownRequest(new BigDecimal("100000"));
         drawdownService.createDrawdown(request1);
 
-        // 2回目のドローダウン
+        // 2回目のドローダウン用の新しいFacilityを作成
+        Facility facility2 = new Facility();
+        facility2.setSyndicateId(1L);
+        facility2.setCommitment(Money.of(new BigDecimal("800000")));
+        facility2.setCurrency("JPY");
+        facility2.setStartDate(LocalDate.now());
+        facility2.setEndDate(LocalDate.now().plusYears(1));
+        facility2 = facilityRepository.save(facility2);
+        
+        // 新しいFacilityにSharePieを設定（同じ比率：70%:30%）
+        SharePie sharePie1_2 = new SharePie();
+        sharePie1_2.setFacility(facility2);
+        sharePie1_2.setInvestorId(investor1.getId());
+        sharePie1_2.setShare(Percentage.of(new BigDecimal("0.7")));
+        sharePieRepository.save(sharePie1_2);
+
+        SharePie sharePie2_2 = new SharePie();
+        sharePie2_2.setFacility(facility2);
+        sharePie2_2.setInvestorId(investor2.getId());
+        sharePie2_2.setShare(Percentage.of(new BigDecimal("0.3")));
+        sharePieRepository.save(sharePie2_2);
+        
+        // 2回目のドローダウン（新しいFacility）
         CreateDrawdownRequest request2 = createDrawdownRequest(new BigDecimal("150000"));
+        request2.setFacilityId(facility2.getId());
         drawdownService.createDrawdown(request2);
 
         // 投資家エンティティを再取得

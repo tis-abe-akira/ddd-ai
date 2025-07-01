@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 
 @Entity
 @Table(name = "facilities")
@@ -37,6 +38,10 @@ public class Facility {
 
     @OneToMany(mappedBy = "facility", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SharePie> sharePies = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private FacilityState status = FacilityState.DRAFT;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -159,6 +164,22 @@ public class Facility {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public FacilityState getStatus() {
+        return status;
+    }
+
+    public void setStatus(FacilityState status) {
+        this.status = status;
+    }
+
+    public boolean canBeModified() {
+        return status == FacilityState.DRAFT;
+    }
+
+    public boolean isFixed() {
+        return status == FacilityState.FIXED;
     }
 
 }
