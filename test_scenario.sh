@@ -397,8 +397,162 @@ if [[ "$HTTP_CODE_4" = "200" ]]; then
   echo ""
   echo "--- Fee Payment テスト完了 ---"
 
+  echo ""
+  echo "--- Drawdown テスト開始 ---"
+  
+  echo "--- 1. 正常なDrawdown作成 ---"
+  DRAWDOWN_RESPONSE=$(curl -s -X POST "$API_URL/loans/drawdowns" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "facilityId": '$FACILITY_ID',
+      "borrowerId": '$BORROWER_ID',
+      "amount": 2000000,
+      "currency": "USD",
+      "drawdownDate": "2025-02-01",
+      "annualInterestRate": 0.05,
+      "repaymentPeriodMonths": 12,
+      "repaymentCycle": "MONTHLY",
+      "repaymentMethod": "EQUAL_INSTALLMENT",
+      "purpose": "Working capital"
+    }' \
+    -w "%{http_code}")
+
+  HTTP_CODE_DRAWDOWN=$(echo "$DRAWDOWN_RESPONSE" | grep -o '[0-9]\{3\}$')
+  RESPONSE_BODY_DRAWDOWN=$(echo "$DRAWDOWN_RESPONSE" | sed 's/[0-9]\{3\}$//')
+
+  if [[ "$HTTP_CODE_DRAWDOWN" = "200" ]]; then
+    echo "[OK] Drawdown作成成功: HTTP $HTTP_CODE_DRAWDOWN"
+    DRAWDOWN_ID=$(echo "$RESPONSE_BODY_DRAWDOWN" | jq -r '.id')
+    LOAN_ID=$(echo "$RESPONSE_BODY_DRAWDOWN" | jq -r '.loanId')
+    echo "作成されたDrawdown ID: $DRAWDOWN_ID"
+    echo "作成されたLoan ID: $LOAN_ID"
+    echo "$RESPONSE_BODY_DRAWDOWN" | jq
+  else
+    echo "[NG] Drawdown作成失敗: HTTP $HTTP_CODE_DRAWDOWN"
+    echo "エラーレスポンス: $RESPONSE_BODY_DRAWDOWN"
+  fi
+
+  echo ""
+  echo "--- 2. 利用可能額超過エラーケース ---"
+  DRAWDOWN_ERROR=$(curl -s -X POST "$API_URL/loans/drawdowns" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "facilityId": '$FACILITY_ID',
+      "borrowerId": '$BORROWER_ID',
+      "amount": 6000000,
+      "currency": "USD",
+      "drawdownDate": "2025-02-01",
+      "annualInterestRate": 0.05,
+      "repaymentPeriodMonths": 12,
+      "repaymentCycle": "MONTHLY",
+      "repaymentMethod": "EQUAL_INSTALLMENT",
+      "purpose": "Working capital"
+    }' \
+    -w "%{http_code}")
+
+  HTTP_CODE_DRAWDOWN_ERROR=$(echo "$DRAWDOWN_ERROR" | grep -o '[0-9]\{3\}$')
+  RESPONSE_BODY_DRAWDOWN_ERROR=$(echo "$DRAWDOWN_ERROR" | sed 's/[0-9]\{3\}$//')
+
+  if [[ "$HTTP_CODE_DRAWDOWN_ERROR" = "400" ]]; then
+    echo "[OK] 利用可能額超過エラーが正しく検出: HTTP $HTTP_CODE_DRAWDOWN_ERROR"
+    echo "エラーメッセージ: $RESPONSE_BODY_DRAWDOWN_ERROR"
+  else
+    echo "[NG] 利用可能額超過エラーが検出されなかった: HTTP $HTTP_CODE_DRAWDOWN_ERROR"
+    echo "レスポンス: $RESPONSE_BODY_DRAWDOWN_ERROR"
+  fi
+
+  echo ""
+  echo "--- Drawdown テスト完了 ---"
+
+  # Drawdownが成功した場合のみPaymentテストを実行
+  if [[ "$HTTP_CODE_DRAWDOWN" = "200" ]]; then
+    echo ""
+    echo "--- Payment テスト開始 ---"
+    
+    echo "--- 1. 正常な返済処理 ---"
+    PAYMENT_RESPONSE=$(curl -s -X POST "$API_URL/loans/payments" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "loanId": '$LOAN_ID',
+        "paymentDate": "2025-03-01",
+        "principalAmount": 100000,
+        "interestAmount": 8333.33,
+        "currency": "USD"
+      }' \
+      -w "%{http_code}")
+
+    HTTP_CODE_PAYMENT=$(echo "$PAYMENT_RESPONSE" | grep -o '[0-9]\{3\}$')
+    RESPONSE_BODY_PAYMENT=$(echo "$PAYMENT_RESPONSE" | sed 's/[0-9]\{3\}$//')
+
+    if [[ "$HTTP_CODE_PAYMENT" = "200" ]]; then
+      echo "[OK] Payment作成成功: HTTP $HTTP_CODE_PAYMENT"
+      PAYMENT_ID=$(echo "$RESPONSE_BODY_PAYMENT" | jq -r '.id')
+      echo "作成されたPayment ID: $PAYMENT_ID"
+      echo "投資家別配分確認:"
+      echo "$RESPONSE_BODY_PAYMENT" | jq '.paymentDistributions'
+    else
+      echo "[NG] Payment作成失敗: HTTP $HTTP_CODE_PAYMENT"
+      echo "エラーレスポンス: $RESPONSE_BODY_PAYMENT"
+    fi
+
+    echo ""
+    echo "--- 2. 返済額不正エラーケース ---"
+    PAYMENT_ERROR=$(curl -s -X POST "$API_URL/loans/payments" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "loanId": '$LOAN_ID',
+        "paymentDate": "2025-03-01",
+        "principalAmount": -1000,
+        "interestAmount": -100,
+        "currency": "USD"
+      }' \
+      -w "%{http_code}")
+
+    HTTP_CODE_PAYMENT_ERROR=$(echo "$PAYMENT_ERROR" | grep -o '[0-9]\{3\}$')
+    
+    if [[ "$HTTP_CODE_PAYMENT_ERROR" = "400" ]]; then
+      echo "[OK] 返済額不正エラーが正しく検出: HTTP $HTTP_CODE_PAYMENT_ERROR"
+    else
+      echo "[NG] 返済額不正エラーが検出されなかった: HTTP $HTTP_CODE_PAYMENT_ERROR"
+    fi
+
+    echo ""
+    echo "--- Payment履歴確認 ---"
+    echo "Loan別Payment履歴:"
+    curl -s "$API_URL/loans/payments/loan/$LOAN_ID" | jq
+
+    echo ""
+    echo "--- Payment テスト完了 ---"
+
+    echo ""
+    echo "--- 最終的なTransaction統合確認 ---"
+    echo "すべての取引を含むFacility別Transaction履歴:"
+    curl -s "$API_URL/transactions/facility/$FACILITY_ID" | jq
+
+    echo ""
+    echo "最終的なTransaction統計:"
+    curl -s "$API_URL/transactions/facility/$FACILITY_ID/statistics" | jq
+
+    echo ""
+    echo "取引タイプ別確認 - DRAWDOWN:"
+    curl -s "$API_URL/transactions/type/DRAWDOWN" | jq
+
+    echo ""
+    echo "取引タイプ別確認 - PAYMENT:"
+    curl -s "$API_URL/transactions/type/PAYMENT" | jq
+
+    echo ""
+    echo "取引タイプ別確認 - FEE_PAYMENT:"
+    curl -s "$API_URL/transactions/type/FEE_PAYMENT" | jq
+
+    echo ""
+    echo "--- Transaction統合確認完了 ---"
+  else
+    echo "Drawdownが正常に作成されなかったため、Paymentテストをスキップします"
+  fi
+
 else
-  echo "Facilityが正常に作成されなかったため、Fee Paymentテストをスキップします"
+  echo "Facilityが正常に作成されなかったため、Drawdown/Payment/Fee Paymentテストをスキップします"
 fi
 
 echo ""

@@ -140,6 +140,28 @@ erDiagram
         Long paymentId FK
     }
 
+    FeePayment {
+        Long id PK
+        FeeType feeType
+        LocalDate feeDate
+        String description
+        String recipientType
+        Long recipientId
+        Money calculationBase
+        Double feeRate
+        String currency
+    }
+
+    FeeDistribution {
+        Long id PK
+        String recipientType
+        Long recipientId
+        Money distributionAmount
+        Double distributionRatio
+        String currency
+        Long feePaymentId FK
+    }
+
     %% 関係性
     Syndicate ||--|| Borrower : "has borrower"
     Syndicate ||--|| Investor : "has lead bank"
@@ -160,6 +182,10 @@ erDiagram
     Payment ||--|| Loan : "repays"
     Payment ||--o{ PaymentDistribution : "distributes to"
     PaymentDistribution }|--|| Investor : "pays to"
+    FeePayment ||--|| Transaction : "is-a"
+    FeePayment ||--|| Facility : "related to"
+    FeePayment ||--o{ FeeDistribution : "distributes to"
+    FeeDistribution }|--|| Investor : "pays to"
 ```
 
 ### 1.2 Value Objects
@@ -256,59 +282,48 @@ classDiagram
         EQUAL_INSTALLMENT
         BULLET_PAYMENT
     }
+
+    class FeeType {
+        <<enumeration>>
+        MANAGEMENT_FEE
+        ARRANGEMENT_FEE
+        COMMITMENT_FEE
+        TRANSACTION_FEE
+        LATE_FEE
+        AGENT_FEE
+        OTHER_FEE
+        +getDescription() String
+        +requiresInvestorDistribution() boolean
+    }
+
+    class TransactionType {
+        <<enumeration>>
+        DRAWDOWN
+        PAYMENT
+        FEE_PAYMENT
+        FACILITY_INVESTMENT
+        TRADE
+        SETTLEMENT
+    }
+
+    class TransactionStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        CANCELLED
+        REFUNDED
+    }
 ```
 
 ## 2. 将来実装予定データモデル（概念レベル）
 
-### 2.1 Transaction階層の拡張と支払い処理
+### 2.1 将来の取引タイプ拡張
 
 ```mermaid
 erDiagram
-    %% Transaction階層（抽象基底概念）- 既に実装済みの部分は省略
-    Transaction {
-        Long id PK
-        String transactionType
-        Long facilityId FK
-        Money amount
-        String currency
-        LocalDate transactionDate
-    }
-
-    Payment {
-        Long id PK
-        String paymentType
-        Long loanId FK
-        Money amount
-        LocalDate paymentDate
-    }
-
-    InterestPayment {
-        Long id PK
-        Long loanId FK
-        Money amount
-        LocalDate paymentDate
-        LocalDate periodStart
-        LocalDate periodEnd
-        BigDecimal interestRate
-    }
-
-    PrincipalPayment {
-        Long id PK
-        Long loanId FK
-        Money amount
-        LocalDate paymentDate
-        Money remainingBalance
-    }
-
-    FeePayment {
-        Long id PK
-        Long facilityId FK
-        Money amount
-        LocalDate paymentDate
-        FeeType feeType
-        String description
-    }
-
+    %% 将来実装予定の取引タイプ
     FacilityTrade {
         Long id PK
         Long facilityId FK
@@ -319,16 +334,17 @@ erDiagram
         LocalDate tradeDate
     }
 
-    %% 継承関係
-    Transaction ||--o{ Payment : "is-a"
-    Payment ||--o{ InterestPayment : "is-a"
-    Payment ||--o{ PrincipalPayment : "is-a"
-    Payment ||--o{ FeePayment : "is-a"
-    Transaction ||--o{ FacilityTrade : "is-a"
+    Settlement {
+        Long id PK
+        Long facilityId FK
+        Money finalAmount
+        LocalDate settlementDate
+        String settlementType
+    }
 
-    %% 関係性
-    Loan ||--o{ InterestPayment : "generates"
-    Loan ||--o{ PrincipalPayment : "generates"
+    %% 継承関係
+    Transaction ||--o{ FacilityTrade : "is-a"
+    Transaction ||--o{ Settlement : "is-a"
 ```
 
 ### 2.2 配分管理の拡張（Share Pie vs Amount Pie）
@@ -392,22 +408,19 @@ erDiagram
     Transaction }|--|| Currency : "denominated in"
 ```
 
-### 2.4 手数料種別詳細
+### 2.4 将来拡張予定手数料タイプ
 
 ```mermaid
 classDiagram
-    class FeeType {
+    class FutureFeеType {
         <<enumeration>>
-        COMMITMENT_FEE
-        ARRANGEMENT_FEE
-        AGENT_FEE
         PARTICIPATION_FEE
         PREPAYMENT_FEE
-        ANNUAL_MANAGEMENT_FEE
         UTILIZATION_FEE
         FACILITY_FEE
         AMENDMENT_FEE
-        OTHER
+        SYNDICATION_FEE
+        UNDERWRITING_FEE
         +getDescription() String
         +getCalculationMethod() String
     }
@@ -490,7 +503,9 @@ mindmap
 ---
 
 **注記**: 
-- 現在実装済み: Company, Borrower, Investor (投資額管理機能含む), Syndicate, Facility, SharePie, Transaction, FacilityInvestment, Drawdown, Loan, PaymentDetail, AmountPie, Payment, PaymentDistribution
-- 将来実装予定: Fee階層（FeePayment）, FacilityTrade, マスタデータ
+- **現在実装済み**: Company, Borrower, Investor (投資額管理機能含む), Syndicate, Facility, SharePie, Transaction (基底クラス), FacilityInvestment, Drawdown, Loan, PaymentDetail, AmountPie, Payment, PaymentDistribution, **FeePayment, FeeDistribution**
+- **将来実装予定**: FacilityTrade, Settlement, マスタデータ、追加手数料タイプ
+- **Transaction統合管理**: 全取引タイプ（Drawdown, Payment, FeePayment, FacilityInvestment）の統一的管理・追跡
 - 共通フィールド（created_at, updated_at, version）は図から省略
-- Payment/PaymentDistributionは元本・利息返済処理と投資家別配分を管理
+- Payment/PaymentDistribution: 元本・利息返済処理と投資家別配分
+- **FeePayment/FeeDistribution**: 手数料処理と投資家別配分（SharePie比率ベース）
