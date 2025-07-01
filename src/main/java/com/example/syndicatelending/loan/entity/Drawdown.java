@@ -1,6 +1,7 @@
 package com.example.syndicatelending.loan.entity;
 
 import com.example.syndicatelending.transaction.entity.Transaction;
+import com.example.syndicatelending.transaction.entity.TransactionType;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.List;
@@ -24,7 +25,7 @@ public class Drawdown extends Transaction {
 
     public Drawdown() {
         super();
-        this.setTransactionType("DRAWDOWN");
+        this.setTransactionType(TransactionType.DRAWDOWN);
     }
 
     public Long getLoanId() {

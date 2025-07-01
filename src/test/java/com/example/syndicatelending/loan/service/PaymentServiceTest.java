@@ -19,6 +19,8 @@ import com.example.syndicatelending.party.entity.InvestorType;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.common.domain.model.Percentage;
+import com.example.syndicatelending.transaction.entity.TransactionType;
+import com.example.syndicatelending.transaction.entity.TransactionStatus;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -143,6 +145,15 @@ class PaymentServiceTest {
         // 返済実行
         Payment payment = paymentService.processPayment(paymentRequest);
         assertNotNull(payment);
+        
+        // Transaction基底クラスのフィールド検証
+        assertEquals(TransactionType.PAYMENT, payment.getTransactionType());
+        assertEquals(TransactionStatus.PENDING, payment.getStatus());
+        assertEquals(facility.getId(), payment.getFacilityId());
+        assertEquals(borrower.getId(), payment.getBorrowerId());
+        assertNotNull(payment.getId());
+        assertNotNull(payment.getCreatedAt());
+        assertNotNull(payment.getUpdatedAt());
 
         // 投資家エンティティを再取得
         investor1 = investorRepository.findById(investor1.getId()).orElseThrow();

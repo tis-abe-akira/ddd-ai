@@ -23,8 +23,13 @@ public abstract class Transaction {
     @Column(nullable = false)
     private LocalDate transactionDate;
 
-    @Column(nullable = false)
-    private String transactionType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", nullable = false)
+    private TransactionType transactionType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private TransactionStatus status;
 
     @Column(nullable = false)
     @Convert(converter = MoneyAttributeConverter.class)
@@ -44,6 +49,9 @@ public abstract class Transaction {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = TransactionStatus.PENDING;
+        }
     }
 
     @PreUpdate
@@ -84,12 +92,20 @@ public abstract class Transaction {
         this.transactionDate = transactionDate;
     }
 
-    public String getTransactionType() {
+    public TransactionType getTransactionType() {
         return transactionType;
     }
 
-    public void setTransactionType(String transactionType) {
+    public void setTransactionType(TransactionType transactionType) {
         this.transactionType = transactionType;
+    }
+
+    public TransactionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TransactionStatus status) {
+        this.status = status;
     }
 
     public Money getAmount() {
@@ -122,5 +138,52 @@ public abstract class Transaction {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    // Business Methods
+    
+    /**
+     * 取引を完了状態に変更
+     */
+    public void markAsCompleted() {
+        this.status = TransactionStatus.COMPLETED;
+    }
+    
+    /**
+     * 取引を失敗状態に変更
+     */
+    public void markAsFailed() {
+        this.status = TransactionStatus.FAILED;
+    }
+    
+    /**
+     * 取引をキャンセル状態に変更
+     */
+    public void markAsCancelled() {
+        this.status = TransactionStatus.CANCELLED;
+    }
+    
+    /**
+     * 取引が完了しているかチェック
+     * @return 完了している場合true
+     */
+    public boolean isCompleted() {
+        return this.status == TransactionStatus.COMPLETED;
+    }
+    
+    /**
+     * 取引がキャンセル可能かチェック
+     * @return キャンセル可能な場合true
+     */
+    public boolean isCancellable() {
+        return this.status == TransactionStatus.PENDING || this.status == TransactionStatus.PROCESSING;
+    }
+    
+    /**
+     * 取引が処理中かチェック
+     * @return 処理中の場合true
+     */
+    public boolean isProcessing() {
+        return this.status == TransactionStatus.PROCESSING;
     }
 }

@@ -13,7 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build**: Maven
 - **Database**: H2 (インメモリ)
 - **Dependencies**: Spring Web, Data JPA, Validation, AOP, Lombok, JaCoCo, SpringDoc OpenAPI
-- **State Management**: Spring State Machine (Facility状態管理)
+- **State Management**: Spring State Machine (Facility・Loan・Party状態管理)
+- **Transaction Management**: 統一Transaction階層 (基底クラス継承)
 
 ## アーキテクチャ
 実用的な3層アーキテクチャ（簡素化版）：
@@ -27,12 +28,21 @@ com.example.syndicatelending/
 ├── common/             # 共通要素
 │   ├── domain/model/   # Money, Percentage値オブジェクト
 │   ├── application/exception/ # ビジネス例外クラス
-│   └── infrastructure/ # GlobalExceptionHandler
+│   ├── infrastructure/ # GlobalExceptionHandler
+│   └── statemachine/   # State Machine基盤
+├── transaction/        # 取引管理（✅完了）
+│   ├── entity/         # Transaction基底クラス、TransactionType/Status enum
+│   ├── service/        # 統一取引管理・横断機能
+│   └── controller/     # 取引履歴・レポートAPI
 ├── party/              # 参加者管理（✅完了）
 ├── syndicate/          # シンジケート団管理（✅完了）
 ├── facility/           # 融資枠管理（✅完了）
 ├── loan/               # ローン・ドローダウン管理（✅完了）
-└── transaction/        # 取引基底クラス（🔄一部実装）
+└── fee/                # 手数料管理（✅完了）
+    ├── entity/         # FeePayment, FeeDistribution, FeeType
+    ├── service/        # 手数料計算・配分ロジック
+    ├── controller/     # 手数料API
+    └── dto/            # CreateFeePaymentRequest
 ```
 
 各モジュールは標準的な3層構造（controller/service/repository/entity/dto）を採用。
@@ -77,9 +87,23 @@ mvn test jacoco:report
 - **JaCoCo Coverage**: `target/site/jacoco/index.html`（テスト後）
 
 ## 主要API エンドポイント
+
+### 取引管理
+- **取引履歴**: `GET /api/v1/transactions/facility/{facilityId}` - Facility別取引履歴
+- **取引統計**: `GET /api/v1/transactions/facility/{facilityId}/statistics` - 取引統計情報
+- **取引状態管理**: `POST /api/v1/transactions/{id}/approve|complete|cancel` - 取引状態変更
+
+### ローン管理
 - **ドローダウン**: `POST /api/v1/loans/drawdowns` - ローンの引き出し実行
 - **支払い**: `POST /api/v1/loans/payments` - 元本・利息の返済処理
 - **支払い履歴**: `GET /api/v1/loans/payments/loan/{loanId}` - 特定ローンの支払い履歴
+
+### 手数料管理
+- **手数料支払い**: `POST /api/v1/fees/payments` - 手数料支払い処理
+- **手数料履歴**: `GET /api/v1/fees/payments/facility/{facilityId}` - Facility別手数料履歴
+- **手数料統計**: `GET /api/v1/fees/payments/facility/{facilityId}/statistics` - 手数料統計
+
+### その他
 - **ファシリティ**: `POST /api/v1/facilities` - 融資枠の作成・管理
 
 ## 重要な設計判断
@@ -88,10 +112,14 @@ mvn test jacoco:report
 3. **Business ID**: エンティティはUUID自動生成、データベースは別途自動増分ID
 4. **金融計算**: BigDecimalベースの厳密な計算
 5. **統合サービス**: 機能単位での統合サービスで複雑さを削減
-6. **状態管理の導入**: Spring State MachineによるFacilityのライフサイクル管理
-   - **目的**: ドローダウン実行後のFacility変更禁止を厳密に制御
-   - **状態遷移**: DRAFT（変更可能） → FIXED（変更不可・確定済み）
-   - **ビジネスルール**: FIXED状態での2度目のドローダウンを防止
+6. **統一Transaction基盤の確立**: Transaction基底クラスによる取引管理統一
+   - **目的**: 全取引タイプ（Drawdown, Payment, FeePayment等）の一貫管理
+   - **継承戦略**: JPA JOINED継承による各サブクラス専用テーブル
+   - **Type Safety**: TransactionType/Status enumによる型安全な分類・状態管理
+7. **状態管理の導入**: Spring State Machineによる包括的ライフサイクル管理
+   - **Facility**: DRAFT → FIXED（ドローダウン後変更禁止）
+   - **Loan**: DRAFT → ACTIVE → OVERDUE → COMPLETED（返済ライフサイクル）
+   - **Party**: ACTIVE → RESTRICTED（Facility参加後制限）
 
 ## 実装済み機能
 - ✅ **Party管理**: 企業・借り手・投資家のCRUD
@@ -99,9 +127,11 @@ mvn test jacoco:report
 - ✅ **Facility管理**: 融資枠作成、SharePie（持分比率）管理、状態管理（State Machine）
 - ✅ **Loan管理**: ドローダウン実行、返済スケジュール自動生成
 - ✅ **Payment管理**: 元本・利息返済処理、投資家別配分管理、REST API
-- ✅ **Loan状態管理**: 初回返済時のDRAFT→ACTIVE状態遷移（State Machine）
+- ✅ **Transaction管理**: 統一取引基盤、横断的取引履歴・統計、状態管理API
+- ✅ **Fee管理**: 7種類手数料タイプ、手数料計算・配分、投資家別配分API
+- ✅ **State Machine**: Facility・Loan・Party包括的ライフサイクル管理
 - ✅ **Investor投資額管理**: 現在投資額の自動追跡（Drawdown増加・返済減少）
-- ✅ **共通基盤**: Money/Percentage値オブジェクト、例外処理
+- ✅ **共通基盤**: Money/Percentage値オブジェクト、例外処理、Transaction基底クラス
 
 ## 主要なビジネスルール
 - **SharePie検証**: ファシリティの持分比率合計は100%必須
@@ -118,6 +148,12 @@ mvn test jacoco:report
 - **AmountPie生成**: ドローダウン時の投資家別配分額自動計算
 - **投資額自動管理**: Drawdown時増加、元本返済時減少（利息支払いは影響なし）
 - **PaymentDistribution生成**: 返済時の投資家別配分額自動計算（持分比率ベース）
+- **Transaction状態管理**: 全取引のライフサイクル制御（PENDING→PROCESSING→COMPLETED）
+- **手数料配分ルール**: 
+  - 管理手数料・アレンジメント手数料：リードバンク収益
+  - コミットメント手数料・遅延手数料：投資家配分（持分比率ベース）
+  - 取引手数料・エージェント手数料：エージェントバンク収益
+- **手数料計算検証**: 計算基準額×手数料率=手数料額の整合性チェック
 
 ---
 

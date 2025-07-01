@@ -17,6 +17,7 @@ import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
 import com.example.syndicatelending.common.statemachine.EntityStateService;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.transaction.entity.TransactionType;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDate;
@@ -97,7 +98,7 @@ public class FacilityService {
             investment.setBorrowerId(borrowerId); // Syndicateから取得したborrowerIdを設定
             // 按分金額計算: Money × Percentage.value → Money
             investment.setAmount(commitment.multiply(pie.getShare().getValue()));
-            investment.setTransactionType("FACILITY_INVESTMENT");
+            investment.setTransactionType(TransactionType.FACILITY_INVESTMENT);
             investment.setTransactionDate(LocalDate.now());
             investments.add(investment);
         }
@@ -186,7 +187,7 @@ public class FacilityService {
             investment.setBorrowerId(borrowerId);
             // 按分金額計算: Money × Percentage.value → Money
             investment.setAmount(newCommitment.multiply(pie.getShare().getValue()));
-            investment.setTransactionType("FACILITY_INVESTMENT");
+            investment.setTransactionType(TransactionType.FACILITY_INVESTMENT);
             investment.setTransactionDate(LocalDate.now());
             newInvestments.add(investment);
         }

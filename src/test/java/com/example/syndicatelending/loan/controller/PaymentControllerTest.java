@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.lang.reflect.Field;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -125,7 +126,19 @@ class PaymentControllerTest {
                 com.example.syndicatelending.common.domain.model.Money.of(BigDecimal.valueOf(50000)), // interestAmount
                 "JPY" // currency
         );
-        payment.setId(1L);
+        // Transaction基底クラスのフィールドをモック用に設定
+        payment.setFacilityId(1L);
+        payment.setBorrowerId(1L);
+        
+        // ReflectionでIDを設定（Transaction基底クラスのprotected setId()を使用）
+        try {
+            Field idField = payment.getClass().getSuperclass().getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(payment, 1L);
+        } catch (Exception e) {
+            // テスト環境でのReflection失敗は無視
+        }
+        
         return payment;
     }
 }
