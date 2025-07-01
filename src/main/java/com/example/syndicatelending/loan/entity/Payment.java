@@ -2,19 +2,16 @@ package com.example.syndicatelending.loan.entity;
 
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
+import com.example.syndicatelending.transaction.entity.Transaction;
+import com.example.syndicatelending.transaction.entity.TransactionType;
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
 @Entity
 @Table(name = "payments")
-public class Payment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class Payment extends Transaction {
     @Column(name = "loan_id", nullable = false)
     private Long loanId;
 
@@ -39,24 +36,17 @@ public class Payment {
     @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<PaymentDistribution> paymentDistributions = new ArrayList<>();
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @Version
-    private Long version;
-
     @PrePersist
+    @Override
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        super.onCreate();
+        if (getTransactionType() == null) {
+            setTransactionType(TransactionType.PAYMENT);
+        }
+        // Set totalAmount as the main amount field inherited from Transaction
+        if (getAmount() == null && totalAmount != null) {
+            setAmount(totalAmount);
+        }
     }
 
     public Payment() {}
@@ -69,16 +59,14 @@ public class Payment {
         this.principalAmount = principalAmount;
         this.interestAmount = interestAmount;
         this.currency = currency;
+        
+        // Initialize inherited fields from Transaction
+        setTransactionType(TransactionType.PAYMENT);
+        setTransactionDate(paymentDate);
+        setAmount(totalAmount);
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public Long getLoanId() {
         return loanId;
@@ -136,27 +124,4 @@ public class Payment {
         this.paymentDistributions = paymentDistributions;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getVersion() {
-        return version;
-    }
-
-    public void setVersion(Long version) {
-        this.version = version;
-    }
 }
