@@ -233,4 +233,173 @@ fi
 echo ""
 echo "--- Facility組成テスト完了 ---"
 
-echo "--- 完了 ---"
+# Facilityが正常に作成された場合のみ、以降のテストを実行
+if [[ "$HTTP_CODE_4" = "200" ]]; then
+  echo ""
+  echo "--- Transaction履歴テスト ---"
+  echo "Facility別Transaction履歴を取得:"
+  curl -s "$API_URL/transactions/facility/$FACILITY_ID" | jq
+
+  echo ""
+  echo "Transaction統計を取得:"
+  curl -s "$API_URL/transactions/facility/$FACILITY_ID/statistics" | jq
+
+  echo ""
+  echo "--- Fee Payment テスト開始 ---"
+  
+  echo "--- 1. 管理手数料支払い作成 ---"
+  FEE_PAYMENT_1=$(curl -s -X POST "$API_URL/fees/payments" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "facilityId": '$FACILITY_ID',
+      "borrowerId": '$BORROWER_ID',
+      "feeType": "MANAGEMENT_FEE",
+      "feeDate": "2025-01-31",
+      "feeAmount": 25000.00,
+      "calculationBase": 5000000.00,
+      "feeRate": 0.5,
+      "recipientType": "BANK",
+      "recipientId": '$INVESTOR_ID',
+      "currency": "USD",
+      "description": "2025年1月分管理手数料"
+    }' \
+    -w "%{http_code}")
+
+  HTTP_CODE_FEE1=$(echo "$FEE_PAYMENT_1" | grep -o '[0-9]\{3\}$')
+  RESPONSE_BODY_FEE1=$(echo "$FEE_PAYMENT_1" | sed 's/[0-9]\{3\}$//')
+
+  if [[ "$HTTP_CODE_FEE1" = "200" ]]; then
+    echo "[OK] 管理手数料支払い作成成功: HTTP $HTTP_CODE_FEE1"
+    FEE_PAYMENT_ID1=$(echo "$RESPONSE_BODY_FEE1" | jq -r '.id')
+    echo "作成された手数料支払いID: $FEE_PAYMENT_ID1"
+    echo "$RESPONSE_BODY_FEE1" | jq
+  else
+    echo "[NG] 管理手数料支払い作成失敗: HTTP $HTTP_CODE_FEE1"
+    echo "エラーレスポンス: $RESPONSE_BODY_FEE1"
+  fi
+
+  echo ""
+  echo "--- 2. コミットメント手数料支払い作成（投資家配分） ---"
+  FEE_PAYMENT_2=$(curl -s -X POST "$API_URL/fees/payments" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "facilityId": '$FACILITY_ID',
+      "borrowerId": '$BORROWER_ID',
+      "feeType": "COMMITMENT_FEE",
+      "feeDate": "2025-01-31",
+      "feeAmount": 12500.00,
+      "calculationBase": 5000000.00,
+      "feeRate": 0.25,
+      "recipientType": "INVESTOR",
+      "recipientId": '$INVESTOR_ID',
+      "currency": "USD",
+      "description": "2025年1月分コミットメント手数料"
+    }' \
+    -w "%{http_code}")
+
+  HTTP_CODE_FEE2=$(echo "$FEE_PAYMENT_2" | grep -o '[0-9]\{3\}$')
+  RESPONSE_BODY_FEE2=$(echo "$FEE_PAYMENT_2" | sed 's/[0-9]\{3\}$//')
+
+  if [[ "$HTTP_CODE_FEE2" = "200" ]]; then
+    echo "[OK] コミットメント手数料支払い作成成功: HTTP $HTTP_CODE_FEE2"
+    FEE_PAYMENT_ID2=$(echo "$RESPONSE_BODY_FEE2" | jq -r '.id')
+    echo "作成された手数料支払いID: $FEE_PAYMENT_ID2"
+    echo "投資家別配分確認:"
+    echo "$RESPONSE_BODY_FEE2" | jq '.feeDistributions'
+  else
+    echo "[NG] コミットメント手数料支払い作成失敗: HTTP $HTTP_CODE_FEE2"
+    echo "エラーレスポンス: $RESPONSE_BODY_FEE2"
+  fi
+
+  echo ""
+  echo "--- 3. 手数料計算エラーケース ---"
+  FEE_PAYMENT_ERROR=$(curl -s -X POST "$API_URL/fees/payments" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "facilityId": '$FACILITY_ID',
+      "borrowerId": '$BORROWER_ID',
+      "feeType": "ARRANGEMENT_FEE",
+      "feeDate": "2025-01-01",
+      "feeAmount": 30000.00,
+      "calculationBase": 5000000.00,
+      "feeRate": 0.5,
+      "recipientType": "BANK",
+      "recipientId": '$INVESTOR_ID',
+      "currency": "USD",
+      "description": "計算が合わない手数料"
+    }' \
+    -w "%{http_code}")
+
+  HTTP_CODE_FEE_ERROR=$(echo "$FEE_PAYMENT_ERROR" | grep -o '[0-9]\{3\}$')
+  RESPONSE_BODY_FEE_ERROR=$(echo "$FEE_PAYMENT_ERROR" | sed 's/[0-9]\{3\}$//')
+
+  if [[ "$HTTP_CODE_FEE_ERROR" = "400" ]]; then
+    echo "[OK] 手数料計算エラーが正しく検出: HTTP $HTTP_CODE_FEE_ERROR"
+    echo "エラーメッセージ: $RESPONSE_BODY_FEE_ERROR"
+  else
+    echo "[NG] 手数料計算エラーが検出されなかった: HTTP $HTTP_CODE_FEE_ERROR"
+    echo "レスポンス: $RESPONSE_BODY_FEE_ERROR"
+  fi
+
+  echo ""
+  echo "--- 4. 受益者タイプエラーケース ---"
+  FEE_PAYMENT_TYPE_ERROR=$(curl -s -X POST "$API_URL/fees/payments" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "facilityId": '$FACILITY_ID',
+      "borrowerId": '$BORROWER_ID',
+      "feeType": "MANAGEMENT_FEE",
+      "feeDate": "2025-01-01",
+      "feeAmount": 25000.00,
+      "calculationBase": 5000000.00,
+      "feeRate": 0.5,
+      "recipientType": "INVESTOR",
+      "recipientId": '$INVESTOR_ID',
+      "currency": "USD",
+      "description": "間違った受益者タイプ"
+    }' \
+    -w "%{http_code}")
+
+  HTTP_CODE_TYPE_ERROR=$(echo "$FEE_PAYMENT_TYPE_ERROR" | grep -o '[0-9]\{3\}$')
+  RESPONSE_BODY_TYPE_ERROR=$(echo "$FEE_PAYMENT_TYPE_ERROR" | sed 's/[0-9]\{3\}$//')
+
+  if [[ "$HTTP_CODE_TYPE_ERROR" = "400" ]]; then
+    echo "[OK] 受益者タイプエラーが正しく検出: HTTP $HTTP_CODE_TYPE_ERROR"
+    echo "エラーメッセージ: $RESPONSE_BODY_TYPE_ERROR"
+  else
+    echo "[NG] 受益者タイプエラーが検出されなかった: HTTP $HTTP_CODE_TYPE_ERROR"
+    echo "レスポンス: $RESPONSE_BODY_TYPE_ERROR"
+  fi
+
+  echo ""
+  echo "--- Fee Payment 検索テスト ---"
+  
+  echo "Facility別手数料履歴:"
+  curl -s "$API_URL/fees/payments/facility/$FACILITY_ID" | jq
+
+  echo ""
+  echo "手数料タイプ別検索（MANAGEMENT_FEE）:"
+  curl -s "$API_URL/fees/payments/type/MANAGEMENT_FEE" | jq
+
+  echo ""
+  echo "手数料統計:"
+  curl -s "$API_URL/fees/payments/facility/$FACILITY_ID/statistics" | jq
+
+  echo ""
+  echo "--- Transaction履歴更新確認 ---"
+  echo "更新されたFacility別Transaction履歴（Fee Paymentを含む）:"
+  curl -s "$API_URL/transactions/facility/$FACILITY_ID" | jq
+
+  echo ""
+  echo "更新されたTransaction統計:"
+  curl -s "$API_URL/transactions/facility/$FACILITY_ID/statistics" | jq
+
+  echo ""
+  echo "--- Fee Payment テスト完了 ---"
+
+else
+  echo "Facilityが正常に作成されなかったため、Fee Paymentテストをスキップします"
+fi
+
+echo ""
+echo "--- 全テスト完了 ---"

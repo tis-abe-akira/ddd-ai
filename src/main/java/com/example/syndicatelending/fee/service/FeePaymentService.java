@@ -77,16 +77,13 @@ public class FeePaymentService {
         // 手数料配分生成（投資家配分が必要な場合）
         if (feePayment.requiresInvestorDistribution()) {
             List<FeeDistribution> distributions = generateFeeDistributions(feePayment, facility);
+            // 手数料配分の逆参照設定（保存前に設定）
+            distributions.forEach(dist -> dist.setFeePayment(feePayment));
             feePayment.setFeeDistributions(distributions);
         }
 
         // 保存
         FeePayment savedFeePayment = feePaymentRepository.save(feePayment);
-
-        // 手数料配分の逆参照設定
-        if (savedFeePayment.getFeeDistributions() != null) {
-            savedFeePayment.getFeeDistributions().forEach(dist -> dist.setFeePayment(savedFeePayment));
-        }
 
         return savedFeePayment;
     }
