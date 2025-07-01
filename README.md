@@ -11,7 +11,9 @@
 - **融資枠管理**: ファシリティの作成と投資家間の持分比率管理
 - **投資記録管理**: ファシリティ組成時の投資家投資記録自動生成
 - **ドローダウン処理**: 融資実行、ローン作成、返済スケジュール自動生成
-- **取引処理**: 支払い、取引の記録・分配（一部実装済み）
+- **返済処理**: 元本・利息返済、投資家別配分管理
+- **手数料管理**: 各種手数料の計算・配分・支払い処理
+- **取引統合管理**: 全取引タイプの統一的な追跡・監査・レポート機能
 
 ## 🏗️ アーキテクチャ
 
@@ -27,8 +29,9 @@ Controller → Service → Repository → Entity
 - **Party**: 参加者管理（Company, Borrower, Investor）
 - **Syndicate**: シンジケート団管理
 - **Facility**: 融資枠管理
-- **Transaction**: 取引基底クラス
-- **Loan**: ローン・ドローダウン管理
+- **Transaction**: 取引基底クラス（統一Transaction基盤）
+- **Loan**: ローン・ドローダウン・返済管理
+- **Fee**: 手数料管理（Fee Payment・配分処理）
 - **Common**: 共通Value Objects（Money, Percentage）
 
 ## 🚀 クイックスタート
@@ -60,15 +63,16 @@ mvn spring-boot:run
 |---------|---------|------|
 | 参加者管理 | ✅ 完了 | Company, Borrower, Investor の CRUD操作 |
 | シンジケート管理 | ✅ 完了 | シンジケート団の組成・管理 |
-| 融資枠管理 | ✅ 完了 | Facility作成、SharePie（持分比率）管理 |
+| 融資枠管理 | ✅ 完了 | Facility作成、SharePie（持分比率）管理、状態管理 |
 | 投資記録管理 | ✅ 完了 | FacilityInvestment自動生成（Facility組成時） |
 | ドローダウン処理 | ✅ 完了 | Drawdown実行、Loan作成、返済スケジュール自動生成 |
-| 支払い処理 | ✅ 完了 | Payment実行、元本・利息返済、投資家別配分管理 |
+| 返済処理 | ✅ 完了 | Payment実行、元本・利息返済、投資家別配分管理 |
+| 手数料管理 | ✅ 完了 | Fee Payment、手数料計算・配分・投資家分配 |
 | 投資額管理 | ✅ 完了 | Investor現在投資額の自動追跡（Drawdown増加・返済減少） |
-| 取引処理 | ✅ 85%実装 | Transaction基底クラス、Drawdown・Payment完了、Fee未実装 |
+| 取引統合管理 | ✅ 完了 | Transaction基底クラス、全取引タイプの統一管理・追跡 |
 | レポーティング | 🚧 未実装 | 各種レポート・分析機能 |
 
-**開発完了度**: 約90%（基本的なシンジケートローン管理機能 + ドローダウン・支払い処理）
+**開発完了度**: 約95%（基本的なシンジケートローン管理機能完成、取引統合管理・手数料処理含む）
 
 ## 🛠️ 技術スタック
 
@@ -137,6 +141,20 @@ mvn jacoco:report
 - `GET /api/v1/loans/drawdowns/{id}` - ドローダウン詳細
 - `GET /api/v1/loans/drawdowns/facility/{facilityId}` - ファシリティ別ドローダウン一覧
 
+#### 返済処理
+- `POST /api/v1/loans/payments` - 返済実行（投資家配分自動計算）
+- `GET /api/v1/loans/payments/loan/{loanId}` - ローン別返済履歴
+
+#### 手数料管理
+- `POST /api/v1/fees/payments` - 手数料支払い作成（投資家配分自動処理）
+- `GET /api/v1/fees/payments/facility/{facilityId}` - ファシリティ別手数料履歴
+- `GET /api/v1/fees/payments/type/{feeType}` - 手数料タイプ別検索
+
+#### 取引統合管理
+- `GET /api/v1/transactions/facility/{facilityId}` - ファシリティ別全取引履歴
+- `GET /api/v1/transactions/type/{transactionType}` - 取引タイプ別検索
+- `GET /api/v1/transactions/facility/{facilityId}/statistics` - 取引統計
+
 詳細なAPI仕様は [Swagger UI](http://localhost:8080/swagger-ui.html) で確認できます。
 
 ## 🎨 主要な設計パターン
@@ -157,20 +175,20 @@ mvn jacoco:report
 
 ## 🚧 今後の開発予定
 
-### Phase 1: Transaction処理（優先度: High）
-- ✅ Drawdown（資金引き出し）機能
-- Payment処理（利息・元本・手数料支払い）
-- ✅ AmountPie（実際金額配分）管理
+### Phase 1: 高度な機能（優先度: Medium）
+- **レポーティング機能**: 投資家別収益レポート、ファシリティ分析
+- **バッチ処理**: 定期手数料の自動計算・生成
+- **監査ログ**: 詳細な変更履歴追跡
 
-### Phase 2: 高度な機能（優先度: Medium）
-- レポーティング機能
-- バッチ処理
-- 監査ログ
+### Phase 2: ビジネス拡張（優先度: Medium）
+- **セカンダリー取引**: ファシリティ持分の売買機能
+- **複雑な配分ルール**: ウォーターフォール配分・優先劣後構造
+- **リスク管理**: 信用リスク・流動性リスク管理
 
 ### Phase 3: アーキテクチャ進化（優先度: Low）
-- Event Sourcing導入検討
-- CQRS パターン適用
-- マイクロサービス化
+- **Event Sourcing導入**: イベント駆動アーキテクチャ
+- **CQRS パターン適用**: 読み書き分離
+- **マイクロサービス化**: サービス境界の分離
 
 ## 🤝 開発ガイドライン
 
