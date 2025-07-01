@@ -68,6 +68,10 @@ public class PaymentService {
                 interestAmount,
                 request.getCurrency()
         );
+        
+        // Transaction基底クラスのフィールドを設定
+        payment.setFacilityId(loan.getFacilityId());
+        payment.setBorrowerId(loan.getBorrowerId());
 
         // 4. Payment保存
         Payment savedPayment = paymentRepository.save(payment);

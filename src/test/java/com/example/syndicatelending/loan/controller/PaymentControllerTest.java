@@ -125,7 +125,10 @@ class PaymentControllerTest {
                 com.example.syndicatelending.common.domain.model.Money.of(BigDecimal.valueOf(50000)), // interestAmount
                 "JPY" // currency
         );
-        payment.setId(1L);
+        // Transaction基底クラスのフィールドをモック用に設定
+        payment.setFacilityId(1L);
+        payment.setBorrowerId(1L);
+        // payment.setId(1L); // 継承されたIDは自動設定される想定
         return payment;
     }
 }
