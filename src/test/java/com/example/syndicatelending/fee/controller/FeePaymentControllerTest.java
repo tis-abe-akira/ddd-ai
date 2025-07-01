@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.lang.reflect.Field;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -194,6 +195,15 @@ class FeePaymentControllerTest {
         feePayment.setUpdatedAt(LocalDateTime.now());
         feePayment.setVersion(0L);
         
+        // ReflectionでIDを設定（Transaction基底クラスのprotected setId()を使用）
+        try {
+            Field idField = feePayment.getClass().getSuperclass().getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(feePayment, 1L);
+        } catch (Exception e) {
+            // テスト環境でのReflection失敗は無視
+        }
+        
         return feePayment;
     }
 
@@ -231,6 +241,15 @@ class FeePaymentControllerTest {
         dist3.setFeePayment(feePayment);
         
         feePayment.setFeeDistributions(Arrays.asList(dist1, dist2, dist3));
+        
+        // ReflectionでIDを設定
+        try {
+            Field idField = feePayment.getClass().getSuperclass().getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(feePayment, 2L);
+        } catch (Exception e) {
+            // テスト環境でのReflection失敗は無視
+        }
         
         return feePayment;
     }

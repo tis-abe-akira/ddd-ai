@@ -50,9 +50,12 @@ public class FeePaymentService {
         // バリデーション
         validateFeePaymentRequest(request);
 
-        // Facility存在確認
+        // Facility存在確認（SharePieも一緒に取得）
         Facility facility = facilityRepository.findById(request.getFacilityId())
             .orElseThrow(() -> new ResourceNotFoundException("Facility not found: " + request.getFacilityId()));
+        
+        // SharePieのLazy Loadingを明示的に初期化
+        facility.getSharePies().size(); // Lazy Loadingを強制実行
 
         // 手数料支払いエンティティ作成
         Money feeAmount = Money.of(request.getFeeAmount());
@@ -158,14 +161,15 @@ public class FeePaymentService {
         // SharePieに基づく投資家別配分計算
         for (SharePie sharePie : facility.getSharePies()) {
             // 配分金額計算：手数料総額 × 持分比率
+            // SharePieの値は既に小数点形式（0.4 = 40%）なので100で除算不要
             Money distributionAmount = feePayment.getAmount()
-                .multiply(sharePie.getShare().getValue().divide(BigDecimal.valueOf(100)));
+                .multiply(sharePie.getShare().getValue());
 
             FeeDistribution distribution = new FeeDistribution(
                 "INVESTOR",
                 sharePie.getInvestorId(),
                 distributionAmount,
-                sharePie.getShare().getValue().doubleValue(),
+                sharePie.getShare().getValue().multiply(BigDecimal.valueOf(100)).doubleValue(), // パーセンテージ表示のため100倍
                 feePayment.getCurrency()
             );
 

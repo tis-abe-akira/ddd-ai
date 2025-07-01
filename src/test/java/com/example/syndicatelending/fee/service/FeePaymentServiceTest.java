@@ -99,19 +99,26 @@ class FeePaymentServiceTest {
         sharePie1.setFacility(facility);
         sharePie1.setInvestorId(investor1.getId());
         sharePie1.setShare(Percentage.of(new BigDecimal("0.4")));
-        sharePieRepository.save(sharePie1);
+        sharePie1 = sharePieRepository.save(sharePie1);
 
         SharePie sharePie2 = new SharePie();
         sharePie2.setFacility(facility);
         sharePie2.setInvestorId(investor2.getId());
         sharePie2.setShare(Percentage.of(new BigDecimal("0.35")));
-        sharePieRepository.save(sharePie2);
+        sharePie2 = sharePieRepository.save(sharePie2);
 
         SharePie sharePie3 = new SharePie();
         sharePie3.setFacility(facility);
         sharePie3.setInvestorId(investor3.getId());
         sharePie3.setShare(Percentage.of(new BigDecimal("0.25")));
-        sharePieRepository.save(sharePie3);
+        sharePie3 = sharePieRepository.save(sharePie3);
+        
+        // FacilityのSharePieリストに明示的に追加
+        facility.getSharePies().clear();
+        facility.getSharePies().add(sharePie1);
+        facility.getSharePies().add(sharePie2);
+        facility.getSharePies().add(sharePie3);
+        facility = facilityRepository.save(facility);
     }
 
     @Test
