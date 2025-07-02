@@ -8,7 +8,8 @@ import type {
   CreateCompanyRequest,
   CreateInvestorRequest,
   ApiResponse,
-  ApiError 
+  ApiError,
+  PageResponse
 } from '../types/api';
 
 // API Base Configuration
@@ -50,7 +51,14 @@ export const companyApi = {
 
 // Borrowers
 export const borrowerApi = {
-  getAll: () => apiClient.get<Borrower[]>('/parties/borrowers'),
+  getAll: (page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc'); // 新しい順にソート
+    
+    return apiClient.get<PageResponse<Borrower>>(`/parties/borrowers?${params.toString()}`);
+  },
   getById: (id: number) => apiClient.get<Borrower>(`/parties/borrowers/${id}`),
   create: (data: CreateBorrowerRequest) => apiClient.post<Borrower>('/parties/borrowers', data),
   update: (id: number, data: Partial<CreateBorrowerRequest>) => 
