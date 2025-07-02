@@ -21,16 +21,17 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 0,
-    size: 10,
+    size: 0, // バックエンドのデフォルトに従う
     totalElements: 0,
     totalPages: 0,
   });
 
-  const fetchBorrowers = async (page: number = 0, size: number = 10) => {
+  const fetchBorrowers = async (page: number = 0, size?: number) => {
     try {
       setLoading(true);
       setError(null);
       
+      // sizeが指定されていない場合はバックエンドのデフォルトに従う
       const response = await borrowerApi.getAll(page, size);
       const pageData = response.data;
       
@@ -49,7 +50,8 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
   };
 
   useEffect(() => {
-    fetchBorrowers(pagination.page, pagination.size);
+    // 初回はバックエンドのデフォルトサイズに従う
+    fetchBorrowers(0);
   }, [refreshTrigger]);
 
   const handlePageChange = (newPage: number) => {

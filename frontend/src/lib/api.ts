@@ -54,6 +54,7 @@ export const borrowerApi = {
   getAll: (page?: number, size?: number) => {
     const params = new URLSearchParams();
     if (page !== undefined) params.append('page', page.toString());
+    // sizeは指定された場合のみ送信（undefinedならバックエンドのデフォルトに従う）
     if (size !== undefined) params.append('size', size.toString());
     params.append('sort', 'id,desc'); // 新しい順にソート
     
