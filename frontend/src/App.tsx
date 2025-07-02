@@ -3,6 +3,7 @@ import BorrowerPage from './pages/BorrowerPage';
 import InvestorPage from './pages/InvestorPage';
 import SyndicatePage from './pages/SyndicatePage';
 import FacilityPage from './pages/FacilityPage';
+import DrawdownPage from './pages/DrawdownPage';
 import Layout from './components/layout/Layout';
 
 function App() {
@@ -19,7 +20,7 @@ function App() {
               <p className="text-accent-400 text-lg mb-8">
                 シンジケートローン管理システムへようこそ
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 hover:border-accent-500 transition-colors">
                   <h3 className="text-xl font-semibold text-white mb-2">借り手管理</h3>
                   <p className="text-accent-400 mb-4">借り手の登録・管理</p>
@@ -60,6 +61,16 @@ function App() {
                     管理画面へ
                   </a>
                 </div>
+                <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 hover:border-accent-500 transition-colors">
+                  <h3 className="text-xl font-semibold text-white mb-2">ドローダウン管理</h3>
+                  <p className="text-accent-400 mb-4">融資実行・管理</p>
+                  <a 
+                    href="/drawdowns"
+                    className="inline-block bg-accent-500 hover:bg-accent-400 text-white font-semibold py-2 px-4 rounded transition-colors"
+                  >
+                    管理画面へ
+                  </a>
+                </div>
               </div>
             </div>
           </Layout>
@@ -76,6 +87,9 @@ function App() {
         
         {/* Facility routes */}
         <Route path="/facilities" element={<FacilityPage />} />
+        
+        {/* Drawdown routes */}
+        <Route path="/drawdowns" element={<DrawdownPage />} />
         
         {/* Placeholder routes */}
         <Route path="/loans" element={

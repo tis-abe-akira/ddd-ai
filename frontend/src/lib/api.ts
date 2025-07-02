@@ -6,12 +6,15 @@ import type {
   Investor, 
   Syndicate,
   Facility,
+  Loan,
+  Drawdown,
   CreateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
   CreateSyndicateRequest,
   CreateFacilityRequest,
   UpdateFacilityRequest,
+  CreateDrawdownRequest,
   ApiResponse,
   ApiError,
   PageResponse
@@ -126,6 +129,22 @@ export const facilityApi = {
   update: (id: number, data: UpdateFacilityRequest) => 
     apiClient.put<Facility>(`/facilities/${id}`, data),
   delete: (id: number) => apiClient.delete(`/facilities/${id}`),
+};
+
+// Drawdowns
+export const drawdownApi = {
+  getAll: () => apiClient.get<Drawdown[]>('/loans/drawdowns'),
+  getAllPaged: (page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc'); // 新しい順にソート
+    
+    return apiClient.get<PageResponse<Drawdown>>(`/loans/drawdowns/paged?${params.toString()}`);
+  },
+  getById: (id: number) => apiClient.get<Drawdown>(`/loans/drawdowns/${id}`),
+  getByFacilityId: (facilityId: number) => apiClient.get<Drawdown[]>(`/loans/drawdowns/facility/${facilityId}`),
+  create: (data: CreateDrawdownRequest) => apiClient.post<Drawdown>('/loans/drawdowns', data),
 };
 
 // Utility function for handling API responses

@@ -60,6 +60,10 @@ export type InvestorType =
 
 export type FacilityStatus = 'DRAFT' | 'FIXED';
 
+export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
+
+export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET' | 'INTEREST_ONLY';
+
 export type Industry = 
   | 'FINANCE' 
   | 'MANUFACTURING' 
@@ -164,6 +168,65 @@ export interface UpdateFacilityRequest {
   endDate?: string;
   interestTerms?: string;
   sharePies?: CreateSharePieRequest[];
+}
+
+export interface Loan {
+  id: number;
+  facilityId: number;
+  borrowerId: number;
+  amount: number;
+  currency: string;
+  purpose: string;
+  annualInterestRate: number;
+  drawdownDate: string;
+  repaymentPeriodMonths: number;
+  repaymentCycle: string;
+  repaymentMethod: RepaymentMethod;
+  status: LoanStatus;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface Drawdown {
+  id: number;
+  loanId: number;
+  amount: number;
+  currency: string;
+  purpose: string;
+  transactionDate: string;
+  amountPies: AmountPie[];
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface AmountPie {
+  id: number;
+  investorId: number;
+  amount: number;
+  drawdownId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDrawdownRequest {
+  facilityId: number;
+  borrowerId: number;
+  amount: number;
+  currency: string;
+  purpose: string;
+  annualInterestRate: number;
+  drawdownDate: string;
+  repaymentPeriodMonths: number;
+  repaymentCycle: string;
+  repaymentMethod: RepaymentMethod;
+  amountPies?: CreateAmountPieRequest[];
+}
+
+export interface CreateAmountPieRequest {
+  investorId: number;
+  amount: number;
 }
 
 // API Response Types
