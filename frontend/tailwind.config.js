@@ -8,19 +8,19 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          900: '#162013',
+          50: '#f8fafc',
+          900: '#1e1e1e', // IntelliJ Dark background
         },
         secondary: {
-          500: '#426039',
-          600: '#2e4328',
+          500: '#3c3c3c', // IntelliJ border/divider
+          600: '#2b2b2b', // IntelliJ sidebar/panel
         },
         accent: {
-          400: '#a2c398',
-          500: '#8cd279',
+          400: '#9aa7b0', // IntelliJ muted text
+          500: '#6897bb', // IntelliJ blue accent
         },
-        success: '#0bda35',
-        error: '#fa4b38',
+        success: '#629755', // IntelliJ green
+        error: '#bc3f3c',   // IntelliJ red
       },
       fontFamily: {
         'manrope': ['Manrope', 'Noto Sans', 'sans-serif'],
