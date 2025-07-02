@@ -93,17 +93,8 @@ public class PartyService {
 
     // Borrower operations
     public Borrower createBorrower(CreateBorrowerRequest request) {
-        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            Long companyId;
-            try {
-                companyId = Long.parseLong(request.getCompanyId());
-            } catch (NumberFormatException e) {
-                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
-            }
-            if (!companyRepository.existsById(companyId)) {
-                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
-            }
-        }
+        // Skip company validation - companyId is now treated as optional reference string
+        // No longer validate against actual Company entities
         // CreditRatingのバリデーション振る舞いを利用
         if (!request.isCreditLimitOverride()) {
             if (request.getCreditRating() == null || request.getCreditLimit() == null ||
@@ -155,18 +146,8 @@ public class PartyService {
             }
         }
 
-        // 企業IDが指定されている場合の存在チェック
-        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            Long companyId;
-            try {
-                companyId = Long.parseLong(request.getCompanyId());
-            } catch (NumberFormatException e) {
-                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
-            }
-            if (!companyRepository.existsById(companyId)) {
-                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
-            }
-        }
+        // Skip company validation - companyId is now treated as optional reference string
+        // No longer validate against actual Company entities
 
         Borrower entityToSave = new Borrower();
 
@@ -193,17 +174,8 @@ public class PartyService {
 
     // Investor operations
     public Investor createInvestor(CreateInvestorRequest request) {
-        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            Long companyId;
-            try {
-                companyId = Long.parseLong(request.getCompanyId());
-            } catch (NumberFormatException e) {
-                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
-            }
-            if (!companyRepository.existsById(companyId)) {
-                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
-            }
-        }
+        // Skip company validation - companyId is now treated as optional reference string
+        // No longer validate against actual Company entities
         Investor investor = new Investor(
                 request.getName(),
                 request.getEmail(),
@@ -240,18 +212,8 @@ public class PartyService {
         // 【新規追加】Facility組成後の制約フィールド変更チェック
         validateInvestorRestrictedFields(id, existingInvestor, request);
 
-        // 企業IDが指定されている場合の存在チェック
-        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
-            Long companyId;
-            try {
-                companyId = Long.parseLong(request.getCompanyId());
-            } catch (NumberFormatException e) {
-                throw new ResourceNotFoundException("Invalid company ID: " + request.getCompanyId());
-            }
-            if (!companyRepository.existsById(companyId)) {
-                throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
-            }
-        }
+        // Skip company validation - companyId is now treated as optional reference string
+        // No longer validate against actual Company entities
 
         Investor entityToSave = new Investor();
 
