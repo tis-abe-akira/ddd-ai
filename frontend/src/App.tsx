@@ -35,12 +35,15 @@ function App() {
                     準備中
                   </span>
                 </div>
-                <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 opacity-50">
+                <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 hover:border-accent-500 transition-colors">
                   <h3 className="text-xl font-semibold text-white mb-2">投資家管理</h3>
                   <p className="text-accent-400 mb-4">投資家の登録・管理</p>
-                  <span className="inline-block bg-secondary-600 text-accent-400 font-semibold py-2 px-4 rounded">
-                    準備中
-                  </span>
+                  <a 
+                    href="/lenders"
+                    className="inline-block bg-accent-500 hover:bg-accent-400 text-white font-semibold py-2 px-4 rounded transition-colors"
+                  >
+                    管理画面へ
+                  </a>
                 </div>
               </div>
             </div>
