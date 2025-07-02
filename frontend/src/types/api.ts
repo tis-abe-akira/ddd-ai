@@ -31,6 +31,17 @@ export interface Investor {
   isActive: boolean;
 }
 
+export interface Syndicate {
+  id: number;
+  name: string;
+  leadBankId: number;
+  borrowerId: number;
+  memberInvestorIds: number[];
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
 // Enums (バックエンドと同じ定義)
 export type CreditRating = 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC' | 'CC' | 'C' | 'D';
 
@@ -96,6 +107,13 @@ export interface CreateInvestorRequest {
   companyId?: string;
   investmentCapacity: number;
   investorType: InvestorType;
+}
+
+export interface CreateSyndicateRequest {
+  name: string;
+  leadBankId: number;
+  borrowerId: number;
+  memberInvestorIds: number[];
 }
 
 // API Response Types

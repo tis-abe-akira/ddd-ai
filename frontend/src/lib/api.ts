@@ -4,9 +4,11 @@ import type {
   Borrower, 
   Company, 
   Investor, 
+  Syndicate,
   CreateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
+  CreateSyndicateRequest,
   ApiResponse,
   ApiError,
   PageResponse
@@ -83,6 +85,25 @@ export const investorApi = {
   update: (id: number, data: Partial<CreateInvestorRequest>) => 
     apiClient.put<Investor>(`/parties/investors/${id}`, data),
   delete: (id: number) => apiClient.delete(`/parties/investors/${id}`),
+};
+
+// Syndicates
+export const syndicateApi = {
+  getAll: (page?: number, size?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    // sizeは指定された場合のみ送信（undefinedならバックエンドのデフォルトに従う）
+    if (size !== undefined) params.append('size', size.toString());
+    if (search) params.append('search', search);
+    params.append('sort', 'id,desc'); // 新しい順にソート
+    
+    return apiClient.get<PageResponse<Syndicate>>(`/syndicates?${params.toString()}`);
+  },
+  getById: (id: number) => apiClient.get<Syndicate>(`/syndicates/${id}`),
+  create: (data: CreateSyndicateRequest) => apiClient.post<Syndicate>('/syndicates', data),
+  update: (id: number, data: Partial<CreateSyndicateRequest>) => 
+    apiClient.put<Syndicate>(`/syndicates/${id}`, data),
+  delete: (id: number) => apiClient.delete(`/syndicates/${id}`),
 };
 
 // Utility function for handling API responses
