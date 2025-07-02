@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BorrowerPage from './pages/BorrowerPage';
+import InvestorPage from './pages/InvestorPage';
 import Layout from './components/layout/Layout';
 
 function App() {
@@ -49,20 +50,14 @@ function App() {
         {/* Borrower routes */}
         <Route path="/borrowers" element={<BorrowerPage />} />
         
+        {/* Investor routes */}
+        <Route path="/lenders" element={<InvestorPage />} />
+        
         {/* Placeholder routes */}
         <Route path="/loans" element={
           <Layout>
             <div className="text-center">
               <h1 className="text-3xl font-bold text-white mb-4">ローン管理</h1>
-              <p className="text-accent-400">準備中です</p>
-            </div>
-          </Layout>
-        } />
-        
-        <Route path="/lenders" element={
-          <Layout>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-white mb-4">投資家管理</h1>
               <p className="text-accent-400">準備中です</p>
             </div>
           </Layout>

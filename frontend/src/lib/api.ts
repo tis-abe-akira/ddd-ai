@@ -69,7 +69,15 @@ export const borrowerApi = {
 
 // Investors
 export const investorApi = {
-  getAll: () => apiClient.get<Investor[]>('/parties/investors'),
+  getAll: (page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    // sizeは指定された場合のみ送信（undefinedならバックエンドのデフォルトに従う）
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc'); // 新しい順にソート
+    
+    return apiClient.get<PageResponse<Investor>>(`/parties/investors?${params.toString()}`);
+  },
   getById: (id: number) => apiClient.get<Investor>(`/parties/investors/${id}`),
   create: (data: CreateInvestorRequest) => apiClient.post<Investor>('/parties/investors', data),
   update: (id: number, data: Partial<CreateInvestorRequest>) => 
