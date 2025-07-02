@@ -58,6 +58,8 @@ export type InvestorType =
   | 'CREDIT_UNION' 
   | 'OTHER';
 
+export type FacilityStatus = 'DRAFT' | 'FIXED';
+
 export type Industry = 
   | 'FINANCE' 
   | 'MANUFACTURING' 
@@ -114,6 +116,54 @@ export interface CreateSyndicateRequest {
   leadBankId: number;
   borrowerId: number;
   memberInvestorIds: number[];
+}
+
+export interface Facility {
+  id: number;
+  syndicateId: number;
+  commitment: number;
+  currency: string;
+  startDate: string;
+  endDate: string;
+  interestTerms: string;
+  sharePies: SharePie[];
+  status: FacilityStatus;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface SharePie {
+  id: number;
+  investorId: number;
+  share: number; // 0.0-1.0 (例: 0.4 = 40%)
+  facilityId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFacilityRequest {
+  syndicateId: number;
+  commitment: number;
+  currency: string;
+  startDate: string;
+  endDate: string;
+  interestTerms: string;
+  sharePies: CreateSharePieRequest[];
+}
+
+export interface CreateSharePieRequest {
+  investorId: number;
+  share: number;
+}
+
+export interface UpdateFacilityRequest {
+  commitment?: number;
+  currency?: string;
+  startDate?: string;
+  endDate?: string;
+  interestTerms?: string;
+  sharePies?: CreateSharePieRequest[];
 }
 
 // API Response Types

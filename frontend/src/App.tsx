@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BorrowerPage from './pages/BorrowerPage';
 import InvestorPage from './pages/InvestorPage';
 import SyndicatePage from './pages/SyndicatePage';
+import FacilityPage from './pages/FacilityPage';
 import Layout from './components/layout/Layout';
 
 function App() {
@@ -49,12 +50,15 @@ function App() {
                     管理画面へ
                   </a>
                 </div>
-                <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 opacity-50">
-                  <h3 className="text-xl font-semibold text-white mb-2">ローン管理</h3>
-                  <p className="text-accent-400 mb-4">ローンの作成・管理</p>
-                  <span className="inline-block bg-secondary-600 text-accent-400 font-semibold py-2 px-4 rounded">
-                    準備中
-                  </span>
+                <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 hover:border-accent-500 transition-colors">
+                  <h3 className="text-xl font-semibold text-white mb-2">ファシリティ管理</h3>
+                  <p className="text-accent-400 mb-4">融資枠の組成・管理</p>
+                  <a 
+                    href="/facilities"
+                    className="inline-block bg-accent-500 hover:bg-accent-400 text-white font-semibold py-2 px-4 rounded transition-colors"
+                  >
+                    管理画面へ
+                  </a>
                 </div>
               </div>
             </div>
@@ -69,6 +73,9 @@ function App() {
         
         {/* Syndicate routes */}
         <Route path="/syndicates" element={<SyndicatePage />} />
+        
+        {/* Facility routes */}
+        <Route path="/facilities" element={<FacilityPage />} />
         
         {/* Placeholder routes */}
         <Route path="/loans" element={

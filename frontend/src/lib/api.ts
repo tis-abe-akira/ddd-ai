@@ -5,10 +5,13 @@ import type {
   Company, 
   Investor, 
   Syndicate,
+  Facility,
   CreateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
   CreateSyndicateRequest,
+  CreateFacilityRequest,
+  UpdateFacilityRequest,
   ApiResponse,
   ApiError,
   PageResponse
@@ -104,6 +107,25 @@ export const syndicateApi = {
   update: (id: number, data: Partial<CreateSyndicateRequest>) => 
     apiClient.put<Syndicate>(`/syndicates/${id}`, data),
   delete: (id: number) => apiClient.delete(`/syndicates/${id}`),
+};
+
+// Facilities
+export const facilityApi = {
+  getAll: (page?: number, size?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    // sizeは指定された場合のみ送信（undefinedならバックエンドのデフォルトに従う）
+    if (size !== undefined) params.append('size', size.toString());
+    if (search) params.append('search', search);
+    params.append('sort', 'id,desc'); // 新しい順にソート
+    
+    return apiClient.get<PageResponse<Facility>>(`/facilities?${params.toString()}`);
+  },
+  getById: (id: number) => apiClient.get<Facility>(`/facilities/${id}`),
+  create: (data: CreateFacilityRequest) => apiClient.post<Facility>('/facilities', data),
+  update: (id: number, data: UpdateFacilityRequest) => 
+    apiClient.put<Facility>(`/facilities/${id}`, data),
+  delete: (id: number) => apiClient.delete(`/facilities/${id}`),
 };
 
 // Utility function for handling API responses
