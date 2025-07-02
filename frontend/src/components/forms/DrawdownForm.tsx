@@ -103,7 +103,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
       onSuccess?.(newDrawdown);
     } catch (error) {
       const apiError = error as ApiError;
-      setSubmitError(apiError.message || 'エラーが発生しました');
+      setSubmitError(apiError.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -138,20 +138,20 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">ドローダウン基本情報</h3>
-              <p className="text-accent-400 text-sm mb-6">ドローダウンの金額・目的・実行日を設定してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Drawdown Basic Information</h3>
+              <p className="text-accent-400 text-sm mb-6">Set the amount, purpose, and execution date for the drawdown</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Amount */}
                 <div>
                   <label htmlFor="amount" className="block text-sm font-medium text-white mb-2">
-                    ドローダウン金額 <span className="text-error">*</span>
+                    Drawdown Amount <span className="text-error">*</span>
                   </label>
                   <input
                     {...register('amount', { valueAsNumber: true })}
                     type="number"
                     id="amount"
-                    placeholder="例: 1000000"
+                    placeholder="e.g., 1000000"
                     max={getAvailableAmount()}
                     className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                   />
@@ -160,7 +160,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
                   )}
                   {selectedFacility && (
                     <p className="mt-1 text-xs text-accent-400">
-                      利用可能額: {formatCurrency(getAvailableAmount())}
+                      Available Amount: {formatCurrency(getAvailableAmount())}
                     </p>
                   )}
                 </div>
@@ -168,7 +168,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
                 {/* Drawdown Date */}
                 <div>
                   <label htmlFor="drawdownDate" className="block text-sm font-medium text-white mb-2">
-                    ドローダウン実行日 <span className="text-error">*</span>
+                    Drawdown Execution Date <span className="text-error">*</span>
                   </label>
                   <input
                     {...register('drawdownDate')}
@@ -186,7 +186,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
               {/* Purpose */}
               <div className="mt-6">
                 <label htmlFor="purpose" className="block text-sm font-medium text-white mb-2">
-                  ドローダウンの目的 <span className="text-error">*</span>
+                  Drawdown Purpose <span className="text-error">*</span>
                 </label>
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
                   {purposeOptions.map((option) => (
@@ -208,7 +208,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
                   {...register('purpose')}
                   type="text"
                   id="purpose"
-                  placeholder="詳細な目的を入力してください"
+                  placeholder="Enter detailed purpose"
                   className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                 />
                 {errors.purpose && (
@@ -247,35 +247,35 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">確認・実行</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">Confirmation & Execution</h3>
               <p className="text-accent-400 text-sm mb-6">内容を確認して、ドローダウンを実行してください</p>
               
               <div className="bg-secondary-600 rounded-lg p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm text-accent-400">ファシリティ</div>
+                    <div className="text-sm text-accent-400">Facility</div>
                     <div className="text-white font-medium">#{watchedValues.facilityId}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-accent-400">ドローダウン金額</div>
+                    <div className="text-sm text-accent-400">Drawdown Amount</div>
                     <div className="text-white font-medium text-lg">
-                      {watchedValues.amount ? formatCurrency(watchedValues.amount) : '未設定'}
+                      {watchedValues.amount ? formatCurrency(watchedValues.amount) : 'Not set'}
                     </div>
                   </div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">目的</div>
+                  <div className="text-sm text-accent-400">Purpose</div>
                   <div className="text-white font-medium">{watchedValues.purpose}</div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm text-accent-400">実行日</div>
+                    <div className="text-sm text-accent-400">Execution Date</div>
                     <div className="text-white font-medium">{watchedValues.drawdownDate}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-accent-400">年利</div>
+                    <div className="text-sm text-accent-400">Annual Rate</div>
                     <div className="text-white font-medium">
                       {((watchedValues.annualInterestRate || 0) * 100).toFixed(2)}%
                     </div>
@@ -284,13 +284,13 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm text-accent-400">返済期間</div>
+                    <div className="text-sm text-accent-400">Repayment Period</div>
                     <div className="text-white font-medium">
-                      {watchedValues.repaymentPeriodMonths}ヶ月
+                      {watchedValues.repaymentPeriodMonths} months
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-accent-400">返済方法</div>
+                    <div className="text-sm text-accent-400">Repayment Method</div>
                     <div className="text-white font-medium">{watchedValues.repaymentMethod}</div>
                   </div>
                 </div>
@@ -303,9 +303,9 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <div>
-                      <div className="text-warning font-medium text-sm">重要事項</div>
+                      <div className="text-warning font-medium text-sm">Important Notice</div>
                       <div className="text-accent-400 text-sm mt-1">
-                        ドローダウン実行後、ファシリティは確定状態（FIXED）になり、変更できなくなります。
+                        After drawdown execution, the facility will become fixed (FIXED status) and cannot be modified.
                       </div>
                     </div>
                   </div>
@@ -385,7 +385,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
               onClick={prevStep}
               className="flex-1 bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              戻る
+              Back
             </button>
           )}
           
@@ -396,7 +396,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
               disabled={!isStepValid}
               className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              次へ
+              Next
             </button>
           ) : (
             <button
@@ -404,7 +404,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'ドローダウン実行中...' : 'ドローダウン実行'}
+              {isSubmitting ? 'Executing Drawdown...' : 'Execute Drawdown'}
             </button>
           )}
           
@@ -414,7 +414,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
               onClick={onCancel}
               className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              キャンセル
+              Cancel
             </button>
           )}
         </div>

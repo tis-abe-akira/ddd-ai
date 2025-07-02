@@ -18,7 +18,7 @@ function App() {
                 Syndicated Loan Management System
               </h1>
               <p className="text-accent-400 text-lg">
-                シンジケートローン管理システムへようこそ
+                Welcome to the Syndicated Loan Management System
               </p>
             </div>
           </Layout>

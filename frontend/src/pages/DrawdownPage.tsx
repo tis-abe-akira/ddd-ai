@@ -13,7 +13,7 @@ const DrawdownPage: React.FC = () => {
   const [selectedDrawdown, setSelectedDrawdown] = useState<Drawdown | null>(null);
 
   const handleSuccess = (drawdown: Drawdown) => {
-    setSuccessMessage(`ドローダウン「#${drawdown.id}」を正常に実行しました。`);
+    setSuccessMessage(`Drawdown "#${drawdown.id}" has been executed successfully.`);
     setShowForm(false);
     setRefreshTrigger(prev => prev + 1);
     // 成功メッセージを5秒後に消去
@@ -41,11 +41,8 @@ const DrawdownPage: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
   return (
@@ -55,7 +52,7 @@ const DrawdownPage: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">Drawdowns</h1>
-            <p className="text-accent-400">ドローダウンの実行・管理を行います</p>
+            <p className="text-accent-400">Execute and manage loan drawdowns</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -64,7 +61,7 @@ const DrawdownPage: React.FC = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {showForm ? 'フォームを閉じる' : '新規ドローダウン実行'}
+            {showForm ? 'Close Form' : 'New Drawdown'}
           </button>
         </div>
 
@@ -103,7 +100,7 @@ const DrawdownPage: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <label htmlFor="search" className="block text-sm font-medium text-white mb-2">
-                    検索
+                    Search
                   </label>
                   <div className="relative">
                     <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +109,7 @@ const DrawdownPage: React.FC = () => {
                     <input
                       id="search"
                       type="text"
-                      placeholder="ドローダウンIDまたは目的で検索..."
+                      placeholder="Search by drawdown ID or purpose..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
@@ -122,12 +119,12 @@ const DrawdownPage: React.FC = () => {
                 
                 <div className="md:w-64">
                   <label htmlFor="facilityFilter" className="block text-sm font-medium text-white mb-2">
-                    ファシリティフィルタ
+                    Facility Filter
                   </label>
                   <input
                     id="facilityFilter"
                     type="number"
-                    placeholder="ファシリティID"
+                    placeholder="Facility ID"
                     value={facilityFilter || ''}
                     onChange={(e) => setFacilityFilter(e.target.value ? Number(e.target.value) : undefined)}
                     className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
@@ -138,19 +135,19 @@ const DrawdownPage: React.FC = () => {
                   <button
                     onClick={() => setRefreshTrigger(prev => prev + 1)}
                     className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
-                    title="更新"
+                    title="Refresh"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    更新
+                    Refresh
                   </button>
                   
                   {facilityFilter && (
                     <button
                       onClick={() => setFacilityFilter(undefined)}
                       className="bg-error hover:bg-error/80 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
-                      title="フィルタクリア"
+                      title="Clear Filter"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -163,19 +160,19 @@ const DrawdownPage: React.FC = () => {
               {/* Quick Stats */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">今日実行予定</div>
+                  <div className="text-accent-400 text-sm">Scheduled Today</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">今月実行済み</div>
+                  <div className="text-accent-400 text-sm">Executed This Month</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">総実行額</div>
+                  <div className="text-accent-400 text-sm">Total Executed</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">平均実行額</div>
+                  <div className="text-accent-400 text-sm">Average Amount</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
               </div>
@@ -199,7 +196,7 @@ const DrawdownPage: React.FC = () => {
             <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">
-                  ドローダウン詳細 #{selectedDrawdown.id}
+                  Drawdown Details #{selectedDrawdown.id}
                 </h2>
                 <button
                   onClick={closeDrawdownDetail}
@@ -214,24 +211,24 @@ const DrawdownPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <h3 className="text-white font-semibold mb-4">基本情報</h3>
+                  <h3 className="text-white font-semibold mb-4">Basic Information</h3>
                   <div className="space-y-3">
                     <div>
-                      <div className="text-accent-400 text-sm">ドローダウン金額</div>
+                      <div className="text-accent-400 text-sm">Drawdown Amount</div>
                       <div className="text-white text-xl font-bold">
                         {formatCurrency(selectedDrawdown.amount, selectedDrawdown.currency)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-accent-400 text-sm">ローンID</div>
+                      <div className="text-accent-400 text-sm">Loan ID</div>
                       <div className="text-white font-medium">#{selectedDrawdown.loanId}</div>
                     </div>
                     <div>
-                      <div className="text-accent-400 text-sm">実行日</div>
+                      <div className="text-accent-400 text-sm">Execution Date</div>
                       <div className="text-white font-medium">{formatDate(selectedDrawdown.transactionDate)}</div>
                     </div>
                     <div>
-                      <div className="text-accent-400 text-sm">目的</div>
+                      <div className="text-accent-400 text-sm">Purpose</div>
                       <div className="text-white font-medium">{selectedDrawdown.purpose}</div>
                     </div>
                   </div>
@@ -240,13 +237,13 @@ const DrawdownPage: React.FC = () => {
                 {/* Amount Pies */}
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-4">
-                    投資家配分 ({selectedDrawdown.amountPies?.length || 0}名)
+                    Investor Allocation ({selectedDrawdown.amountPies?.length || 0} investors)
                   </h3>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {selectedDrawdown.amountPies?.map((pie, index) => (
                       <div key={index} className="flex justify-between items-center bg-primary-900 rounded p-3">
                         <div>
-                          <div className="text-white font-medium">投資家 #{pie.investorId}</div>
+                          <div className="text-white font-medium">Investor #{pie.investorId}</div>
                           <div className="text-accent-400 text-sm">ID: {pie.id}</div>
                         </div>
                         <div className="text-right">
@@ -260,7 +257,7 @@ const DrawdownPage: React.FC = () => {
                       </div>
                     )) || (
                       <div className="text-accent-400 text-center py-4">
-                        投資家配分情報がありません
+                        No investor allocation information available
                       </div>
                     )}
                   </div>
@@ -269,7 +266,7 @@ const DrawdownPage: React.FC = () => {
                   {selectedDrawdown.amountPies && selectedDrawdown.amountPies.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-secondary-500">
                       <div className="flex justify-between items-center">
-                        <span className="text-accent-400">配分合計</span>
+                        <span className="text-accent-400">Total Allocation</span>
                         <span className="text-white font-bold">
                           {formatCurrency(
                             selectedDrawdown.amountPies.reduce((sum, pie) => sum + pie.amount, 0),
@@ -278,7 +275,7 @@ const DrawdownPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex justify-between items-center mt-1">
-                        <span className="text-accent-400">差額</span>
+                        <span className="text-accent-400">Difference</span>
                         <span className={`font-medium ${
                           Math.abs(selectedDrawdown.amount - selectedDrawdown.amountPies.reduce((sum, pie) => sum + pie.amount, 0)) < 0.01
                             ? 'text-success'
@@ -297,18 +294,18 @@ const DrawdownPage: React.FC = () => {
 
               {/* Additional Information */}
               <div className="mt-6 bg-secondary-600 rounded-lg p-4">
-                <h3 className="text-white font-semibold mb-4">システム情報</h3>
+                <h3 className="text-white font-semibold mb-4">System Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <div className="text-accent-400">作成日時</div>
+                    <div className="text-accent-400">Created At</div>
                     <div className="text-white">{formatDate(selectedDrawdown.createdAt)}</div>
                   </div>
                   <div>
-                    <div className="text-accent-400">更新日時</div>
+                    <div className="text-accent-400">Updated At</div>
                     <div className="text-white">{formatDate(selectedDrawdown.updatedAt)}</div>
                   </div>
                   <div>
-                    <div className="text-accent-400">バージョン</div>
+                    <div className="text-accent-400">Version</div>
                     <div className="text-white">v{selectedDrawdown.version}</div>
                   </div>
                 </div>

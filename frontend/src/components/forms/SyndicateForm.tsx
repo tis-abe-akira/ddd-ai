@@ -81,7 +81,7 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
       onSuccess?.(newSyndicate);
     } catch (error) {
       const apiError = error as ApiError;
-      setSubmitError(apiError.message || 'エラーが発生しました');
+      setSubmitError(apiError.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,18 +93,18 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">基本情報</h3>
-              <p className="text-accent-400 text-sm mb-6">シンジケートの名前を入力してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Basic Information</h3>
+              <p className="text-accent-400 text-sm mb-6">Enter the syndicate name</p>
               
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
-                  シンジケート名 <span className="text-error">*</span>
+                  Syndicate Name <span className="text-error">*</span>
                 </label>
                 <input
                   {...register('name')}
                   type="text"
                   id="name"
-                  placeholder="例: ABC シンジケート 2025"
+                  placeholder="e.g., ABC Syndicate 2025"
                   className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                 />
                 {errors.name && (
@@ -119,8 +119,8 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">借り手選択</h3>
-              <p className="text-accent-400 text-sm mb-6">融資を受ける借り手を選択してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Borrower Selection</h3>
+              <p className="text-accent-400 text-sm mb-6">Select the borrower who will receive the financing</p>
               
               <BorrowerSelect
                 value={watchedValues.borrowerId}
@@ -135,15 +135,15 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">リードバンク選択</h3>
-              <p className="text-accent-400 text-sm mb-6">シンジケートのリードバンクを選択してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Lead Bank Selection</h3>
+              <p className="text-accent-400 text-sm mb-6">Select the lead bank for the syndicate</p>
               
               <InvestorCards
                 mode="lead-bank"
                 selectedLeadBank={watchedValues.leadBankId}
                 onLeadBankChange={(leadBankId) => {
                   setValue('leadBankId', leadBankId);
-                  // リードバンクを自動的にメンバーにも追加
+                  // Automatically add lead bank to member investors
                   const currentMembers = watchedValues.memberInvestorIds || [];
                   if (!currentMembers.includes(leadBankId)) {
                     setValue('memberInvestorIds', [...currentMembers, leadBankId]);
@@ -159,8 +159,8 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">メンバー投資家選択</h3>
-              <p className="text-accent-400 text-sm mb-6">シンジケートのメンバー投資家を選択してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Member Investor Selection</h3>
+              <p className="text-accent-400 text-sm mb-6">Select member investors for the syndicate</p>
               
               <InvestorCards
                 mode="members"
@@ -176,32 +176,32 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">確認</h3>
-              <p className="text-accent-400 text-sm mb-6">内容を確認して、シンジケートを組成してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Confirmation</h3>
+              <p className="text-accent-400 text-sm mb-6">Review the details and create the syndicate</p>
               
               <div className="bg-secondary-600 rounded-lg p-6 space-y-4">
                 <div>
-                  <div className="text-sm text-accent-400">シンジケート名</div>
+                  <div className="text-sm text-accent-400">Syndicate Name</div>
                   <div className="text-white font-medium">{watchedValues.name}</div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">借り手ID</div>
+                  <div className="text-sm text-accent-400">Borrower ID</div>
                   <div className="text-white font-medium">{watchedValues.borrowerId}</div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">リードバンクID</div>
+                  <div className="text-sm text-accent-400">Lead Bank ID</div>
                   <div className="text-white font-medium">{watchedValues.leadBankId}</div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">メンバー投資家ID</div>
+                  <div className="text-sm text-accent-400">Member Investor IDs</div>
                   <div className="text-white font-medium">
-                    {watchedValues.memberInvestorIds?.join(', ') || 'なし'}
+                    {watchedValues.memberInvestorIds?.join(', ') || 'None'}
                   </div>
                   <div className="text-accent-400 text-xs mt-1">
-                    計 {watchedValues.memberInvestorIds?.length || 0} 名
+                    Total: {watchedValues.memberInvestorIds?.length || 0} investors
                   </div>
                 </div>
               </div>
@@ -279,7 +279,7 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
               onClick={prevStep}
               className="flex-1 bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              戻る
+              Back
             </button>
           )}
           
@@ -290,7 +290,7 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
               disabled={!isStepValid}
               className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              次へ
+              Next
             </button>
           ) : (
             <button
@@ -298,7 +298,7 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'シンジケート組成中...' : 'シンジケート組成'}
+              {isSubmitting ? 'Creating Syndicate...' : 'Create Syndicate'}
             </button>
           )}
           
@@ -308,7 +308,7 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
               onClick={onCancel}
               className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              キャンセル
+              Cancel
             </button>
           )}
         </div>

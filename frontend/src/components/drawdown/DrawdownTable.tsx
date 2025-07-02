@@ -51,11 +51,8 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -87,11 +84,11 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
     const daysDiff = Math.ceil((drawdownDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
     if (daysDiff > 0) {
-      return '予定';
+      return 'Scheduled';
     } else if (daysDiff === 0) {
-      return '実行中';
+      return 'Executing';
     } else {
-      return '完了';
+      return 'Completed';
     }
   };
 
@@ -109,7 +106,7 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
-        <span className="ml-3 text-accent-400">読み込み中...</span>
+        <span className="ml-3 text-accent-400">Loading...</span>
       </div>
     );
   }
@@ -119,12 +116,12 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
       {/* Table Header */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-accent-400">
-          {facilityFilter ? filteredDrawdowns.length : totalElements}件のドローダウン
-          {facilityFilter && <span className="ml-2">（ファシリティ #{facilityFilter}）</span>}
+          {facilityFilter ? filteredDrawdowns.length : totalElements} drawdown(s)
+          {facilityFilter && <span className="ml-2">(Facility #{facilityFilter})</span>}
         </div>
         {!facilityFilter && (
           <div className="text-sm text-accent-400">
-            ページ {currentPage + 1} / {Math.max(totalPages, 1)}
+            Page {currentPage + 1} / {Math.max(totalPages, 1)}
           </div>
         )}
       </div>
@@ -134,10 +131,10 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
         {filteredDrawdowns.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-accent-400 text-lg mb-2">
-              {searchTerm ? '検索結果が見つかりません' : 'ドローダウンが実行されていません'}
+              {searchTerm ? 'No search results found' : 'No drawdowns executed'}
             </div>
             <div className="text-accent-400 text-sm">
-              {searchTerm ? '別のキーワードで検索してみてください' : '新しいドローダウンを実行してください'}
+              {searchTerm ? 'Try searching with different keywords' : 'Please execute a new drawdown'}
             </div>
           </div>
         ) : (
@@ -146,28 +143,28 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
               <thead>
                 <tr className="border-b border-secondary-500">
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    ドローダウン
+                    Drawdown
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    金額
+                    Amount
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    ローンID
+                    Loan ID
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    目的
+                    Purpose
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    実行日
+                    Execution Date
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    投資家配分
+                    Investor Allocation
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    ステータス
+                    Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    操作
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -205,20 +202,20 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-white">{formatDate(drawdown.transactionDate)}</div>
                         <div className="text-accent-400 text-xs">
-                          {formatDate(drawdown.createdAt)}作成
+                          Created {formatDate(drawdown.createdAt)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <span className="text-white font-medium">{drawdown.amountPies?.length || 0}</span>
-                          <span className="text-accent-400 text-sm ml-1">名</span>
+                          <span className="text-accent-400 text-sm ml-1">investors</span>
                         </div>
                         <div className="text-accent-400 text-xs">
-                          配分: {formatCurrency(totalAmountPies, drawdown.currency)}
+                          Allocated: {formatCurrency(totalAmountPies, drawdown.currency)}
                         </div>
                         {Math.abs(totalAmountPies - drawdown.amount) > 0.01 && (
                           <div className="text-warning text-xs">
-                            差額: {formatCurrency(drawdown.amount - totalAmountPies, drawdown.currency)}
+                            Difference: {formatCurrency(drawdown.amount - totalAmountPies, drawdown.currency)}
                           </div>
                         )}
                       </td>
@@ -233,7 +230,7 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                             <button
                               onClick={() => onView(drawdown)}
                               className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
-                              title="詳細表示"
+                              title="View Details"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -253,17 +250,17 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                             {/* Tooltip */}
                             <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-10">
                               <div className="bg-secondary-600 border border-secondary-500 rounded-lg p-3 min-w-64 shadow-lg">
-                                <div className="text-white text-sm font-medium mb-2">投資家配分詳細</div>
+                                <div className="text-white text-sm font-medium mb-2">Investor Allocation Details</div>
                                 <div className="space-y-1">
                                   {drawdown.amountPies?.slice(0, 5).map((pie, index) => (
                                     <div key={index} className="flex justify-between text-xs">
-                                      <span className="text-accent-400">投資家#{pie.investorId}</span>
+                                      <span className="text-accent-400">Investor #{pie.investorId}</span>
                                       <span className="text-white">{formatCurrency(pie.amount, drawdown.currency)}</span>
                                     </div>
                                   )) || []}
                                   {(drawdown.amountPies?.length || 0) > 5 && (
                                     <div className="text-accent-400 text-xs text-center">
-                                      他 {(drawdown.amountPies?.length || 0) - 5}名...
+                                      +{(drawdown.amountPies?.length || 0) - 5} more...
                                     </div>
                                   )}
                                 </div>
@@ -285,7 +282,7 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
       {!facilityFilter && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-accent-400">
-            {filteredDrawdowns.length}件表示中
+            Showing {filteredDrawdowns.length} items
           </div>
           <div className="flex items-center gap-2">
             <button

@@ -11,7 +11,7 @@ const FacilityPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSuccess = (facility: Facility) => {
-    setSuccessMessage(`ファシリティ「#${facility.id}」を正常に組成しました。`);
+    setSuccessMessage(`Facility "#${facility.id}" has been created successfully.`);
     setShowForm(false);
     setRefreshTrigger(prev => prev + 1);
     // 成功メッセージを3秒後に消去
@@ -23,7 +23,7 @@ const FacilityPage: React.FC = () => {
   };
 
   const handleDelete = async (facility: Facility) => {
-    if (window.confirm(`ファシリティ「#${facility.id}」を削除しますか？`)) {
+    if (window.confirm(`Are you sure you want to delete facility "#${facility.id}"?`)) {
       try {
         // TODO: API呼び出し実装
         console.log('Delete facility:', facility.id);
@@ -46,7 +46,7 @@ const FacilityPage: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">Facilities</h1>
-            <p className="text-accent-400">ファシリティの組成・管理を行います</p>
+            <p className="text-accent-400">Create and manage financing facilities</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -55,7 +55,7 @@ const FacilityPage: React.FC = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {showForm ? 'フォームを閉じる' : '新規ファシリティ組成'}
+            {showForm ? 'Close Form' : 'New Facility'}
           </button>
         </div>
 
@@ -86,7 +86,7 @@ const FacilityPage: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <label htmlFor="search" className="block text-sm font-medium text-white mb-2">
-                    検索
+                    Search
                   </label>
                   <div className="relative">
                     <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ const FacilityPage: React.FC = () => {
                     <input
                       id="search"
                       type="text"
-                      placeholder="ファシリティIDまたは金利条件で検索..."
+                      placeholder="Search by facility ID or interest terms..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
@@ -107,12 +107,12 @@ const FacilityPage: React.FC = () => {
                   <button
                     onClick={() => setRefreshTrigger(prev => prev + 1)}
                     className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
-                    title="更新"
+                    title="Refresh"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    更新
+                    Refresh
                   </button>
                 </div>
               </div>
@@ -120,15 +120,15 @@ const FacilityPage: React.FC = () => {
               {/* Quick Stats */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">ドラフト中</div>
+                  <div className="text-accent-400 text-sm">Draft</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">確定済み</div>
+                  <div className="text-accent-400 text-sm">Fixed</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">総融資枠額</div>
+                  <div className="text-accent-400 text-sm">Total Facility Amount</div>
                   <div className="text-white text-2xl font-bold">-</div>
                 </div>
               </div>

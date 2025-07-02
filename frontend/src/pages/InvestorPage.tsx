@@ -10,7 +10,7 @@ const InvestorPage: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleFormSuccess = (investor: Investor) => {
-    setSuccessMessage(`投資家「${investor.name}」を正常に登録しました。`);
+    setSuccessMessage(`Investor "${investor.name}" has been registered successfully.`);
     setShowForm(false);
     setRefreshTrigger(prev => prev + 1); // リストを更新
     // 成功メッセージを3秒後に消去

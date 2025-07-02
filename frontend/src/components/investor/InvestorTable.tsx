@@ -96,7 +96,7 @@ const InvestorTable: React.FC<InvestorTableProps> = ({ onRefresh, refreshTrigger
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
-        <span className="ml-3 text-accent-400">読み込み中...</span>
+        <span className="ml-3 text-accent-400">Loading...</span>
       </div>
     );
   }

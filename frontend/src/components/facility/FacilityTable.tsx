@@ -41,11 +41,8 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -71,9 +68,9 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'DRAFT':
-        return 'ドラフト';
+        return 'Draft';
       case 'FIXED':
-        return '確定済み';
+        return 'Fixed';
       default:
         return status;
     }
@@ -87,7 +84,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
-        <span className="ml-3 text-accent-400">読み込み中...</span>
+        <span className="ml-3 text-accent-400">Loading...</span>
       </div>
     );
   }
@@ -97,10 +94,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
       {/* Table Header */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-accent-400">
-          {totalElements}件のファシリティ
+          {totalElements} facility(ies)
         </div>
         <div className="text-sm text-accent-400">
-          ページ {currentPage + 1} / {Math.max(totalPages, 1)}
+          Page {currentPage + 1} / {Math.max(totalPages, 1)}
         </div>
       </div>
 
@@ -109,10 +106,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
         {facilities.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-accent-400 text-lg mb-2">
-              {searchTerm ? '検索結果が見つかりません' : 'ファシリティが組成されていません'}
+              {searchTerm ? 'No search results found' : 'No facilities created'}
             </div>
             <div className="text-accent-400 text-sm">
-              {searchTerm ? '別のキーワードで検索してみてください' : '新しいファシリティを組成してください'}
+              {searchTerm ? 'Try searching with different keywords' : 'Please create a new facility'}
             </div>
           </div>
         ) : (
@@ -121,25 +118,25 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
               <thead>
                 <tr className="border-b border-secondary-500">
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    ファシリティ
+                    Facility
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    融資枠額
+                    Amount
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    シンジケート
+                    Syndicate
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    期間
+                    Period
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    投資家数
+                    Investors
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    ステータス
+                    Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    操作
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -177,7 +174,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <span className="text-white font-medium">{facility.sharePies?.length || 0}</span>
-                          <span className="text-accent-400 text-sm ml-1">名</span>
+                          <span className="text-accent-400 text-sm ml-1">investors</span>
                         </div>
                         <div className={`text-xs ${isValidSharePie ? 'text-success' : 'text-warning'}`}>
                           {Math.round(totalShare * 100)}%
@@ -197,7 +194,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                             <button
                               onClick={() => onEdit(facility)}
                               className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
-                              title="編集"
+                              title="Edit"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -208,7 +205,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                             <button
                               onClick={() => onDelete(facility)}
                               className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
-                              title="削除"
+                              title="Delete"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -217,7 +214,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                           )}
                           {facility.status === 'FIXED' && (
                             <div className="text-accent-400 text-xs">
-                              確定済み
+                              Fixed
                             </div>
                           )}
                         </div>
@@ -235,7 +232,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-accent-400">
-            {facilities.length}件表示中
+            Showing {facilities.length} items
           </div>
           <div className="flex items-center gap-2">
             <button

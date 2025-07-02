@@ -95,7 +95,7 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
-        <span className="ml-3 text-accent-400">読み込み中...</span>
+        <span className="ml-3 text-accent-400">Loading...</span>
       </div>
     );
   }
@@ -108,7 +108,7 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
           onClick={() => fetchBorrowers(pagination.page, pagination.size)}
           className="mt-2 text-sm text-accent-500 hover:text-accent-400 underline"
         >
-          再試行
+          Retry
         </button>
       </div>
     );
@@ -165,7 +165,7 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
               {filteredBorrowers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-accent-400">
-                    {searchTerm ? '検索結果が見つかりません' : 'Borrowerが登録されていません'}
+                    {searchTerm ? 'No search results found' : 'No borrowers registered'}
                   </td>
                 </tr>
               ) : (

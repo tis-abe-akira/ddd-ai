@@ -36,7 +36,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
       onSuccess?.(investor);
     } catch (error) {
       const apiError = error as ApiError;
-      setSubmitError(apiError.message || 'エラーが発生しました');
+      setSubmitError(apiError.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -45,21 +45,21 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-2">新規投資家登録</h2>
-        <p className="text-accent-400 text-sm">投資家の基本情報を入力してください</p>
+        <h2 className="text-xl font-bold text-white mb-2">New Investor Registration</h2>
+        <p className="text-accent-400 text-sm">Enter the investor's basic information</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Investor Name */}
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
-            投資家名 <span className="text-error">*</span>
+            Investor Name <span className="text-error">*</span>
           </label>
           <input
             {...register('name')}
             type="text"
             id="name"
-            placeholder="投資家名を入力してください"
+            placeholder="Enter investor name"
             className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           />
           {errors.name && (
@@ -70,7 +70,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
         {/* Email */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
-            メールアドレス <span className="text-error">*</span>
+            Email Address <span className="text-error">*</span>
           </label>
           <input
             {...register('email')}
@@ -87,7 +87,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
         {/* Phone Number */}
         <div>
           <label htmlFor="phoneNumber" className="block text-sm font-medium text-white mb-2">
-            電話番号 <span className="text-error">*</span>
+            Phone Number <span className="text-error">*</span>
           </label>
           <input
             {...register('phoneNumber')}
@@ -104,13 +104,13 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
         {/* Company ID */}
         <div>
           <label htmlFor="companyId" className="block text-sm font-medium text-white mb-2">
-            会社ID（任意）
+            Company ID (Optional)
           </label>
           <input
             {...register('companyId')}
             type="text"
             id="companyId"
-            placeholder="COMP001（任意）"
+            placeholder="COMP001 (optional)"
             className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           />
           {errors.companyId && (
@@ -121,7 +121,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
         {/* Investment Capacity */}
         <div>
           <label htmlFor="investmentCapacity" className="block text-sm font-medium text-white mb-2">
-            投資能力 <span className="text-error">*</span>
+            Investment Capacity <span className="text-error">*</span>
           </label>
           <div className="relative">
             <input
@@ -136,7 +136,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
               step="1"
               className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
             />
-            <span className="absolute right-4 top-3 text-accent-400 text-sm">円</span>
+            <span className="absolute right-4 top-3 text-accent-400 text-sm">JPY</span>
           </div>
           {errors.investmentCapacity && (
             <p className="mt-1 text-sm text-error">{errors.investmentCapacity.message}</p>
@@ -146,14 +146,14 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
         {/* Investor Type */}
         <div>
           <label htmlFor="investorType" className="block text-sm font-medium text-white mb-2">
-            投資家タイプ <span className="text-error">*</span>
+            Investor Type <span className="text-error">*</span>
           </label>
           <select
             {...register('investorType')}
             id="investorType"
             className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           >
-            <option value="">タイプを選択してください</option>
+            <option value="">Select investor type</option>
             {investorTypeOptions.map((type) => (
               <option key={type} value={type} className="bg-secondary-600 text-white">
                 {investorTypeLabels[type]}
@@ -179,7 +179,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
             disabled={isSubmitting}
             className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            {isSubmitting ? '登録中...' : '登録する'}
+            {isSubmitting ? 'Registering...' : 'Register'}
           </button>
           
           {onCancel && (
@@ -188,7 +188,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
               onClick={onCancel}
               className="flex-1 bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              キャンセル
+              Cancel
             </button>
           )}
         </div>

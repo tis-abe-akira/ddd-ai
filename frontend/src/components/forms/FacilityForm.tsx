@@ -85,7 +85,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
       onSuccess?.(newFacility);
     } catch (error) {
       const apiError = error as ApiError;
-      setSubmitError(apiError.message || 'エラーが発生しました');
+      setSubmitError(apiError.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -105,8 +105,8 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">シンジケート選択</h3>
-              <p className="text-accent-400 text-sm mb-6">ファシリティを組成するシンジケートを選択してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Syndicate Selection</h3>
+              <p className="text-accent-400 text-sm mb-6">Select the syndicate for this facility</p>
               
               <SyndicateSelect
                 value={watchedValues.syndicateId}
@@ -121,20 +121,20 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">ファシリティ基本情報</h3>
-              <p className="text-accent-400 text-sm mb-6">融資枠の基本的な条件を設定してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Facility Basic Information</h3>
+              <p className="text-accent-400 text-sm mb-6">Set the basic conditions for the credit facility</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Commitment Amount */}
                 <div>
                   <label htmlFor="commitment" className="block text-sm font-medium text-white mb-2">
-                    融資枠額 <span className="text-error">*</span>
+                    Facility Amount <span className="text-error">*</span>
                   </label>
                   <input
                     {...register('commitment', { valueAsNumber: true })}
                     type="number"
                     id="commitment"
-                    placeholder="例: 5000000"
+                    placeholder="e.g., 5000000"
                     className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                   />
                   {errors.commitment && (
@@ -145,7 +145,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
                 {/* Currency */}
                 <div>
                   <label htmlFor="currency" className="block text-sm font-medium text-white mb-2">
-                    通貨 <span className="text-error">*</span>
+                    Currency <span className="text-error">*</span>
                   </label>
                   <select
                     {...register('currency')}
@@ -166,7 +166,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
                 {/* Start Date */}
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-medium text-white mb-2">
-                    開始日 <span className="text-error">*</span>
+                    Start Date <span className="text-error">*</span>
                   </label>
                   <input
                     {...register('startDate')}
@@ -182,7 +182,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
                 {/* End Date */}
                 <div>
                   <label htmlFor="endDate" className="block text-sm font-medium text-white mb-2">
-                    終了日 <span className="text-error">*</span>
+                    End Date <span className="text-error">*</span>
                   </label>
                   <input
                     {...register('endDate')}
@@ -199,13 +199,13 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               {/* Interest Terms */}
               <div className="mt-6">
                 <label htmlFor="interestTerms" className="block text-sm font-medium text-white mb-2">
-                  金利条件 <span className="text-error">*</span>
+                  Interest Terms <span className="text-error">*</span>
                 </label>
                 <input
                   {...register('interestTerms')}
                   type="text"
                   id="interestTerms"
-                  placeholder="例: LIBOR + 2%"
+                  placeholder="e.g., LIBOR + 2%"
                   className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                 />
                 {errors.interestTerms && (
@@ -220,8 +220,8 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">投資家持分配分</h3>
-              <p className="text-accent-400 text-sm mb-6">各投資家の持分比率を設定してください（合計100%）</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Investor Share Allocation</h3>
+              <p className="text-accent-400 text-sm mb-6">Set the share percentage for each investor (total 100%)</p>
               
               <SharePieAllocation
                 value={watchedValues.sharePies || []}
@@ -237,49 +237,49 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">確認</h3>
-              <p className="text-accent-400 text-sm mb-6">内容を確認して、ファシリティを組成してください</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Confirmation</h3>
+              <p className="text-accent-400 text-sm mb-6">Review the details and create the facility</p>
               
               <div className="bg-secondary-600 rounded-lg p-6 space-y-4">
                 <div>
-                  <div className="text-sm text-accent-400">シンジケートID</div>
+                  <div className="text-sm text-accent-400">Syndicate ID</div>
                   <div className="text-white font-medium">{watchedValues.syndicateId}</div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">融資枠額</div>
+                  <div className="text-sm text-accent-400">Facility Amount</div>
                   <div className="text-white font-medium text-lg">
-                    {watchedValues.commitment ? formatCurrency(watchedValues.commitment) : '未設定'}
+                    {watchedValues.commitment ? formatCurrency(watchedValues.commitment) : 'Not set'}
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm text-accent-400">開始日</div>
+                    <div className="text-sm text-accent-400">Start Date</div>
                     <div className="text-white font-medium">{watchedValues.startDate}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-accent-400">終了日</div>
+                    <div className="text-sm text-accent-400">End Date</div>
                     <div className="text-white font-medium">{watchedValues.endDate}</div>
                   </div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">金利条件</div>
+                  <div className="text-sm text-accent-400">Interest Terms</div>
                   <div className="text-white font-medium">{watchedValues.interestTerms}</div>
                 </div>
                 
                 <div>
-                  <div className="text-sm text-accent-400">投資家持分配分</div>
+                  <div className="text-sm text-accent-400">Investor Share Allocation</div>
                   <div className="space-y-2 mt-2">
                     {watchedValues.sharePies?.map((pie, index) => (
                       <div key={index} className="flex justify-between items-center bg-primary-900 rounded p-2">
-                        <span className="text-white">投資家ID: {pie.investorId}</span>
+                        <span className="text-white">Investor ID: {pie.investorId}</span>
                         <span className="text-accent-500 font-medium">{Math.round(pie.share * 100)}%</span>
                       </div>
                     )) || []}
                     <div className="border-t border-secondary-500 pt-2 flex justify-between items-center font-bold">
-                      <span className="text-white">合計</span>
+                      <span className="text-white">Total</span>
                       <span className="text-success">
                         {Math.round((watchedValues.sharePies?.reduce((sum, pie) => sum + pie.share, 0) || 0) * 100)}%
                       </span>
@@ -361,7 +361,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               onClick={prevStep}
               className="flex-1 bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              戻る
+              Back
             </button>
           )}
           
@@ -372,7 +372,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               disabled={!isStepValid}
               className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              次へ
+              Next
             </button>
           ) : (
             <button
@@ -380,7 +380,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'ファシリティ組成中...' : 'ファシリティ組成'}
+              {isSubmitting ? 'Creating Facility...' : 'Create Facility'}
             </button>
           )}
           
@@ -390,7 +390,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               onClick={onCancel}
               className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              キャンセル
+              Cancel
             </button>
           )}
         </div>

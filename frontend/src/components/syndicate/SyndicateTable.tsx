@@ -41,11 +41,8 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
   const getStatusBadge = (syndicate: Syndicate) => {
@@ -56,11 +53,11 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
     );
     
     if (daysSinceCreation <= 7) {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full">新規</span>;
+      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full">New</span>;
     } else if (daysSinceCreation <= 30) {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full">進行中</span>;
+      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full">Active</span>;
     } else {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full">確定済み</span>;
+      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full">Completed</span>;
     }
   };
 
@@ -68,7 +65,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
-        <span className="ml-3 text-accent-400">読み込み中...</span>
+        <span className="ml-3 text-accent-400">Loading...</span>
       </div>
     );
   }
@@ -78,10 +75,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
       {/* Table Header */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-accent-400">
-          {totalElements}件のシンジケート
+          {totalElements} syndicate(s)
         </div>
         <div className="text-sm text-accent-400">
-          ページ {currentPage + 1} / {Math.max(totalPages, 1)}
+          Page {currentPage + 1} / {Math.max(totalPages, 1)}
         </div>
       </div>
 
@@ -90,10 +87,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
         {syndicates.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-accent-400 text-lg mb-2">
-              {searchTerm ? '検索結果が見つかりません' : 'シンジケートが登録されていません'}
+              {searchTerm ? 'No search results found' : 'No syndicates registered'}
             </div>
             <div className="text-accent-400 text-sm">
-              {searchTerm ? '別のキーワードで検索してみてください' : '新しいシンジケートを組成してください'}
+              {searchTerm ? 'Try searching with different keywords' : 'Please create a new syndicate'}
             </div>
           </div>
         ) : (
@@ -102,25 +99,25 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
               <thead>
                 <tr className="border-b border-secondary-500">
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    シンジケート名
+                    Syndicate Name
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    借り手ID
+                    Borrower ID
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    リードバンクID
+                    Lead Bank ID
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    メンバー数
+                    Members
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    ステータス
+                    Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    組成日
+                    Created Date
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    操作
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -147,7 +144,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <span className="text-white font-medium">{syndicate.memberInvestorIds.length}</span>
-                        <span className="text-accent-400 text-sm ml-1">名</span>
+                        <span className="text-accent-400 text-sm ml-1">members</span>
                       </div>
                       <div className="text-accent-400 text-xs">
                         IDs: {syndicate.memberInvestorIds.slice(0, 3).join(', ')}
@@ -169,7 +166,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                           <button
                             onClick={() => onEdit(syndicate)}
                             className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
-                            title="編集"
+                            title="Edit"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -180,7 +177,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                           <button
                             onClick={() => onDelete(syndicate)}
                             className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
-                            title="削除"
+                            title="Delete"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -201,7 +198,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-accent-400">
-            {syndicates.length}件表示中
+            Showing {syndicates.length} items
           </div>
           <div className="flex items-center gap-2">
             <button

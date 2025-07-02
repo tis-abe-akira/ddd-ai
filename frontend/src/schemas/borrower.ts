@@ -10,18 +10,18 @@ export const creditRatingOptions: CreditRating[] = [
 export const createBorrowerSchema = z.object({
   name: z
     .string()
-    .min(1, '会社名は必須です')
-    .max(100, '会社名は100文字以内で入力してください'),
+    .min(1, 'Company name is required')
+    .max(100, 'Company name must be 100 characters or less'),
   
   email: z
     .string()
-    .min(1, 'メールアドレスは必須です')
-    .email('有効なメールアドレスを入力してください'),
+    .min(1, 'Email address is required')
+    .email('Please enter a valid email address'),
   
   phoneNumber: z
     .string()
-    .min(1, '電話番号は必須です')
-    .regex(/^[\d\-\+\(\)\s]+$/, '有効な電話番号を入力してください'),
+    .min(1, 'Phone number is required')
+    .regex(/^[\d\-\+\(\)\s]+$/, 'Please enter a valid phone number'),
   
   companyId: z
     .string()
@@ -29,16 +29,16 @@ export const createBorrowerSchema = z.object({
   
   creditLimit: z
     .number({
-      required_error: '信用限度額は必須です',
-      invalid_type_error: '信用限度額は数値で入力してください'
+      required_error: 'Credit limit is required',
+      invalid_type_error: 'Credit limit must be a number'
     })
-    .positive('信用限度額は正の数である必要があります')
-    .max(1000000000, '信用限度額は10億以下で入力してください'),
+    .positive('Credit limit must be positive')
+    .max(1000000000, 'Credit limit must be 1 billion or less'),
   
   creditRating: z
     .enum(['AAA', 'AA', 'A', 'BBB', 'BB', 'B', 'CCC', 'CC', 'C', 'D'], {
-      required_error: '信用格付けを選択してください',
-      invalid_type_error: '有効な信用格付けを選択してください'
+      required_error: 'Please select credit rating',
+      invalid_type_error: 'Please select a valid credit rating'
     })
 });
 
