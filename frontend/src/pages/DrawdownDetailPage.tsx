@@ -73,10 +73,13 @@ const DrawdownDetailPage: React.FC = () => {
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
+  const formatCurrency = (amount: number, currency?: string) => {
+    const currencyCode = currency || 'USD';
+    if (!amount && amount !== 0) return 'N/A';
+    
     return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
-      currency: currency,
+      currency: currencyCode,
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -259,13 +262,13 @@ const DrawdownDetailPage: React.FC = () => {
                   <div>
                     <label className="block text-accent-400 text-sm">Principal Amount</label>
                     <div className="text-white font-bold">
-                      {formatCurrency(loan.principalAmount, loan.currency)}
+                      {formatCurrency(loan.principalAmount?.amount || loan.principalAmount, loan.currency)}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-accent-400 text-sm">Current Balance</label>
+                    <label className="block text-accent-400 text-sm">Outstanding Balance</label>
                     <div className="text-white font-bold">
-                      {formatCurrency(loan.currentBalance, loan.currency)}
+                      {formatCurrency(loan.outstandingBalance?.amount || loan.outstandingBalance, loan.currency)}
                     </div>
                   </div>
                 </div>
@@ -276,7 +279,7 @@ const DrawdownDetailPage: React.FC = () => {
                 <div className="space-y-2">
                   <div>
                     <label className="block text-accent-400 text-sm">Annual Interest Rate</label>
-                    <div className="text-white">{(loan.annualInterestRate * 100).toFixed(2)}%</div>
+                    <div className="text-white">{((loan.annualInterestRate?.value || loan.annualInterestRate) * 100).toFixed(2)}%</div>
                   </div>
                   <div>
                     <label className="block text-accent-400 text-sm">Repayment Period</label>

@@ -4,6 +4,7 @@ import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import com.example.syndicatelending.transaction.entity.Transaction;
 import com.example.syndicatelending.transaction.entity.TransactionType;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +35,7 @@ public class Payment extends Transaction {
     private String currency;
 
     @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference
     private List<PaymentDistribution> paymentDistributions = new ArrayList<>();
 
     @PrePersist

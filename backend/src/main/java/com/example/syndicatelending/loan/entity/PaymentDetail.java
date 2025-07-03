@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 /**
  * 返済明細エンティティ。
@@ -24,6 +25,7 @@ public class PaymentDetail {
     /** 所属するローン */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "loan_id", nullable = false)
+    @JsonBackReference
     private Loan loan;
 
     /** 返済回数 */

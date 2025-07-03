@@ -12,6 +12,7 @@ import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import com.example.syndicatelending.common.domain.model.PercentageAttributeConverter;
 import com.example.syndicatelending.common.statemachine.loan.LoanState;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 /**
  * ローン（貸付）エンティティ。
@@ -70,6 +71,7 @@ public class Loan {
 
     /** 支払い詳細リスト */
     @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonManagedReference
     private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
     /** 通貨コード（例: JPY, USD等） */

@@ -174,10 +174,10 @@ export interface Loan {
   id: number;
   facilityId: number;
   borrowerId: number;
-  amount: number;
+  principalAmount: any; // MoneyオブジェクトまたはnumberとしてJSONシリアライズされる可能性
+  outstandingBalance: any; // MoneyオブジェクトまたはnumberとしてJSONシリアライズされる可能性
   currency: string;
-  purpose: string;
-  annualInterestRate: number;
+  annualInterestRate: any; // PercentageオブジェクトまたはnumberとしてJSONシリアライズされる可能性
   drawdownDate: string;
   repaymentPeriodMonths: number;
   repaymentCycle: string;
