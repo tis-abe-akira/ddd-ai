@@ -229,6 +229,40 @@ export interface CreateAmountPieRequest {
   amount: number;
 }
 
+// Payment関連の型定義
+export interface Payment {
+  id: number;
+  loanId: number;
+  paymentDate: string;
+  principalAmount: number;
+  interestAmount: number;
+  totalAmount: number;
+  currency: string;
+  paymentDistributions: PaymentDistribution[];
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface PaymentDistribution {
+  id: number;
+  paymentId: number;
+  investorId: number;
+  principalAmount: number;
+  interestAmount: number;
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentRequest {
+  loanId: number;
+  paymentDate: string;
+  principalAmount: number;
+  interestAmount: number;
+  currency: string;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data: T;

@@ -8,6 +8,7 @@ import type {
   Facility,
   Loan,
   Drawdown,
+  Payment,
   CreateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
@@ -15,6 +16,7 @@ import type {
   CreateFacilityRequest,
   UpdateFacilityRequest,
   CreateDrawdownRequest,
+  CreatePaymentRequest,
   ApiResponse,
   ApiError,
   PageResponse
@@ -145,6 +147,26 @@ export const drawdownApi = {
   getById: (id: number) => apiClient.get<Drawdown>(`/loans/drawdowns/${id}`),
   getByFacilityId: (facilityId: number) => apiClient.get<Drawdown[]>(`/loans/drawdowns/facility/${facilityId}`),
   create: (data: CreateDrawdownRequest) => apiClient.post<Drawdown>('/loans/drawdowns', data),
+};
+
+// Loans
+export const loanApi = {
+  getById: (id: number) => apiClient.get<Loan>(`/loans/${id}`),
+  getByDrawdownId: (drawdownId: number) => apiClient.get<Loan>(`/loans/drawdown/${drawdownId}`),
+  getAll: (page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<Loan>>(`/loans?${params.toString()}`);
+  },
+};
+
+// Payments
+export const paymentApi = {
+  getByLoanId: (loanId: number) => apiClient.get<Payment[]>(`/loans/payments/loan/${loanId}`),
+  create: (data: CreatePaymentRequest) => apiClient.post<Payment>('/loans/payments', data),
 };
 
 // Utility function for handling API responses

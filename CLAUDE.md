@@ -9,8 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 クリーンアーキテクチャとDDD（ドメイン駆動設計）を採用したSpring Boot REST API。
 
 ## 技術スタック
-- **Framework**: Spring Boot 3.2.1, Java 17
-- **Build**: Maven
+- **Backend**: Spring Boot 3.2.1, Java 17
+- **Frontend**: React 18 + TypeScript + Vite
+- **Build**: Maven (Backend), Vite (Frontend)
 - **Database**: H2 (インメモリ)
 - **Dependencies**: Spring Web, Data JPA, Validation, AOP, Lombok, JaCoCo, SpringDoc OpenAPI
 - **State Management**: Spring State Machine (Facility・Loan・Party状態管理)
@@ -79,7 +80,8 @@ mvn test jacoco:report
 5. **Testing**: 各層での適切なテスト戦略（Entity -> Service -> API Integration）
 
 ## 重要なURL
-- **アプリケーション**: http://localhost:8080
+- **Backend API**: http://localhost:8080
+- **Frontend App**: http://localhost:5173
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
 - **H2コンソール**: http://localhost:8080/h2-console
   - JDBC URL: `jdbc:h2:mem:testdb`
@@ -178,3 +180,10 @@ mvn test jacoco:report
 「この実装により[変更内容]が追加されました。関連ドキュメント（CLAUDE.md、.clinerules等）の更新も必要でしょうか？」
 
 **このプロセスにより、ドキュメントと実装の整合性を常に保ち、プロジェクトの知識が確実に蓄積されます。**
+
+---
+
+## フロントエンド関連ドキュメント
+
+フロントエンドのアーキテクチャ、UI/UX方針、開発規約については以下を参照：
+- **frontend/README.md**: フロントエンド専用の技術仕様・開発ガイドライン

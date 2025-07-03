@@ -4,6 +4,7 @@ import InvestorPage from './pages/InvestorPage';
 import SyndicatePage from './pages/SyndicatePage';
 import FacilityPage from './pages/FacilityPage';
 import DrawdownPage from './pages/DrawdownPage';
+import DrawdownDetailPage from './pages/DrawdownDetailPage';
 import Layout from './components/layout/Layout';
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
         
         {/* Drawdown routes */}
         <Route path="/drawdowns" element={<DrawdownPage />} />
+        <Route path="/drawdowns/:id" element={<DrawdownDetailPage />} />
         
         {/* Placeholder routes */}
         <Route path="/loans" element={

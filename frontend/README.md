@@ -1,69 +1,114 @@
-# React + TypeScript + Vite
+# Frontend Architecture & Guidelines
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 技術スタック
+- **Framework**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS v3 (IntelliJ IDEA Dark色彩)
+- **Form Management**: Zod + React Hook Form
+- **State Management**: React useState/useEffect
+- **API Client**: Custom api.ts module
 
-Currently, two official plugins are available:
+## UI/UX方針
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 言語・表記
+- **UI表記**: 英語統一（ユーザー向けテキスト）
+- **コメント**: 日本語OK（ソースコード内）
+- **日付形式**: YYYY-M-D (ダッシュ区切り)
 
-## Expanding the ESLint configuration
+### デザインシステム
+- **カラーテーマ**: IntelliJ IDEA Dark準拠
+- **フォント**: システムデフォルト（monospace for IDs）
+- **アイコン**: Heroicons (SVGベース)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## アーキテクチャ
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### ディレクトリ構成
+```
+src/
+├── components/          # UIコンポーネント
+│   ├── layout/         # レイアウト関連
+│   ├── forms/          # フォームコンポーネント
+│   ├── [domain]/       # ドメイン別コンポーネント
+│   └── ...
+├── pages/              # ページコンポーネント
+├── schemas/            # Zodスキーマ定義
+├── types/              # TypeScript型定義
+├── lib/                # ユーティリティ・API
+└── App.tsx             # エントリーポイント
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### コンポーネント設計
+- **Atomic Design**: Atoms → Molecules → Organisms → Pages
+- **Props Interface**: 明示的な型定義
+- **State Management**: ローカル状態優先、必要に応じてContext
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### フォーム管理
+- **Validation**: Zodスキーマベース
+- **Multi-step Forms**: ステップ定義をschemas/で管理
+- **Error Handling**: 統一的なエラーメッセージ表示
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### API通信
+- **Base URL**: http://localhost:8080/api/v1
+- **Error Handling**: GlobalExceptionHandlerとの連携
+- **Loading States**: 各テーブル・フォームで管理
+
+## ナビゲーション
+
+### ルーティング
+- **List Pages**: `/drawdowns`, `/facilities`, `/syndicates`
+- **Detail Pages**: `/drawdowns/:id` - Drawdown詳細とRelated Loan情報
+- **Row Click**: テーブル行クリックで詳細ページに遷移
+
+## 開発規約
+
+### コーディング規約
+1. **ファイル命名**: PascalCase (components), camelCase (utils)
+2. **Props Interface**: コンポーネント名 + Props
+3. **useState**: 明示的な型指定
+4. **Import Order**: React → 3rd party → local
+
+### UI一貫性
+1. **Button Styles**: Tailwind classnames統一
+2. **Form Elements**: 共通スタイリング適用
+3. **Status Badges**: カラーコード統一
+4. **Loading States**: スピナー + テキスト
+
+### 多言語化対応
+- **User-facing Text**: 英語必須
+- **Validation Messages**: schemas/内で英語定義
+- **Comments**: 日本語OK（実装背景説明等）
+
+## バックエンド連携
+
+### API仕様
+- **Base URL**: Spring Boot (localhost:8080)
+- **Format**: REST API + JSON
+- **Authentication**: 未実装（将来対応予定）
+- **CORS**: 開発環境で設定済み
+
+### データ型
+- **Money**: BigDecimal → number変換
+- **Date**: ISO 8601 → Date オブジェクト
+- **ID**: Auto-increment (DB) + UUID (business)
+
+---
+
+## 開発コマンド
+
+```bash
+# 開発サーバー起動
+npm run dev
+
+# ビルド
+npm run build
+
+# 型チェック
+npm run type-check
+
+# リント
+npm run lint
 ```
+
+## 重要なURL
+- **アプリケーション**: http://localhost:5173
+- **バックエンドAPI**: http://localhost:8080/api/v1
+- **Swagger**: http://localhost:8080/swagger-ui.html

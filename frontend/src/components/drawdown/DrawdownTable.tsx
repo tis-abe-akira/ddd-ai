@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { drawdownApi } from '../../lib/api';
 import type { Drawdown } from '../../types/api';
 
@@ -15,6 +16,7 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
   onView,
   refreshTrigger = 0
 }) => {
+  const navigate = useNavigate();
   const [drawdowns, setDrawdowns] = useState<Drawdown[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -173,7 +175,11 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                   const totalAmountPies = drawdown.amountPies?.reduce((sum, pie) => sum + pie.amount, 0) || 0;
                   
                   return (
-                    <tr key={drawdown.id} className="hover:bg-secondary-600/50 transition-colors">
+                    <tr 
+                      key={drawdown.id} 
+                      className="hover:bg-secondary-600/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/drawdowns/${drawdown.id}`)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-accent-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -228,7 +234,10 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                         <div className="flex items-center gap-2">
                           {onView && (
                             <button
-                              onClick={() => onView(drawdown)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onView(drawdown);
+                              }}
                               className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
                               title="View Details"
                             >
@@ -241,7 +250,10 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                           
                           {/* AmountPie詳細モーダル（簡易版） */}
                           <div className="group relative">
-                            <button className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors">
+                            <button 
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
+                            >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                               </svg>
