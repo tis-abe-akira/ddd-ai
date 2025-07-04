@@ -4,8 +4,8 @@ import type { Syndicate, SyndicateDetail } from '../../types/api';
 
 interface SyndicateTableProps {
   searchTerm?: string;
-  onEdit?: (syndicate: Syndicate) => void;
-  onDelete?: (syndicate: Syndicate) => void;
+  onEdit?: (syndicate: SyndicateDetail) => void;
+  onDelete?: (syndicate: SyndicateDetail) => void;
   refreshTrigger?: number;
 }
 
@@ -166,7 +166,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                       <div className="flex items-center gap-2">
                         {onEdit && (
                           <button
-                            onClick={() => onEdit(syndicate)}
+                            onClick={() => {
+                              console.log('Edit button clicked!', syndicate);
+                              onEdit(syndicate);
+                            }}
                             className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
                             title="Edit"
                           >
@@ -177,7 +180,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                         )}
                         {onDelete && (
                           <button
-                            onClick={() => onDelete(syndicate)}
+                            onClick={() => {
+                              console.log('Delete button clicked!', syndicate);
+                              onDelete(syndicate);
+                            }}
                             className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
                             title="Delete"
                           >

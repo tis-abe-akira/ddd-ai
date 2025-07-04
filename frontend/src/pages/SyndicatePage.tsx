@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import SyndicateForm from '../components/forms/SyndicateForm';
 import SyndicateTable from '../components/syndicate/SyndicateTable';
+import { syndicateApi } from '../lib/api';
 import type { Syndicate, SyndicateDetail } from '../types/api';
 
 const SyndicatePage: React.FC = () => {
@@ -22,21 +23,25 @@ const SyndicatePage: React.FC = () => {
     setShowForm(false);
   };
 
-  const handleDelete = async (syndicate: Syndicate) => {
+  const handleDelete = async (syndicate: SyndicateDetail) => {
     if (window.confirm(`Are you sure you want to delete syndicate "${syndicate.name}"?`)) {
       try {
-        // TODO: API呼び出し実装
-        console.log('Delete syndicate:', syndicate.id);
+        await syndicateApi.delete(syndicate.id);
+        setSuccessMessage(`Syndicate "${syndicate.name}" has been deleted successfully.`);
         setRefreshTrigger(prev => prev + 1);
+        // 成功メッセージを3秒後に消去
+        setTimeout(() => setSuccessMessage(null), 3000);
       } catch (error) {
         console.error('Failed to delete syndicate:', error);
+        alert('Failed to delete syndicate. Please try again.');
       }
     }
   };
 
-  const handleEdit = (syndicate: Syndicate) => {
-    // TODO: 編集機能実装
+  const handleEdit = (syndicate: SyndicateDetail) => {
+    // TODO: 編集機能実装 - フォーム表示で編集モードにする
     console.log('Edit syndicate:', syndicate);
+    alert('Edit functionality will be implemented soon!');
   };
 
   return (
