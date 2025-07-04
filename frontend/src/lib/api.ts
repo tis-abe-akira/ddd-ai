@@ -11,6 +11,7 @@ import type {
   Drawdown,
   Payment,
   CreateBorrowerRequest,
+  UpdateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
   CreateSyndicateRequest,
@@ -74,7 +75,7 @@ export const borrowerApi = {
   },
   getById: (id: number) => apiClient.get<Borrower>(`/parties/borrowers/${id}`),
   create: (data: CreateBorrowerRequest) => apiClient.post<Borrower>('/parties/borrowers', data),
-  update: (id: number, data: Partial<CreateBorrowerRequest>) => 
+  update: (id: number, data: UpdateBorrowerRequest) => 
     apiClient.put<Borrower>(`/parties/borrowers/${id}`, data),
   delete: (id: number) => apiClient.delete(`/parties/borrowers/${id}`),
 };

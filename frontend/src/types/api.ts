@@ -112,6 +112,16 @@ export interface CreateBorrowerRequest {
   creditRating: CreditRating;
 }
 
+export interface UpdateBorrowerRequest {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  companyId: string;
+  creditLimit: number;
+  creditRating: CreditRating;
+  version: number;
+}
+
 export interface CreateCompanyRequest {
   companyName: string;
   registrationNumber: string;
