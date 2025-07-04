@@ -11,6 +11,7 @@ import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.entity.InvestorType;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.facility.repository.FacilityRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,16 @@ public class SyndicateService {
     private final SyndicateRepository syndicateRepository;
     private final InvestorRepository investorRepository;
     private final BorrowerRepository borrowerRepository;
+    private final FacilityRepository facilityRepository;
 
     public SyndicateService(SyndicateRepository syndicateRepository, 
                            InvestorRepository investorRepository,
-                           BorrowerRepository borrowerRepository) {
+                           BorrowerRepository borrowerRepository,
+                           FacilityRepository facilityRepository) {
         this.syndicateRepository = syndicateRepository;
         this.investorRepository = investorRepository;
         this.borrowerRepository = borrowerRepository;
+        this.facilityRepository = facilityRepository;
     }
 
     public Syndicate createSyndicate(Syndicate syndicate) {
@@ -169,6 +173,12 @@ public class SyndicateService {
         if (!syndicateRepository.existsById(id)) {
             throw new ResourceNotFoundException("Syndicate not found with ID: " + id);
         }
+        
+        // Facilityでの使用チェック
+        if (facilityRepository.existsBySyndicateId(id)) {
+            throw new BusinessRuleViolationException("使用中のFacilityがあるため、Syndicateを削除できません。Facilityを削除してから削除してください。");
+        }
+        
         syndicateRepository.deleteById(id);
     }
 }

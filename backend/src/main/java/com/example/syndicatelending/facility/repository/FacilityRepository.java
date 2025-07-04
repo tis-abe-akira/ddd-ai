@@ -32,4 +32,9 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
            "JOIN SharePie sp ON f.id = sp.facility.id " +
            "WHERE sp.investorId = :investorId")
     boolean existsActiveFacilityForInvestor(@Param("investorId") Long investorId);
+
+    /**
+     * 指定されたSyndicateがFacilityで使用されているかチェック
+     */
+    boolean existsBySyndicateId(Long syndicateId);
 }
