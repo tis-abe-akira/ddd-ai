@@ -14,6 +14,7 @@ import type {
   CreateCompanyRequest,
   CreateInvestorRequest,
   CreateSyndicateRequest,
+  UpdateSyndicateRequest,
   CreateFacilityRequest,
   UpdateFacilityRequest,
   CreateDrawdownRequest,
@@ -121,7 +122,7 @@ export const syndicateApi = {
   getById: (id: number) => apiClient.get<Syndicate>(`/syndicates/${id}`),
   getByIdWithDetails: (id: number) => apiClient.get<SyndicateDetail>(`/syndicates/${id}/details`),
   create: (data: CreateSyndicateRequest) => apiClient.post<Syndicate>('/syndicates', data),
-  update: (id: number, data: Partial<CreateSyndicateRequest>) => 
+  update: (id: number, data: UpdateSyndicateRequest) => 
     apiClient.put<Syndicate>(`/syndicates/${id}`, data),
   delete: (id: number) => apiClient.delete(`/syndicates/${id}`),
 };

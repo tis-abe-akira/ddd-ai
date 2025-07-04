@@ -136,6 +136,14 @@ export interface CreateSyndicateRequest {
   memberInvestorIds: number[];
 }
 
+export interface UpdateSyndicateRequest {
+  name: string;
+  leadBankId: number;
+  borrowerId: number;
+  memberInvestorIds: number[];
+  version: number;
+}
+
 export interface Facility {
   id: number;
   syndicateId: number;

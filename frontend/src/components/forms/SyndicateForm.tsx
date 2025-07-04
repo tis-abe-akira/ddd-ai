@@ -5,17 +5,32 @@ import { createSyndicateSchema, type CreateSyndicateFormData, defaultSyndicateVa
 import BorrowerSelect from '../syndicate/BorrowerSelect';
 import InvestorCards from '../syndicate/InvestorCards';
 import { syndicateApi } from '../../lib/api';
-import type { ApiError, Syndicate, Borrower, Investor, CreateSyndicateRequest } from '../../types/api';
+import type { ApiError, Syndicate, Borrower, Investor, CreateSyndicateRequest, UpdateSyndicateRequest, SyndicateDetail } from '../../types/api';
 
 interface SyndicateFormProps {
   onSuccess?: (syndicate: Syndicate) => void;
   onCancel?: () => void;
+  editData?: SyndicateDetail; // 編集モード用のデータ
+  mode?: 'create' | 'edit'; // モード指定
 }
 
-const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) => {
+const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel, editData, mode = 'create' }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 編集モード用のデフォルト値を生成
+  const getInitialValues = (): CreateSyndicateFormData => {
+    if (mode === 'edit' && editData) {
+      return {
+        name: editData.name,
+        borrowerId: editData.borrowerId,
+        leadBankId: editData.leadBankId,
+        memberInvestorIds: editData.memberInvestorIds
+      };
+    }
+    return defaultSyndicateValues;
+  };
 
   const {
     register,
@@ -27,7 +42,7 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
     reset,
   } = useForm<CreateSyndicateFormData>({
     resolver: zodResolver(createSyndicateSchema),
-    defaultValues: defaultSyndicateValues,
+    defaultValues: getInitialValues(),
     mode: 'onChange'
   });
 
@@ -66,19 +81,34 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
     setSubmitError(null);
 
     try {
-      const syndicateRequest: CreateSyndicateRequest = {
-        name: data.name,
-        leadBankId: data.leadBankId,
-        borrowerId: data.borrowerId,
-        memberInvestorIds: data.memberInvestorIds,
-      };
+      let response;
       
-      const response = await syndicateApi.create(syndicateRequest);
-      const newSyndicate = response.data;
+      if (mode === 'edit' && editData) {
+        // 編集モード: update API呼び出し
+        const updateRequest: UpdateSyndicateRequest = {
+          name: data.name,
+          leadBankId: data.leadBankId,
+          borrowerId: data.borrowerId,
+          memberInvestorIds: data.memberInvestorIds,
+          version: editData.version // 楽観的ロック用
+        };
+        response = await syndicateApi.update(editData.id, updateRequest);
+      } else {
+        // 新規作成モード: create API呼び出し
+        const syndicateRequest: CreateSyndicateRequest = {
+          name: data.name,
+          leadBankId: data.leadBankId,
+          borrowerId: data.borrowerId,
+          memberInvestorIds: data.memberInvestorIds,
+        };
+        response = await syndicateApi.create(syndicateRequest);
+      }
+      
+      const syndicate = response.data;
       
       reset();
       setCurrentStep(1);
-      onSuccess?.(newSyndicate);
+      onSuccess?.(syndicate);
     } catch (error) {
       const apiError = error as ApiError;
       setSubmitError(apiError.message || 'An error occurred');
@@ -298,7 +328,10 @@ const SyndicateForm: React.FC<SyndicateFormProps> = ({ onSuccess, onCancel }) =>
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'Creating Syndicate...' : 'Create Syndicate'}
+              {isSubmitting 
+                ? (mode === 'edit' ? 'Updating Syndicate...' : 'Creating Syndicate...')
+                : (mode === 'edit' ? 'Update Syndicate' : 'Create Syndicate')
+              }
             </button>
           )}
           
