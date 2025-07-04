@@ -38,9 +38,10 @@ const SyndicatePage: React.FC = () => {
         setRefreshTrigger(prev => prev + 1);
         // 成功メッセージを3秒後に消去
         setTimeout(() => setSuccessMessage(null), 3000);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete syndicate:', error);
-        alert('Failed to delete syndicate. Please try again.');
+        const errorMessage = error?.message || 'Failed to delete syndicate. Please try again.';
+        alert(errorMessage);
       }
     }
   };
