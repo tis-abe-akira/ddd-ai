@@ -5,6 +5,7 @@ import type {
   Company, 
   Investor, 
   Syndicate,
+  SyndicateDetail,
   Facility,
   Loan,
   Drawdown,
@@ -107,7 +108,18 @@ export const syndicateApi = {
     
     return apiClient.get<PageResponse<Syndicate>>(`/syndicates?${params.toString()}`);
   },
+  getAllWithDetails: () => apiClient.get<SyndicateDetail[]>('/syndicates/details'),
+  getAllWithDetailsPaged: (page?: number, size?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    if (search) params.append('search', search);
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<SyndicateDetail>>(`/syndicates/details/paged?${params.toString()}`);
+  },
   getById: (id: number) => apiClient.get<Syndicate>(`/syndicates/${id}`),
+  getByIdWithDetails: (id: number) => apiClient.get<SyndicateDetail>(`/syndicates/${id}/details`),
   create: (data: CreateSyndicateRequest) => apiClient.post<Syndicate>('/syndicates', data),
   update: (id: number, data: Partial<CreateSyndicateRequest>) => 
     apiClient.put<Syndicate>(`/syndicates/${id}`, data),

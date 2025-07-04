@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import SyndicateForm from '../components/forms/SyndicateForm';
 import SyndicateTable from '../components/syndicate/SyndicateTable';
-import type { Syndicate } from '../types/api';
+import type { Syndicate, SyndicateDetail } from '../types/api';
 
 const SyndicatePage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);

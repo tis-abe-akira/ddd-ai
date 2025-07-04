@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { syndicateApi } from '../../lib/api';
-import type { Syndicate } from '../../types/api';
+import type { Syndicate, SyndicateDetail } from '../../types/api';
 
 interface SyndicateTableProps {
   searchTerm?: string;
@@ -15,7 +15,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
   onDelete,
   refreshTrigger = 0
 }) => {
-  const [syndicates, setSyndicates] = useState<Syndicate[]>([]);
+  const [syndicates, setSyndicates] = useState<SyndicateDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -28,7 +28,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
   const fetchSyndicates = async () => {
     try {
       setLoading(true);
-      const response = await syndicateApi.getAll(currentPage, undefined, searchTerm || undefined);
+      const response = await syndicateApi.getAllWithDetailsPaged(currentPage, undefined, searchTerm || undefined);
       setSyndicates(response.data.content);
       setTotalPages(response.data.totalPages);
       setTotalElements(response.data.totalElements);
@@ -45,7 +45,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
-  const getStatusBadge = (syndicate: Syndicate) => {
+  const getStatusBadge = (syndicate: SyndicateDetail) => {
     // シンジケートのステータスを決定するロジック
     // 現在はシンプルにcreatedAtベースで判断
     const daysSinceCreation = Math.floor(
@@ -102,10 +102,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                     Syndicate Name
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    Borrower ID
+                    Borrower
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    Lead Bank ID
+                    Lead Bank
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
                     Members
@@ -136,19 +136,21 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-white font-mono">{syndicate.borrowerId}</div>
+                      <div className="text-white font-medium">{syndicate.borrowerName}</div>
+                      <div className="text-accent-400 text-xs">ID: {syndicate.borrowerId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-white font-mono">{syndicate.leadBankId}</div>
+                      <div className="text-white font-medium">{syndicate.leadBankName}</div>
+                      <div className="text-accent-400 text-xs">ID: {syndicate.leadBankId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <span className="text-white font-medium">{syndicate.memberInvestorIds.length}</span>
+                        <span className="text-white font-medium">{syndicate.memberInvestorNames.length}</span>
                         <span className="text-accent-400 text-sm ml-1">members</span>
                       </div>
                       <div className="text-accent-400 text-xs">
-                        IDs: {syndicate.memberInvestorIds.slice(0, 3).join(', ')}
-                        {syndicate.memberInvestorIds.length > 3 && ` +${syndicate.memberInvestorIds.length - 3}`}
+                        {syndicate.memberInvestorNames.slice(0, 2).join(', ')}
+                        {syndicate.memberInvestorNames.length > 2 && ` +${syndicate.memberInvestorNames.length - 2}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -244,6 +246,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
           </div>
         </div>
       )}
+
     </div>
   );
 };

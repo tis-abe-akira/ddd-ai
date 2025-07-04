@@ -42,6 +42,20 @@ export interface Syndicate {
   version: number;
 }
 
+export interface SyndicateDetail {
+  id: number;
+  name: string;
+  borrowerId: number;
+  borrowerName: string;
+  leadBankId: number;
+  leadBankName: string;
+  memberInvestorIds: number[];
+  memberInvestorNames: string[];
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
 // Enums (バックエンドと同じ定義)
 export type CreditRating = 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC' | 'CC' | 'C' | 'D';
 

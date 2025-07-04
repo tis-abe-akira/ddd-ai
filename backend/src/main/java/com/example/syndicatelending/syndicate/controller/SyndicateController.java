@@ -2,12 +2,15 @@ package com.example.syndicatelending.syndicate.controller;
 
 import com.example.syndicatelending.syndicate.dto.CreateSyndicateRequest;
 import com.example.syndicatelending.syndicate.dto.UpdateSyndicateRequest;
+import com.example.syndicatelending.syndicate.dto.SyndicateDetailResponseDTO;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.service.SyndicateService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/syndicates")
@@ -30,10 +33,25 @@ public class SyndicateController {
     public ResponseEntity<Syndicate> getSyndicate(@PathVariable Long id) {
         return ResponseEntity.ok(syndicateService.getSyndicateById(id));
     }
+    
+    @GetMapping("/{id}/details")
+    public ResponseEntity<SyndicateDetailResponseDTO> getSyndicateDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(syndicateService.getSyndicateWithDetails(id));
+    }
 
     @GetMapping
     public ResponseEntity<Page<Syndicate>> getAllSyndicates(Pageable pageable) {
         return ResponseEntity.ok(syndicateService.getAllSyndicates(pageable));
+    }
+    
+    @GetMapping("/details")
+    public ResponseEntity<List<SyndicateDetailResponseDTO>> getAllSyndicatesWithDetails() {
+        return ResponseEntity.ok(syndicateService.getAllSyndicatesWithDetails());
+    }
+    
+    @GetMapping("/details/paged")
+    public ResponseEntity<Page<SyndicateDetailResponseDTO>> getAllSyndicatesWithDetailsPageable(Pageable pageable) {
+        return ResponseEntity.ok(syndicateService.getAllSyndicatesWithDetailsPageable(pageable));
     }
 
     @PutMapping("/{id}")

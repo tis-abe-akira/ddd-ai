@@ -93,8 +93,17 @@ public class PartyService {
 
     // Borrower operations
     public Borrower createBorrower(CreateBorrowerRequest request) {
-        // Skip company validation - companyId is now treated as optional reference string
-        // No longer validate against actual Company entities
+        // Validate company existence if companyId is provided
+        if (request.getCompanyId() != null && !request.getCompanyId().isEmpty()) {
+            try {
+                Long companyIdLong = Long.parseLong(request.getCompanyId());
+                if (!companyRepository.existsById(companyIdLong)) {
+                    throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+                }
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID format: " + request.getCompanyId());
+            }
+        }
         // CreditRatingのバリデーション振る舞いを利用
         if (!request.isCreditLimitOverride()) {
             if (request.getCreditRating() == null || request.getCreditLimit() == null ||
