@@ -1,0 +1,32 @@
+/* Google Fonts - Manrope */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+body {
+  margin: 0;
+  font-family: 'Manrope', 'Noto Sans', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Custom input styles for dark theme */
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-green);
+}
+
+/* Custom button styles */
+.btn-primary {
+  background-color: var(--accent-green);
+  color: var(--bg-primary);
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
