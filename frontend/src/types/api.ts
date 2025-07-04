@@ -139,6 +139,16 @@ export interface CreateInvestorRequest {
   investorType: InvestorType;
 }
 
+export interface UpdateInvestorRequest {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  companyId?: string;
+  investmentCapacity: number;
+  investorType: InvestorType;
+  version: number;
+}
+
 export interface CreateSyndicateRequest {
   name: string;
   leadBankId: number;

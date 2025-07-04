@@ -3,16 +3,33 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createInvestorSchema, type CreateInvestorFormData, investorTypeOptions, investorTypeLabels, defaultInvestorValues } from '../../schemas/investor';
 import { investorApi } from '../../lib/api';
-import type { ApiError } from '../../types/api';
+import type { ApiError, Investor, CreateInvestorRequest, UpdateInvestorRequest } from '../../types/api';
 
 interface InvestorFormProps {
-  onSuccess?: (investor: any) => void;
+  onSuccess?: (investor: Investor) => void;
   onCancel?: () => void;
+  editData?: Investor; // 編集モード用のデータ
+  mode?: 'create' | 'edit'; // モード指定
 }
 
-const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
+const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel, editData, mode = 'create' }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 編集モード用のデフォルト値を生成
+  const getInitialValues = (): CreateInvestorFormData => {
+    if (mode === 'edit' && editData) {
+      return {
+        name: editData.name,
+        email: editData.email,
+        phoneNumber: editData.phoneNumber,
+        companyId: editData.companyId || '',
+        investmentCapacity: editData.investmentCapacity,
+        investorType: editData.investorType
+      };
+    }
+    return defaultInvestorValues;
+  };
 
   const {
     register,
@@ -21,7 +38,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
     reset,
   } = useForm<CreateInvestorFormData>({
     resolver: zodResolver(createInvestorSchema),
-    defaultValues: defaultInvestorValues,
+    defaultValues: getInitialValues(),
   });
 
   const onSubmit = async (data: CreateInvestorFormData) => {
@@ -29,9 +46,34 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
     setSubmitError(null);
 
     try {
-      const response = await investorApi.create(data);
-      const investor = response.data;
+      let response;
       
+      if (mode === 'edit' && editData) {
+        // 編集モード: update API呼び出し
+        const updateRequest: UpdateInvestorRequest = {
+          name: data.name,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          companyId: data.companyId,
+          investmentCapacity: data.investmentCapacity,
+          investorType: data.investorType,
+          version: editData.version // 楽観的ロック用
+        };
+        response = await investorApi.update(editData.id, updateRequest);
+      } else {
+        // 新規作成モード: create API呼び出し
+        const createRequest: CreateInvestorRequest = {
+          name: data.name,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          companyId: data.companyId,
+          investmentCapacity: data.investmentCapacity,
+          investorType: data.investorType
+        };
+        response = await investorApi.create(createRequest);
+      }
+      
+      const investor = response.data;
       reset();
       onSuccess?.(investor);
     } catch (error) {
@@ -45,8 +87,12 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-2">New Investor Registration</h2>
-        <p className="text-accent-400 text-sm">Enter the investor's basic information</p>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {mode === 'edit' ? 'Edit Investor' : 'New Investor Registration'}
+        </h2>
+        <p className="text-accent-400 text-sm">
+          {mode === 'edit' ? 'Update the investor information' : 'Enter the investor\'s basic information'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -179,7 +225,10 @@ const InvestorForm: React.FC<InvestorFormProps> = ({ onSuccess, onCancel }) => {
             disabled={isSubmitting}
             className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            {isSubmitting ? 'Registering...' : 'Register'}
+            {isSubmitting 
+              ? (mode === 'edit' ? 'Updating...' : 'Registering...') 
+              : (mode === 'edit' ? 'Update' : 'Register')
+            }
           </button>
           
           {onCancel && (

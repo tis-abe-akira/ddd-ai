@@ -178,6 +178,12 @@ public class PartyService {
         if (!borrowerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Borrower not found with ID: " + id);
         }
+        
+        // Syndicate参加チェック
+        if (syndicateRepository.existsByBorrowerId(id)) {
+            throw new BusinessRuleViolationException("参加中のSyndicateがあるため、Borrowerを削除できません。Syndicateから除外してから削除してください。");
+        }
+        
         borrowerRepository.deleteById(id);
     }
 
@@ -244,6 +250,17 @@ public class PartyService {
         if (!investorRepository.existsById(id)) {
             throw new ResourceNotFoundException("Investor not found with ID: " + id);
         }
+        
+        // Syndicate参加チェック（Lead BankまたはMember Investor）
+        if (syndicateRepository.existsByLeadBankIdOrMemberInvestorIdsContaining(id, id)) {
+            throw new BusinessRuleViolationException("参加中のSyndicateがあるため、Investorを削除できません。Syndicateから除外してから削除してください。");
+        }
+        
+        // Facility参加チェック（SharePie）
+        if (facilityRepository.existsActiveFacilityForInvestor(id)) {
+            throw new BusinessRuleViolationException("参加中のFacilityがあるため、Investorを削除できません。Facilityから除外してから削除してください。");
+        }
+        
         investorRepository.deleteById(id);
     }
 

@@ -44,9 +44,10 @@ const BorrowerPage: React.FC = () => {
         setRefreshTrigger(prev => prev + 1);
         // 成功メッセージを3秒後に消去
         setTimeout(() => setSuccessMessage(null), 3000);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete borrower:', error);
-        alert('Failed to delete borrower. Please try again.');
+        const errorMessage = error?.message || 'Failed to delete borrower. Please try again.';
+        alert(errorMessage);
       }
     }
   };

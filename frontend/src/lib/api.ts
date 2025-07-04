@@ -14,6 +14,7 @@ import type {
   UpdateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
+  UpdateInvestorRequest,
   CreateSyndicateRequest,
   UpdateSyndicateRequest,
   CreateFacilityRequest,
@@ -93,7 +94,7 @@ export const investorApi = {
   },
   getById: (id: number) => apiClient.get<Investor>(`/parties/investors/${id}`),
   create: (data: CreateInvestorRequest) => apiClient.post<Investor>('/parties/investors', data),
-  update: (id: number, data: Partial<CreateInvestorRequest>) => 
+  update: (id: number, data: UpdateInvestorRequest) => 
     apiClient.put<Investor>(`/parties/investors/${id}`, data),
   delete: (id: number) => apiClient.delete(`/parties/investors/${id}`),
 };
