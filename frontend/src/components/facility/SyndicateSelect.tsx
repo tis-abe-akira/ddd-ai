@@ -24,11 +24,6 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
       setLoading(true);
       // 全件取得（検索用）
       const response = await syndicateApi.getAll(0, 100);
-      console.log('Fetched syndicates:', response.data.content);
-      // 各Syndicateのstatusを確認
-      response.data.content.forEach(syndicate => {
-        console.log(`Syndicate ID: ${syndicate.id}, Name: ${syndicate.name}, Status: ${syndicate.status}`);
-      });
       setSyndicates(response.data.content);
     } catch (err) {
       console.error('Failed to fetch syndicates:', err);
@@ -37,17 +32,12 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
     }
   };
 
-  const filteredSyndicates = syndicates.filter(syndicate => {
-    const isDraft = syndicate.status === 'DRAFT';
-    const matchesSearch = syndicate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         syndicate.id.toString().includes(searchTerm);
-    const result = isDraft && matchesSearch;
-    
-    // デバッグログ
-    console.log(`Syndicate ${syndicate.id} (${syndicate.name}): status=${syndicate.status}, isDraft=${isDraft}, matchesSearch=${matchesSearch}, result=${result}`);
-    
-    return result;
-  });
+  const filteredSyndicates = syndicates.filter(syndicate =>
+    // DRAFTステータスのSyndicateのみ表示（1 Syndicate = 1 Facilityのビジネスルール）
+    syndicate.status === 'DRAFT' &&
+    (syndicate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     syndicate.id.toString().includes(searchTerm))
+  );
 
   const selectedSyndicate = syndicates.find(s => s.id === value);
 
@@ -62,13 +52,13 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
   const getStatusDisplay = (syndicate: Syndicate) => {
     switch (syndicate.status) {
       case 'DRAFT':
-        return { text: '組成可能', color: 'text-success' };
+        return { text: 'Draft', color: 'text-success', tooltip: 'Available for facility creation' };
       case 'ACTIVE':
-        return { text: '組成済み', color: 'text-accent-500' };
+        return { text: 'Active', color: 'text-accent-500', tooltip: 'Already used for facility creation' };
       case 'CLOSED':
-        return { text: '終了', color: 'text-accent-400' };
+        return { text: 'Closed', color: 'text-accent-400', tooltip: 'No longer active' };
       default:
-        return { text: '不明', color: 'text-accent-400' };
+        return { text: 'Unknown', color: 'text-accent-400', tooltip: 'Unknown status' };
     }
   };
 
@@ -101,7 +91,10 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                   ID: {selectedSyndicate.id} | メンバー: {selectedSyndicate.memberInvestorIds.length}名
                 </div>
               </div>
-              <div className={`ml-auto px-2 py-1 rounded text-xs font-medium ${getStatusDisplay(selectedSyndicate).color}`}>
+              <div 
+                className={`ml-auto px-2 py-1 rounded text-xs font-medium cursor-help ${getStatusDisplay(selectedSyndicate).color}`}
+                title={getStatusDisplay(selectedSyndicate).tooltip}
+              >
                 {getStatusDisplay(selectedSyndicate).text}
               </div>
             </div>
@@ -169,7 +162,10 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${getStatusDisplay(syndicate).color}`}>
+                      <div 
+                        className={`px-2 py-1 rounded text-xs font-medium cursor-help ${getStatusDisplay(syndicate).color}`}
+                        title={getStatusDisplay(syndicate).tooltip}
+                      >
                         {getStatusDisplay(syndicate).text}
                       </div>
                       <div className="text-accent-400 text-xs mt-1">

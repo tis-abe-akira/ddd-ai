@@ -49,13 +49,41 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
     // バックエンドのSyndicate.statusフィールドを使用
     switch (syndicate.status) {
       case 'DRAFT':
-        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full">組成可能</span>;
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full cursor-help"
+            title="Draft - Syndicate is available for facility creation. Can be edited and used to create new facilities."
+          >
+            Draft
+          </span>
+        );
       case 'ACTIVE':
-        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full">組成済み</span>;
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full cursor-help"
+            title="Active - Syndicate has been used to create a facility. No longer available for new facility creation (1 Syndicate = 1 Facility rule)."
+          >
+            Active
+          </span>
+        );
       case 'CLOSED':
-        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full">終了</span>;
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full cursor-help"
+            title="Closed - Syndicate has been closed and is no longer active. Cannot be used for any operations."
+          >
+            Closed
+          </span>
+        );
       default:
-        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-600 text-gray-400 rounded-full">不明</span>;
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-gray-600 text-gray-400 rounded-full cursor-help"
+            title="Unknown status"
+          >
+            Unknown
+          </span>
+        );
     }
   };
 

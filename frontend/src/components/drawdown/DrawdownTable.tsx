@@ -85,22 +85,43 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return '保留中';
+        return { 
+          label: 'Pending', 
+          tooltip: 'Pending - Transaction has been created but not yet started processing.' 
+        };
       case 'PROCESSING':
-        return '処理中';
+        return { 
+          label: 'Processing', 
+          tooltip: 'Processing - Transaction is currently being executed.' 
+        };
       case 'COMPLETED':
-        return '完了';
+        return { 
+          label: 'Completed', 
+          tooltip: 'Completed - Transaction has been successfully executed and finalized.' 
+        };
       case 'FAILED':
-        return '失敗';
+        return { 
+          label: 'Failed', 
+          tooltip: 'Failed - Transaction execution failed due to system error or business rule violation.' 
+        };
       case 'CANCELLED':
-        return 'キャンセル';
+        return { 
+          label: 'Cancelled', 
+          tooltip: 'Cancelled - Transaction was intentionally cancelled by user or system.' 
+        };
       case 'REFUNDED':
-        return '返金済み';
+        return { 
+          label: 'Refunded', 
+          tooltip: 'Refunded - Completed transaction has been refunded due to correction or contract change.' 
+        };
       default:
-        return status;
+        return { 
+          label: status, 
+          tooltip: 'Unknown transaction status' 
+        };
     }
   };
 
@@ -236,8 +257,11 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(drawdown.status)}`}>
-                          {getStatusLabel(drawdown.status)}
+                        <span 
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-help ${getStatusColor(drawdown.status)}`}
+                          title={getStatusInfo(drawdown.status).tooltip}
+                        >
+                          {getStatusInfo(drawdown.status).label}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

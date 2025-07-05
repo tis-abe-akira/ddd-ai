@@ -74,14 +74,23 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case 'DRAFT':
-        return 'Draft';
+        return { 
+          label: 'Draft', 
+          tooltip: 'Draft - Facility can be edited and modified. No drawdowns have been executed yet.' 
+        };
       case 'FIXED':
-        return 'Fixed';
+        return { 
+          label: 'Fixed', 
+          tooltip: 'Fixed - Facility is finalized after drawdown execution. Cannot be modified anymore.' 
+        };
       default:
-        return status;
+        return { 
+          label: status, 
+          tooltip: 'Unknown facility status' 
+        };
     }
   };
 
@@ -194,8 +203,11 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(facility.status)}`}>
-                          {getStatusLabel(facility.status)}
+                        <span 
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-help ${getStatusColor(facility.status)}`}
+                          title={getStatusInfo(facility.status).tooltip}
+                        >
+                          {getStatusInfo(facility.status).label}
                         </span>
                         <div className="text-accent-400 text-xs mt-1">
                           v{facility.version}

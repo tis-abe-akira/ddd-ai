@@ -1,5 +1,6 @@
 package com.example.syndicatelending.syndicate.dto;
 
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,6 +14,9 @@ public class SyndicateDetailResponseDTO {
     
     private Long id;
     private String name;
+    
+    // Status情報
+    private SyndicateState status;
     
     // Borrower詳細情報
     private Long borrowerId;
@@ -60,12 +64,13 @@ public class SyndicateDetailResponseDTO {
     // Constructors
     public SyndicateDetailResponseDTO() {}
     
-    public SyndicateDetailResponseDTO(Long id, String name, Long borrowerId, String borrowerName,
+    public SyndicateDetailResponseDTO(Long id, String name, SyndicateState status, Long borrowerId, String borrowerName,
                                       Long leadBankId, String leadBankName, List<Long> memberInvestorIds,
                                       List<String> memberInvestorNames, LocalDateTime createdAt,
                                       LocalDateTime updatedAt, Long version) {
         this.id = id;
         this.name = name;
+        this.status = status;
         this.borrowerId = borrowerId;
         this.borrowerName = borrowerName;
         this.leadBankId = leadBankId;
@@ -83,6 +88,9 @@ public class SyndicateDetailResponseDTO {
     
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    
+    public SyndicateState getStatus() { return status; }
+    public void setStatus(SyndicateState status) { this.status = status; }
     
     public Long getBorrowerId() { return borrowerId; }
     public void setBorrowerId(Long borrowerId) { this.borrowerId = borrowerId; }

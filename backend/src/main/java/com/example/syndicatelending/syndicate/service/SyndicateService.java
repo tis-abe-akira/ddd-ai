@@ -119,6 +119,7 @@ public class SyndicateService {
         return new SyndicateDetailResponseDTO(
                 syndicate.getId(),
                 syndicate.getName(),
+                syndicate.getStatus(),
                 syndicate.getBorrowerId(),
                 borrowerName,
                 syndicate.getLeadBankId(),
