@@ -1,0 +1,189 @@
+@startuml Bounded Context Detail Structure
+!theme plain
+skinparam backgroundColor white
+
+title Bounded Context Internal Structure (3-Layer Architecture)
+
+package "Party Context" {
+    package "Controller Layer" {
+        class PartyController {
+            +createBorrower()
+            +createInvestor()
+            +updateBorrower()
+            +deleteBorrower()
+            +deleteInvestor()
+        }
+    }
+    
+    package "Service Layer" {
+        class PartyService {
+            +createBorrower()
+            +deleteBorrower()
+            +createInvestor()
+            +deleteInvestor()
+            --
+            // Cross-Context constraints
+            -checkSyndicateParticipation()
+            -checkFacilityParticipation()
+        }
+    }
+    
+    package "Repository Layer" {
+        interface BorrowerRepository
+        interface InvestorRepository
+        interface CompanyRepository
+    }
+    
+    package "Entity Layer" {
+        class Borrower {
+            -Long id
+            -String name
+            -BigDecimal creditLimit
+            -CreditRating creditRating
+            -BorrowerState status
+        }
+        
+        class Investor {
+            -Long id
+            -String name
+            -BigDecimal investmentCapacity
+            -Money currentInvestmentAmount
+            -InvestorType investorType
+            -InvestorState status
+        }
+    }
+    
+    PartyController --> PartyService
+    PartyService --> BorrowerRepository
+    PartyService --> InvestorRepository
+    BorrowerRepository --> Borrower
+    InvestorRepository --> Investor
+}
+
+package "Transaction Context (Base)" {
+    package "Entity Layer" {
+        abstract class Transaction {
+            -Long id
+            -LocalDateTime transactionDate
+            -TransactionType transactionType
+            -TransactionStatus status
+            -Money amount
+            -Long facilityId
+            -Long borrowerId
+            --
+            // JPA JOINED inheritance strategy
+        }
+        
+        class DrawdownTransaction {
+            -Long loanId
+            -String purpose
+        }
+        
+        class PaymentTransaction {
+            -Long loanId
+            -PaymentType paymentType
+        }
+        
+        class FeePaymentTransaction {
+            -FeeType feeType
+            -BigDecimal feeRate
+        }
+    }
+    
+    Transaction <|-- DrawdownTransaction
+    Transaction <|-- PaymentTransaction
+    Transaction <|-- FeePaymentTransaction
+}
+
+package "Facility Context" {
+    package "Service Layer" {
+        class FacilityService {
+            +createFacility()
+            +validateSharePieTotal()
+            --
+            // State transition
+            -transitionToFixed()
+        }
+    }
+    
+    package "Entity Layer" {
+        class Facility {
+            -Long id
+            -Long syndicateId
+            -Money commitment
+            -FacilityState status
+            --
+            +canModify() : boolean
+        }
+        
+        class SharePie {
+            -Long id
+            -Long facilityId
+            -Long investorId
+            -Percentage share
+            --
+            +calculateAmount(commitment) : Money
+        }
+    }
+    
+    FacilityService --> Facility
+    Facility "1" --> "*" SharePie
+}
+
+package "Loan Context" {
+    package "Entity Layer" {
+        class Loan {
+            -Long id
+            -Long facilityId
+            -Money drawdownAmount
+            -LoanState status
+        }
+        
+        class AmountPie {
+            -Long id
+            -Long loanId
+            -Long investorId
+            -Money amount
+        }
+        
+        class PaymentDistribution {
+            -Long id
+            -Long paymentId
+            -Long investorId
+            -Money principalAmount
+            -Money interestAmount
+        }
+    }
+    
+    Loan "1" --> "*" AmountPie
+}
+
+note right of PartyService
+  Application Service Layer での
+  Cross-Context制約管理:
+  
+  • Syndicate参加チェック
+  • Facility参加チェック
+  • データ整合性保護
+  
+  ドメイン層は純粋に保つ
+end note
+
+note bottom of Transaction
+  統一Transaction基盤:
+  
+  • JPA JOINED継承戦略
+  • 型安全な取引分類
+  • 横断的履歴管理
+  • State Machine統合
+end note
+
+note right of SharePie
+  持分比率管理:
+  
+  • Percentage値オブジェクト
+  • 100%制約検証
+  • 自動金額計算
+end note
+
+@enduml

@@ -1,0 +1,178 @@
+@startuml Cross-Context Dependencies
+!theme plain
+skinparam backgroundColor white
+
+title Cross-Context Dependencies & Data Flow
+
+package "Party Context" as party {
+    entity Borrower {
+        * id: Long
+        --
+        name: String
+        creditLimit: BigDecimal
+        creditRating: CreditRating
+        status: BorrowerState
+    }
+    
+    entity Investor {
+        * id: Long
+        --
+        name: String
+        investmentCapacity: BigDecimal
+        currentInvestmentAmount: Money
+        investorType: InvestorType
+        status: InvestorState
+    }
+}
+
+package "Syndicate Context" as syndicate {
+    entity Syndicate {
+        * id: Long
+        --
+        name: String
+        borrowerId: Long <<FK>>
+        leadBankId: Long <<FK>>
+        memberInvestorIds: List<Long> <<FK>>
+    }
+}
+
+package "Facility Context" as facility {
+    entity Facility {
+        * id: Long
+        --
+        syndicateId: Long <<FK>>
+        commitment: Money
+        status: FacilityState
+    }
+    
+    entity SharePie {
+        * id: Long
+        --
+        facilityId: Long <<FK>>
+        investorId: Long <<FK>>
+        share: Percentage
+    }
+}
+
+package "Loan Context" as loan {
+    entity Loan {
+        * id: Long
+        --
+        facilityId: Long <<FK>>
+        drawdownAmount: Money
+        status: LoanState
+    }
+    
+    entity AmountPie {
+        * id: Long
+        --
+        loanId: Long <<FK>>
+        investorId: Long <<FK>>
+        amount: Money
+    }
+    
+    entity PaymentDistribution {
+        * id: Long
+        --
+        paymentId: Long <<FK>>
+        investorId: Long <<FK>>
+        principalAmount: Money
+        interestAmount: Money
+    }
+}
+
+package "Fee Context" as fee {
+    entity FeePayment {
+        * id: Long
+        --
+        facilityId: Long <<FK>>
+        feeType: FeeType
+        amount: Money
+    }
+    
+    entity FeeDistribution {
+        * id: Long
+        --
+        feePaymentId: Long <<FK>>
+        investorId: Long <<FK>>
+        amount: Money
+    }
+}
+
+package "Transaction Context" as transaction {
+    entity Transaction {
+        * id: Long
+        --
+        facilityId: Long <<FK>>
+        borrowerId: Long <<FK>>
+        transactionType: TransactionType
+        status: TransactionStatus
+        amount: Money
+    }
+}
+
+' ID-based references (loose coupling)
+Syndicate ||--o{ Borrower : "borrowerId"
+Syndicate ||--o{ Investor : "leadBankId"
+Syndicate ||--o{ Investor : "memberInvestorIds"
+
+Facility ||--o{ Syndicate : "syndicateId"
+SharePie ||--o{ Facility : "facilityId"
+SharePie ||--o{ Investor : "investorId"
+
+Loan ||--o{ Facility : "facilityId"
+AmountPie ||--o{ Loan : "loanId"
+AmountPie ||--o{ Investor : "investorId"
+PaymentDistribution ||--o{ Investor : "investorId"
+
+FeePayment ||--o{ Facility : "facilityId"
+FeeDistribution ||--o{ FeePayment : "feePaymentId"
+FeeDistribution ||--o{ Investor : "investorId"
+
+Transaction ||--o{ Facility : "facilityId"
+Transaction ||--o{ Borrower : "borrowerId"
+
+note top of Syndicate
+  参照関係:
+  • Borrower (1つ)
+  • Lead Bank (Investor 1つ)
+  • Member Investors (複数)
+end note
+
+note right of SharePie
+  投資家別持分比率:
+  • Facility内での配分
+  • 合計100%制約
+  • 金額計算基準
+end note
+
+note right of AmountPie
+  投資家別投資金額:
+  • Drawdown時自動生成
+  • SharePieベース計算
+  • 返済時配分基準
+end note
+
+note bottom of Transaction
+  統一取引履歴:
+  • 全取引タイプを統合
+  • Facility, Borrower関連
+  • 横断的レポート可能
+end note
+
+note as design_note
+  **設計方針:**
+  
+  • **ID参照による疎結合**
+    各Contextは独立性を保持
+    
+  • **Application Service層での制約管理**
+    削除時の参照整合性チェック
+    クロスContext業務ルール実装
+    
+  • **ドメイン層の純粋性**
+    各Entityは自Contextのみに集中
+    外部依存なし
+end note
+
+@enduml
