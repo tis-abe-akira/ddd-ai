@@ -46,18 +46,16 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
   };
 
   const getStatusBadge = (syndicate: SyndicateDetail) => {
-    // シンジケートのステータスを決定するロジック
-    // 現在はシンプルにcreatedAtベースで判断
-    const daysSinceCreation = Math.floor(
-      (Date.now() - new Date(syndicate.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysSinceCreation <= 7) {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full">New</span>;
-    } else if (daysSinceCreation <= 30) {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full">Active</span>;
-    } else {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full">Completed</span>;
+    // バックエンドのSyndicate.statusフィールドを使用
+    switch (syndicate.status) {
+      case 'DRAFT':
+        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full">組成可能</span>;
+      case 'ACTIVE':
+        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full">組成済み</span>;
+      case 'CLOSED':
+        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full">終了</span>;
+      default:
+        return <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-600 text-gray-400 rounded-full">不明</span>;
     }
   };
 

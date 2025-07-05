@@ -24,6 +24,11 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
       setLoading(true);
       // 全件取得（検索用）
       const response = await syndicateApi.getAll(0, 100);
+      console.log('Fetched syndicates:', response.data.content);
+      // 各Syndicateのstatusを確認
+      response.data.content.forEach(syndicate => {
+        console.log(`Syndicate ID: ${syndicate.id}, Name: ${syndicate.name}, Status: ${syndicate.status}`);
+      });
       setSyndicates(response.data.content);
     } catch (err) {
       console.error('Failed to fetch syndicates:', err);
@@ -32,10 +37,17 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
     }
   };
 
-  const filteredSyndicates = syndicates.filter(syndicate =>
-    syndicate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    syndicate.id.toString().includes(searchTerm)
-  );
+  const filteredSyndicates = syndicates.filter(syndicate => {
+    const isDraft = syndicate.status === 'DRAFT';
+    const matchesSearch = syndicate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         syndicate.id.toString().includes(searchTerm);
+    const result = isDraft && matchesSearch;
+    
+    // デバッグログ
+    console.log(`Syndicate ${syndicate.id} (${syndicate.name}): status=${syndicate.status}, isDraft=${isDraft}, matchesSearch=${matchesSearch}, result=${result}`);
+    
+    return result;
+  });
 
   const selectedSyndicate = syndicates.find(s => s.id === value);
 
@@ -47,17 +59,16 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
     });
   };
 
-  const getStatusColor = (syndicate: Syndicate) => {
-    const daysSinceCreation = Math.floor(
-      (Date.now() - new Date(syndicate.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysSinceCreation <= 7) {
-      return 'text-success';
-    } else if (daysSinceCreation <= 30) {
-      return 'text-accent-500';
-    } else {
-      return 'text-accent-400';
+  const getStatusDisplay = (syndicate: Syndicate) => {
+    switch (syndicate.status) {
+      case 'DRAFT':
+        return { text: '組成可能', color: 'text-success' };
+      case 'ACTIVE':
+        return { text: '組成済み', color: 'text-accent-500' };
+      case 'CLOSED':
+        return { text: '終了', color: 'text-accent-400' };
+      default:
+        return { text: '不明', color: 'text-accent-400' };
     }
   };
 
@@ -90,8 +101,8 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                   ID: {selectedSyndicate.id} | メンバー: {selectedSyndicate.memberInvestorIds.length}名
                 </div>
               </div>
-              <div className={`ml-auto px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedSyndicate)}`}>
-                組成済み
+              <div className={`ml-auto px-2 py-1 rounded text-xs font-medium ${getStatusDisplay(selectedSyndicate).color}`}>
+                {getStatusDisplay(selectedSyndicate).text}
               </div>
             </div>
           ) : (
@@ -128,7 +139,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
               <div className="p-4 text-center text-accent-400">読み込み中...</div>
             ) : filteredSyndicates.length === 0 ? (
               <div className="p-4 text-center text-accent-400">
-                {searchTerm ? '検索結果が見つかりません' : 'シンジケートが組成されていません'}
+                {searchTerm ? '検索結果が見つかりません' : 'Facility組成可能なシンジケートがありません'}
               </div>
             ) : (
               filteredSyndicates.map((syndicate) => (
@@ -158,11 +169,11 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(syndicate)}`}>
-                        ID: {syndicate.id}
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${getStatusDisplay(syndicate).color}`}>
+                        {getStatusDisplay(syndicate).text}
                       </div>
                       <div className="text-accent-400 text-xs mt-1">
-                        v{syndicate.version}
+                        ID: {syndicate.id} | v{syndicate.version}
                       </div>
                     </div>
                   </div>

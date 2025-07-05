@@ -1,5 +1,6 @@
 package com.example.syndicatelending.syndicate.entity;
 
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,11 @@ public class Syndicate {
     @CollectionTable(name = "syndicate_members", joinColumns = @JoinColumn(name = "syndicate_id"))
     @Column(name = "investor_id")
     private List<Long> memberInvestorIds = new ArrayList<>();
+
+    // Syndicate状態管理
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private SyndicateState status = SyndicateState.DRAFT;
 
     // 作成日時・更新日時
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -124,6 +130,32 @@ public class Syndicate {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public SyndicateState getStatus() {
+        return status;
+    }
+
+    public void setStatus(SyndicateState status) {
+        this.status = status;
+    }
+
+    /**
+     * Syndicateが活動状態かどうかを判定する
+     * 
+     * @return 活動状態の場合 true
+     */
+    public boolean isActive() {
+        return SyndicateState.ACTIVE.equals(this.status);
+    }
+
+    /**
+     * 新たなFacility組成が可能かどうかを判定する
+     * 
+     * @return DRAFT状態でFacility組成可能な場合 true
+     */
+    public boolean canCreateFacility() {
+        return SyndicateState.DRAFT.equals(this.status);
     }
 
     @Override

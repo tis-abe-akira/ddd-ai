@@ -66,31 +66,41 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
     }).format(amount);
   };
 
-  const getStatusColor = (transactionDate: string) => {
-    const drawdownDate = new Date(transactionDate);
-    const today = new Date();
-    const daysDiff = Math.ceil((drawdownDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff > 0) {
-      return 'bg-warning/20 text-warning'; // 未来（予定）
-    } else if (daysDiff === 0) {
-      return 'bg-accent-500/20 text-accent-500'; // 今日
-    } else {
-      return 'bg-success/20 text-success'; // 実行済み
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-warning/20 text-warning';
+      case 'PROCESSING':
+        return 'bg-accent-500/20 text-accent-500';
+      case 'COMPLETED':
+        return 'bg-success/20 text-success';
+      case 'FAILED':
+        return 'bg-error/20 text-error';
+      case 'CANCELLED':
+        return 'bg-secondary-600 text-accent-400';
+      case 'REFUNDED':
+        return 'bg-purple-500/20 text-purple-400';
+      default:
+        return 'bg-secondary-600 text-accent-400';
     }
   };
 
-  const getStatusLabel = (transactionDate: string) => {
-    const drawdownDate = new Date(transactionDate);
-    const today = new Date();
-    const daysDiff = Math.ceil((drawdownDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff > 0) {
-      return 'Scheduled';
-    } else if (daysDiff === 0) {
-      return 'Executing';
-    } else {
-      return 'Completed';
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return '保留中';
+      case 'PROCESSING':
+        return '処理中';
+      case 'COMPLETED':
+        return '完了';
+      case 'FAILED':
+        return '失敗';
+      case 'CANCELLED':
+        return 'キャンセル';
+      case 'REFUNDED':
+        return '返金済み';
+      default:
+        return status;
     }
   };
 
@@ -226,8 +236,8 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(drawdown.transactionDate)}`}>
-                          {getStatusLabel(drawdown.transactionDate)}
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(drawdown.status)}`}>
+                          {getStatusLabel(drawdown.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

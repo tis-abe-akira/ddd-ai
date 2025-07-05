@@ -15,6 +15,8 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateEvent;
 import com.example.syndicatelending.common.statemachine.EntityStateService;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.transaction.entity.TransactionType;

@@ -37,10 +37,13 @@ export interface Syndicate {
   leadBankId: number;
   borrowerId: number;
   memberInvestorIds: number[];
+  status: SyndicateStatus;
   createdAt: string;
   updatedAt: string;
   version: number;
 }
+
+export type SyndicateStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
 
 export interface SyndicateDetail {
   id: number;
@@ -51,6 +54,7 @@ export interface SyndicateDetail {
   leadBankName: string;
   memberInvestorIds: number[];
   memberInvestorNames: string[];
+  status: SyndicateStatus;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -239,11 +243,14 @@ export interface Drawdown {
   currency: string;
   purpose: string;
   transactionDate: string;
+  status: TransactionStatus;
   amountPies: AmountPie[];
   createdAt: string;
   updatedAt: string;
   version: number;
 }
+
+export type TransactionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
 export interface AmountPie {
   id: number;

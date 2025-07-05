@@ -6,6 +6,8 @@ import com.example.syndicatelending.common.statemachine.party.BorrowerState;
 import com.example.syndicatelending.common.statemachine.party.BorrowerEvent;
 import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import com.example.syndicatelending.common.statemachine.party.InvestorEvent;
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateEvent;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
@@ -19,6 +21,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -31,6 +35,8 @@ import java.util.List;
 @Service
 @Transactional
 public class EntityStateService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(EntityStateService.class);
 
     private final BorrowerRepository borrowerRepository;
     private final InvestorRepository investorRepository;
@@ -38,25 +44,29 @@ public class EntityStateService {
     
     private final StateMachine<BorrowerState, BorrowerEvent> borrowerStateMachine;
     private final StateMachine<InvestorState, InvestorEvent> investorStateMachine;
+    private final StateMachine<SyndicateState, SyndicateEvent> syndicateStateMachine;
 
     public EntityStateService(
             BorrowerRepository borrowerRepository,
             InvestorRepository investorRepository, 
             SyndicateRepository syndicateRepository,
             @Qualifier("borrowerStateMachine") StateMachine<BorrowerState, BorrowerEvent> borrowerStateMachine,
-            @Qualifier("investorStateMachine") StateMachine<InvestorState, InvestorEvent> investorStateMachine) {
+            @Qualifier("investorStateMachine") StateMachine<InvestorState, InvestorEvent> investorStateMachine,
+            @Qualifier("syndicateStateMachine") StateMachine<SyndicateState, SyndicateEvent> syndicateStateMachine) {
         this.borrowerRepository = borrowerRepository;
         this.investorRepository = investorRepository;
         this.syndicateRepository = syndicateRepository;
         this.borrowerStateMachine = borrowerStateMachine;
         this.investorStateMachine = investorStateMachine;
+        this.syndicateStateMachine = syndicateStateMachine;
     }
 
     /**
      * Facility組成時の連鎖的状態変更
      * 
-     * 1. Borrowerを ACTIVE → RESTRICTED に遷移
-     * 2. 関連するInvestorを ACTIVE → RESTRICTED に遷移
+     * 1. Syndicateを DRAFT → ACTIVE に遷移
+     * 2. Borrowerを ACTIVE → RESTRICTED に遷移
+     * 3. 関連するInvestorを ACTIVE → RESTRICTED に遷移
      * 
      * @param facility 組成されたFacility
      */
@@ -65,13 +75,45 @@ public class EntityStateService {
         Syndicate syndicate = syndicateRepository.findById(facility.getSyndicateId())
             .orElseThrow(() -> new IllegalStateException("Syndicate not found: " + facility.getSyndicateId()));
 
-        // 1. Borrower状態遷移
+        // 1. Syndicate状態遷移（DRAFT → ACTIVE）
+        transitionSyndicateToActive(syndicate);
+
+        // 2. Borrower状態遷移
         transitionBorrowerToRestricted(syndicate.getBorrowerId());
 
-        // 2. 関連Investor状態遷移
+        // 3. 関連Investor状態遷移
         List<Long> investorIds = getInvestorIdsFromFacility(facility);
         for (Long investorId : investorIds) {
             transitionInvestorToRestricted(investorId);
+        }
+    }
+
+    /**
+     * SyndicateをACTIVE状態に遷移
+     * 
+     * @param syndicate Syndicateエンティティ
+     */
+    private void transitionSyndicateToActive(Syndicate syndicate) {
+        logger.info("Starting Syndicate state transition for ID: {}, current status: {}", 
+                   syndicate.getId(), syndicate.getStatus());
+        
+        // 既にACTIVE状態の場合はスキップ
+        if (syndicate.getStatus() == SyndicateState.ACTIVE) {
+            logger.info("Syndicate ID {} is already ACTIVE, skipping transition", syndicate.getId());
+            return;
+        }
+
+        // StateMachine実行
+        boolean success = executeSyndicateTransition(syndicate, SyndicateEvent.FACILITY_CREATED);
+        logger.info("Syndicate state machine transition result: {}", success);
+        
+        if (success) {
+            // エンティティ状態更新
+            syndicate.setStatus(SyndicateState.ACTIVE);
+            syndicateRepository.save(syndicate);
+            logger.info("Syndicate ID {} successfully transitioned to ACTIVE status", syndicate.getId());
+        } else {
+            logger.warn("Failed to transition Syndicate ID {} to ACTIVE status", syndicate.getId());
         }
     }
 
@@ -164,6 +206,46 @@ public class EntityStateService {
             return investorStateMachine.sendEvent(event);
         } catch (Exception e) {
             throw new IllegalStateException("Investor state transition failed for ID: " + investor.getId(), e);
+        }
+    }
+
+    /**
+     * Syndicate StateMachine遷移実行
+     * 
+     * @param syndicate Syndicateエンティティ
+     * @param event 発火イベント
+     * @return 遷移成功時 true
+     */
+    private boolean executeSyndicateTransition(Syndicate syndicate, SyndicateEvent event) {
+        try {
+            logger.info("Executing Syndicate state machine transition for ID: {}, event: {}", 
+                       syndicate.getId(), event);
+            
+            // StateMachineを初期化
+            syndicateStateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
+                access.resetStateMachine(null);
+            });
+            
+            // StateMachineを開始（初期状態 DRAFT に設定）
+            syndicateStateMachine.start();
+            logger.info("State machine started, current state: {}", 
+                       syndicateStateMachine.getState().getId());
+
+            // 現在状態の確認とコンテキスト設定
+            syndicateStateMachine.getExtendedState().getVariables().put("syndicateId", syndicate.getId());
+            
+            // イベント送信
+            boolean result = syndicateStateMachine.sendEvent(event);
+            logger.info("Event {} sent to state machine, result: {}, new state: {}", 
+                       event, result, syndicateStateMachine.getState().getId());
+            
+            // StateMachine停止
+            syndicateStateMachine.stop();
+            
+            return result;
+        } catch (Exception e) {
+            logger.error("Syndicate state transition failed for ID: {}", syndicate.getId(), e);
+            throw new IllegalStateException("Syndicate state transition failed for ID: " + syndicate.getId(), e);
         }
     }
 
