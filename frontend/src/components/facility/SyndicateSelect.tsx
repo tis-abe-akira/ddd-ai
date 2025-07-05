@@ -6,9 +6,10 @@ interface SyndicateSelectProps {
   value?: number;
   onChange: (syndicateId: number | undefined) => void;
   error?: string;
+  disabled?: boolean;
 }
 
-const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, error }) => {
+const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, error, disabled = false }) => {
   const [syndicates, setSyndicates] = useState<Syndicate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,9 +70,12 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
       {/* Select Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 text-left bg-secondary-600 border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 transition-colors ${
-          error ? 'border-error' : 'border-secondary-500'
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-4 py-3 text-left border rounded-lg focus:outline-none transition-colors ${
+          disabled 
+            ? 'bg-secondary-700 border-secondary-600 cursor-not-allowed opacity-60' 
+            : `bg-secondary-600 border-secondary-500 focus:ring-2 focus:ring-accent-500 ${error ? 'border-error' : ''}`
         }`}
       >
         <div className="flex items-center justify-between">
@@ -100,7 +104,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
       </button>
 
       {/* Dropdown */}
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-10 w-full mt-1 bg-secondary-600 border border-secondary-500 rounded-lg shadow-lg max-h-96 overflow-hidden">
           {/* Search Input */}
           <div className="p-3 border-b border-secondary-500">

@@ -5,17 +5,42 @@ import { createFacilitySchema, type CreateFacilityFormData, defaultFacilityValue
 import SyndicateSelect from '../facility/SyndicateSelect';
 import SharePieAllocation from '../facility/SharePieAllocation';
 import { facilityApi } from '../../lib/api';
-import type { ApiError, Facility, CreateFacilityRequest } from '../../types/api';
+import type { ApiError, Facility, CreateFacilityRequest, UpdateFacilityRequest } from '../../types/api';
 
 interface FacilityFormProps {
   onSuccess?: (facility: Facility) => void;
   onCancel?: () => void;
+  mode?: 'create' | 'edit';
+  editData?: Facility;
 }
 
-const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
+const FacilityForm: React.FC<FacilityFormProps> = ({ 
+  onSuccess, 
+  onCancel, 
+  mode = 'create', 
+  editData 
+}) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const getInitialValues = (): CreateFacilityFormData => {
+    if (mode === 'edit' && editData) {
+      return {
+        syndicateId: editData.syndicateId,
+        commitment: editData.commitment,
+        currency: editData.currency,
+        startDate: editData.startDate,
+        endDate: editData.endDate,
+        interestTerms: editData.interestTerms,
+        sharePies: editData.sharePies?.map(pie => ({
+          investorId: pie.investorId,
+          share: pie.share
+        })) || []
+      };
+    }
+    return defaultFacilityValues;
+  };
 
   const {
     register,
@@ -27,7 +52,7 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
     reset,
   } = useForm<CreateFacilityFormData>({
     resolver: zodResolver(createFacilitySchema),
-    defaultValues: defaultFacilityValues,
+    defaultValues: getInitialValues(),
     mode: 'onChange'
   });
 
@@ -64,25 +89,46 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
     setSubmitError(null);
 
     try {
-      const facilityRequest: CreateFacilityRequest = {
-        syndicateId: data.syndicateId,
-        commitment: data.commitment,
-        currency: data.currency,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        interestTerms: data.interestTerms,
-        sharePies: data.sharePies.map(pie => ({
-          investorId: pie.investorId,
-          share: pie.share
-        }))
-      };
-      
-      const response = await facilityApi.create(facilityRequest);
-      const newFacility = response.data;
-      
-      reset();
-      setCurrentStep(1);
-      onSuccess?.(newFacility);
+      if (mode === 'create') {
+        const facilityRequest: CreateFacilityRequest = {
+          syndicateId: data.syndicateId,
+          commitment: data.commitment,
+          currency: data.currency,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          interestTerms: data.interestTerms,
+          sharePies: data.sharePies.map(pie => ({
+            investorId: pie.investorId,
+            share: pie.share
+          }))
+        };
+        
+        const response = await facilityApi.create(facilityRequest);
+        const newFacility = response.data;
+        
+        reset();
+        setCurrentStep(1);
+        onSuccess?.(newFacility);
+      } else if (mode === 'edit' && editData) {
+        const updateRequest: UpdateFacilityRequest = {
+          syndicateId: data.syndicateId,
+          commitment: data.commitment,
+          currency: data.currency,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          interestTerms: data.interestTerms,
+          sharePies: data.sharePies.map(pie => ({
+            investorId: pie.investorId,
+            share: pie.share
+          })),
+          version: editData.version
+        };
+        
+        const response = await facilityApi.update(editData.id, updateRequest);
+        const updatedFacility = response.data;
+        
+        onSuccess?.(updatedFacility);
+      }
     } catch (error) {
       const apiError = error as ApiError;
       setSubmitError(apiError.message || 'An error occurred');
@@ -106,12 +152,18 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Syndicate Selection</h3>
-              <p className="text-accent-400 text-sm mb-6">Select the syndicate for this facility</p>
+              <p className="text-accent-400 text-sm mb-6">
+                {mode === 'edit' 
+                  ? 'Syndicate cannot be changed after creation' 
+                  : 'Select the syndicate for this facility'
+                }
+              </p>
               
               <SyndicateSelect
                 value={watchedValues.syndicateId}
                 onChange={(syndicateId) => setValue('syndicateId', syndicateId)}
                 error={errors.syndicateId?.message}
+                disabled={mode === 'edit'}
               />
             </div>
           </div>
@@ -380,7 +432,10 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'Creating Facility...' : 'Create Facility'}
+              {isSubmitting 
+                ? (mode === 'edit' ? 'Updating Facility...' : 'Creating Facility...') 
+                : (mode === 'edit' ? 'Update Facility' : 'Create Facility')
+              }
             </button>
           )}
           

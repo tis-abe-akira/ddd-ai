@@ -6,6 +6,7 @@ interface FacilityTableProps {
   searchTerm?: string;
   onEdit?: (facility: Facility) => void;
   onDelete?: (facility: Facility) => void;
+  onDetail?: (facility: Facility) => void;
   refreshTrigger?: number;
 }
 
@@ -13,6 +14,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
   searchTerm = '',
   onEdit,
   onDelete,
+  onDetail,
   refreshTrigger = 0
 }) => {
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -146,7 +148,11 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                   const isValidSharePie = Math.abs(totalShare - 1.0) < 0.0001;
                   
                   return (
-                    <tr key={facility.id} className="hover:bg-secondary-600/50 transition-colors">
+                    <tr 
+                      key={facility.id} 
+                      className="hover:bg-secondary-600/50 transition-colors cursor-pointer"
+                      onClick={() => onDetail?.(facility)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-accent-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -192,7 +198,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                         <div className="flex items-center gap-2">
                           {onEdit && facility.status === 'DRAFT' && (
                             <button
-                              onClick={() => onEdit(facility)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(facility);
+                              }}
                               className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
                               title="Edit"
                             >
@@ -203,7 +212,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                           )}
                           {onDelete && facility.status === 'DRAFT' && (
                             <button
-                              onClick={() => onDelete(facility)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(facility);
+                              }}
                               className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
                               title="Delete"
                             >

@@ -204,12 +204,14 @@ export interface CreateSharePieRequest {
 }
 
 export interface UpdateFacilityRequest {
+  syndicateId: number;
   commitment?: number;
   currency?: string;
   startDate?: string;
   endDate?: string;
   interestTerms?: string;
   sharePies?: CreateSharePieRequest[];
+  version: number;
 }
 
 export interface Loan {
