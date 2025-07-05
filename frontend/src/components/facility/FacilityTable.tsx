@@ -7,6 +7,7 @@ interface FacilityTableProps {
   onEdit?: (facility: Facility) => void;
   onDelete?: (facility: Facility) => void;
   onDetail?: (facility: Facility) => void;
+  onFacilitiesChange?: (facilities: Facility[]) => void;
   refreshTrigger?: number;
 }
 
@@ -15,6 +16,7 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
   onEdit,
   onDelete,
   onDetail,
+  onFacilitiesChange,
   refreshTrigger = 0
 }) => {
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -31,12 +33,17 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
     try {
       setLoading(true);
       const response = await facilityApi.getAll(currentPage, undefined, searchTerm || undefined);
-      setFacilities(response.data.content);
+      const fetchedFacilities = response.data.content;
+      setFacilities(fetchedFacilities);
       setTotalPages(response.data.totalPages);
       setTotalElements(response.data.totalElements);
+      
+      // 親コンポーネントに最新のfacilitiesデータを通知
+      onFacilitiesChange?.(fetchedFacilities);
     } catch (error) {
       console.error('Failed to fetch facilities:', error);
       setFacilities([]);
+      onFacilitiesChange?.([]);
     } finally {
       setLoading(false);
     }

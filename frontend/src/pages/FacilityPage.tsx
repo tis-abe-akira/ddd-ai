@@ -15,6 +15,29 @@ const FacilityPage: React.FC = () => {
   const [showDetail, setShowDetail] = useState(false);
   const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
   const [editData, setEditData] = useState<Facility | undefined>(undefined);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+
+  // Quick Stats計算
+  const calculateStats = () => {
+    const draftCount = facilities.filter(f => f.status === 'DRAFT').length;
+    const fixedCount = facilities.filter(f => f.status === 'FIXED').length;
+    const totalAmount = facilities.reduce((sum, f) => sum + f.commitment, 0);
+    
+    return { draftCount, fixedCount, totalAmount };
+  };
+
+  const { draftCount, fixedCount, totalAmount } = calculateStats();
+
+  const formatCurrency = (amount: number) => {
+    // Facilitiesの通貨は混在可能だが、主要通貨として最初のFacilityの通貨を使用
+    const currency = facilities.length > 0 ? facilities[0].currency : 'JPY';
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      notation: 'compact'
+    }).format(amount);
+  };
 
   const handleSuccess = (facility: Facility) => {
     const action = editMode === 'edit' ? 'updated' : 'created';
@@ -64,6 +87,10 @@ const FacilityPage: React.FC = () => {
   const handleCloseDetail = () => {
     setShowDetail(false);
     setSelectedFacility(null);
+  };
+
+  const handleFacilitiesChange = (updatedFacilities: Facility[]) => {
+    setFacilities(updatedFacilities);
   };
 
   return (
@@ -165,15 +192,20 @@ const FacilityPage: React.FC = () => {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <div className="text-accent-400 text-sm">Draft</div>
-                  <div className="text-white text-2xl font-bold">-</div>
+                  <div className="text-white text-2xl font-bold">{draftCount}</div>
+                  <div className="text-accent-400 text-xs mt-1">Editable facilities</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <div className="text-accent-400 text-sm">Fixed</div>
-                  <div className="text-white text-2xl font-bold">-</div>
+                  <div className="text-white text-2xl font-bold">{fixedCount}</div>
+                  <div className="text-accent-400 text-xs mt-1">Confirmed facilities</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <div className="text-accent-400 text-sm">Total Facility Amount</div>
-                  <div className="text-white text-2xl font-bold">-</div>
+                  <div className="text-white text-2xl font-bold">
+                    {facilities.length > 0 ? formatCurrency(totalAmount) : '¥0'}
+                  </div>
+                  <div className="text-accent-400 text-xs mt-1">Combined commitment</div>
                 </div>
               </div>
             </div>
@@ -187,6 +219,7 @@ const FacilityPage: React.FC = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onDetail={handleDetail}
+            onFacilitiesChange={handleFacilitiesChange}
             refreshTrigger={refreshTrigger}
           />
         )}
