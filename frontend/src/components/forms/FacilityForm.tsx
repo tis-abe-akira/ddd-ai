@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFacilitySchema, type CreateFacilityFormData, defaultFacilityValues, FACILITY_FORM_STEPS, currencyOptions } from '../../schemas/facility';
 import SyndicateSelect from '../facility/SyndicateSelect';
 import SharePieAllocation from '../facility/SharePieAllocation';
-import { facilityApi } from '../../lib/api';
-import type { ApiError, Facility, CreateFacilityRequest, UpdateFacilityRequest } from '../../types/api';
+import { facilityApi, syndicateApi, borrowerApi } from '../../lib/api';
+import type { ApiError, Facility, CreateFacilityRequest, UpdateFacilityRequest, SyndicateDetail, Borrower } from '../../types/api';
 
 interface FacilityFormProps {
   onSuccess?: (facility: Facility) => void;
@@ -23,6 +23,8 @@ const FacilityForm: React.FC<FacilityFormProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedSyndicate, setSelectedSyndicate] = useState<SyndicateDetail | null>(null);
+  const [selectedBorrower, setSelectedBorrower] = useState<Borrower | null>(null);
 
   const getInitialValues = (): CreateFacilityFormData => {
     if (mode === 'edit' && editData) {
@@ -57,6 +59,35 @@ const FacilityForm: React.FC<FacilityFormProps> = ({
   });
 
   const watchedValues = watch();
+
+  // Fetch syndicate details when syndicateId changes
+  useEffect(() => {
+    const fetchSyndicateAndBorrower = async () => {
+      if (watchedValues.syndicateId) {
+        try {
+          const syndicateResponse = await syndicateApi.getById(watchedValues.syndicateId);
+          const syndicateData = syndicateResponse.data;
+          setSelectedSyndicate(syndicateData);
+          
+          if (syndicateData.borrowerId) {
+            const borrowerResponse = await borrowerApi.getById(syndicateData.borrowerId);
+            setSelectedBorrower(borrowerResponse.data);
+          } else {
+            setSelectedBorrower(null);
+          }
+        } catch (error) {
+          console.error('Failed to fetch syndicate or borrower details:', error);
+          setSelectedSyndicate(null);
+          setSelectedBorrower(null);
+        }
+      } else {
+        setSelectedSyndicate(null);
+        setSelectedBorrower(null);
+      }
+    };
+
+    fetchSyndicateAndBorrower();
+  }, [watchedValues.syndicateId]);
 
   const validateCurrentStep = () => {
     const values = getValues();
@@ -181,6 +212,33 @@ const FacilityForm: React.FC<FacilityFormProps> = ({
                 <div>
                   <label htmlFor="commitment" className="block text-sm font-medium text-white mb-2">
                     Facility Amount <span className="text-error">*</span>
+                    {/* Credit Limit Display - Inline with label */}
+                    {selectedBorrower && (
+                      <span className="ml-4 text-xs">
+                        <span className="text-accent-400">Credit Limit:</span>
+                        <span className="ml-1 font-bold text-white">
+                          {new Intl.NumberFormat('ja-JP', {
+                            style: 'currency',
+                            currency: selectedBorrower.currency || 'JPY',
+                            minimumFractionDigits: 0,
+                            notation: 'compact'
+                          }).format(selectedBorrower.creditLimit)}
+                        </span>
+                        <span className="ml-2 text-accent-400">Available:</span>
+                        <span className={`ml-1 font-medium ${
+                          (selectedBorrower.creditLimit - selectedBorrower.currentInvestment) > 0 
+                            ? 'text-success' 
+                            : 'text-warning'
+                        }`}>
+                          {new Intl.NumberFormat('ja-JP', {
+                            style: 'currency',
+                            currency: selectedBorrower.currency || 'JPY',
+                            minimumFractionDigits: 0,
+                            notation: 'compact'
+                          }).format(selectedBorrower.creditLimit - selectedBorrower.currentInvestment)}
+                        </span>
+                      </span>
+                    )}
                   </label>
                   <input
                     {...register('commitment', { valueAsNumber: true })}
