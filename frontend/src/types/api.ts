@@ -79,9 +79,9 @@ export type InvestorType =
 
 export type FacilityStatus = 'DRAFT' | 'FIXED';
 
-export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
+export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
 
-export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET' | 'INTEREST_ONLY';
+export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
 
 export type Industry = 
   | 'FINANCE' 
