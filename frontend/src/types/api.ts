@@ -83,6 +83,8 @@ export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
 
 export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
 
+export type RepaymentCycle = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUALLY' | 'ANNUALLY';
+
 export type Industry = 
   | 'FINANCE' 
   | 'MANUFACTURING' 

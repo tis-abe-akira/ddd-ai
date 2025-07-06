@@ -9,6 +9,7 @@ import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
 import com.example.syndicatelending.loan.entity.Drawdown;
 import com.example.syndicatelending.loan.entity.Loan;
+import com.example.syndicatelending.loan.entity.RepaymentCycle;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
@@ -242,7 +243,7 @@ public class DrawdownService {
                 Percentage.of(request.getAnnualInterestRate()),
                 request.getDrawdownDate(),
                 request.getRepaymentPeriodMonths(),
-                request.getRepaymentCycle(),
+                RepaymentCycle.valueOf(request.getRepaymentCycle()),
                 request.getRepaymentMethod(),
                 request.getCurrency());
     }
