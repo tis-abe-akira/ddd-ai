@@ -20,6 +20,7 @@ import type {
   CreateFacilityRequest,
   UpdateFacilityRequest,
   CreateDrawdownRequest,
+  UpdateDrawdownRequest,
   CreatePaymentRequest,
   ApiResponse,
   ApiError,
@@ -162,6 +163,8 @@ export const drawdownApi = {
   getById: (id: number) => apiClient.get<Drawdown>(`/loans/drawdowns/${id}`),
   getByFacilityId: (facilityId: number) => apiClient.get<Drawdown[]>(`/loans/drawdowns/facility/${facilityId}`),
   create: (data: CreateDrawdownRequest) => apiClient.post<Drawdown>('/loans/drawdowns', data),
+  update: (id: number, data: UpdateDrawdownRequest) => apiClient.put<Drawdown>(`/loans/drawdowns/${id}`, data),
+  delete: (id: number) => apiClient.delete(`/loans/drawdowns/${id}`),
 };
 
 // Loans

@@ -1,6 +1,7 @@
 package com.example.syndicatelending.loan.controller;
 
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
+import com.example.syndicatelending.loan.dto.UpdateDrawdownRequest;
 import com.example.syndicatelending.loan.entity.Drawdown;
 import com.example.syndicatelending.loan.service.DrawdownService;
 
@@ -48,5 +49,17 @@ public class DrawdownController {
     public ResponseEntity<List<Drawdown>> getDrawdownsByFacilityId(@PathVariable Long facilityId) {
         List<Drawdown> drawdowns = drawdownService.getDrawdownsByFacilityId(facilityId);
         return ResponseEntity.ok(drawdowns);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDrawdown(@PathVariable Long id) {
+        drawdownService.deleteDrawdown(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Drawdown> updateDrawdown(@PathVariable Long id, @RequestBody UpdateDrawdownRequest request) {
+        Drawdown drawdown = drawdownService.updateDrawdown(id, request);
+        return ResponseEntity.ok(drawdown);
     }
 }

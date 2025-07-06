@@ -278,6 +278,19 @@ export interface CreateDrawdownRequest {
   amountPies?: CreateAmountPieRequest[];
 }
 
+export interface UpdateDrawdownRequest {
+  amount: number;
+  currency: string;
+  purpose: string;
+  annualInterestRate: number;
+  drawdownDate: string;
+  repaymentPeriodMonths: number;
+  repaymentCycle: string;
+  repaymentMethod: RepaymentMethod;
+  version: number;
+  amountPies?: CreateAmountPieRequest[];
+}
+
 export interface CreateAmountPieRequest {
   investorId: number;
   amount: number;

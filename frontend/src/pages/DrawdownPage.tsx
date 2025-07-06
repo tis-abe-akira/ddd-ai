@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import DrawdownForm from '../components/forms/DrawdownForm';
 import DrawdownTable from '../components/drawdown/DrawdownTable';
+import { drawdownApi } from '../lib/api';
 import type { Drawdown } from '../types/api';
 
 const DrawdownPage: React.FC = () => {
@@ -11,10 +12,13 @@ const DrawdownPage: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedDrawdown, setSelectedDrawdown] = useState<Drawdown | null>(null);
+  const [editingDrawdown, setEditingDrawdown] = useState<Drawdown | null>(null);
 
   const handleSuccess = (drawdown: Drawdown) => {
-    setSuccessMessage(`Drawdown "#${drawdown.id}" has been executed successfully.`);
+    const action = editingDrawdown ? 'updated' : 'executed';
+    setSuccessMessage(`Drawdown "#${drawdown.id}" has been ${action} successfully.`);
     setShowForm(false);
+    setEditingDrawdown(null);
     setRefreshTrigger(prev => prev + 1);
     // 成功メッセージを5秒後に消去
     setTimeout(() => setSuccessMessage(null), 5000);
@@ -22,6 +26,7 @@ const DrawdownPage: React.FC = () => {
 
   const handleCancel = () => {
     setShowForm(false);
+    setEditingDrawdown(null);
   };
 
   const handleView = (drawdown: Drawdown) => {
@@ -29,22 +34,26 @@ const DrawdownPage: React.FC = () => {
   };
 
   const handleEdit = (drawdown: Drawdown) => {
-    // TODO: Implement edit functionality
-    console.log('Edit drawdown:', drawdown);
-    alert(`Edit functionality for Drawdown #${drawdown.id} will be implemented.`);
+    setEditingDrawdown(drawdown);
+    setShowForm(true);
   };
 
-  const handleDelete = (drawdown: Drawdown) => {
-    // TODO: Implement delete functionality
+  const handleDelete = async (drawdown: Drawdown) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to delete Drawdown #${drawdown.id}?\nThis action cannot be undone.`
     );
     
     if (confirmDelete) {
-      console.log('Delete drawdown:', drawdown);
-      alert(`Delete functionality for Drawdown #${drawdown.id} will be implemented.`);
-      // After successful deletion, refresh the table
-      // setRefreshTrigger(prev => prev + 1);
+      try {
+        await drawdownApi.delete(drawdown.id);
+        setSuccessMessage(`Drawdown #${drawdown.id} has been deleted successfully.`);
+        setRefreshTrigger(prev => prev + 1);
+        // 成功メッセージを5秒後に消去
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } catch (error: any) {
+        console.error('Delete failed:', error);
+        alert(`Failed to delete Drawdown #${drawdown.id}: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 
@@ -71,8 +80,12 @@ const DrawdownPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Drawdowns</h1>
-            <p className="text-accent-400">Execute and manage loan drawdowns</p>
+            <h1 className="text-3xl font-bold text-white">
+              {editingDrawdown ? `Edit Drawdown #${editingDrawdown.id}` : 'Drawdowns'}
+            </h1>
+            <p className="text-accent-400">
+              {editingDrawdown ? 'Update drawdown details' : 'Execute and manage loan drawdowns'}
+            </p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -81,7 +94,7 @@ const DrawdownPage: React.FC = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {showForm ? 'Close Form' : 'New Drawdown'}
+{showForm ? 'Close Form' : editingDrawdown ? 'Edit Drawdown' : 'New Drawdown'}
           </button>
         </div>
 
@@ -109,6 +122,8 @@ const DrawdownPage: React.FC = () => {
             <DrawdownForm 
               onSuccess={handleSuccess}
               onCancel={handleCancel}
+              initialData={editingDrawdown || undefined}
+              isEditMode={!!editingDrawdown}
             />
           </div>
         )}
