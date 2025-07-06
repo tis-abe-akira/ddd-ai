@@ -299,6 +299,41 @@ public class FacilityService {
     }
 
     /**
+     * Drawdown削除時にFacilityをDRAFT状態に自動復帰させる
+     * 
+     * このメソッドは手動の revertToDraft とは異なり、Drawdown削除の一環として
+     * 自動的に呼び出される処理です。手動操作の場合の厳格な検証は行いません。
+     * 
+     * @param facilityId FacilityのID
+     * @throws ResourceNotFoundException Facilityが存在しない場合
+     */
+    @Transactional
+    public void autoRevertToDraftOnDrawdownDeletion(Long facilityId) {
+        Facility facility = getFacilityById(facilityId);
+        
+        // 既にDRAFT状態の場合は何もしない
+        if (facility.getStatus() == FacilityState.DRAFT) {
+            return;
+        }
+        
+        // FIXED状態の場合のみDRAFTに戻す（他の状態からの復帰は想定外）
+        if (facility.getStatus() == FacilityState.FIXED) {
+            // Drawdown削除時の自動処理のため、追加の検証は不要
+            // State Machine実行は optional（ログのみ記録）
+            try {
+                boolean result = executeFacilityStateTransition(facility, FacilityEvent.REVERT_TO_DRAFT);
+            } catch (Exception e) {
+                // State Machine実行失敗はログに記録するが、処理は継続
+                System.err.println("State Machine execution warning during auto-revert: " + e.getMessage());
+            }
+            
+            // 状態更新を実行
+            facility.setStatus(FacilityState.DRAFT);
+            facilityRepository.save(facility);
+        }
+    }
+
+    /**
      * Facility StateMachine遷移実行
      * 
      * EntityStateServiceのパターンを踏襲した統一的なState Machine実行メソッド

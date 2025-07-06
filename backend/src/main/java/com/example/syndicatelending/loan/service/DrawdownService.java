@@ -390,7 +390,7 @@ public class DrawdownService {
         
         // 他にDrawdownが無い場合のみ、FacilityをDRAFTに戻す
         if (otherDrawdowns.isEmpty()) {
-            facilityService.revertToDraft(facilityId);
+            facilityService.autoRevertToDraftOnDrawdownDeletion(facilityId);
         }
     }
 
