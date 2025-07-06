@@ -233,4 +233,13 @@ public class PaymentDetail {
         this.actualPaymentDate = paymentDate;
         this.paymentId = paymentId;
     }
+
+    /**
+     * 支払いを未払い状態に戻す（支払い取り消し時）
+     */
+    public void markAsUnpaid() {
+        this.paymentStatus = PaymentStatus.PENDING;
+        this.actualPaymentDate = null;
+        this.paymentId = null;
+    }
 }

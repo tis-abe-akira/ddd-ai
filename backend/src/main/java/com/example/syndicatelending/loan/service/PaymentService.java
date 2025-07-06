@@ -290,8 +290,10 @@ public class PaymentService {
         List<PaymentDistribution> distributions = generatePaymentDistributions(payment, loan, paymentDetail);
         payment.setPaymentDistributions(distributions);
 
-        // 6. Paymentの保存
+        // 6. Paymentの保存と完了マーク
         Payment savedPayment = paymentRepository.save(payment);
+        savedPayment.markAsCompleted(); // 支払い完了状態に設定
+        savedPayment = paymentRepository.save(savedPayment);
 
         // 7. PaymentDetailを支払い済みにマーク
         paymentDetail.markAsPaid(payment.getPaymentDate(), savedPayment.getId());
@@ -404,6 +406,96 @@ public class PaymentService {
             // 元本返済分だけ投資額を減額（利息は投資額に影響しない）
             Money principalReduction = distribution.getPrincipalAmount();
             investor.decreaseInvestmentAmount(principalReduction);
+            investorRepository.save(investor);
+        }
+    }
+
+    /**
+     * 支払いを取り消す
+     * 
+     * @param paymentId 取り消し対象のPaymentID
+     * @return 取り消されたPayment
+     * @throws ResourceNotFoundException Paymentが存在しない場合
+     * @throws BusinessRuleViolationException 取り消し条件が満たされない場合
+     */
+    @Transactional
+    public Payment cancelPayment(Long paymentId) {
+        // 1. Paymentの取得と検証
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + paymentId));
+
+        // 2. 取り消し可能状態の確認（Transaction基底クラスのメソッドを使用）
+        if (!payment.isCancellable()) {
+            throw new BusinessRuleViolationException(
+                    "Payment cannot be cancelled. Current status: " + payment.getStatus());
+        }
+
+        // 3. 関連するLoanの取得
+        Loan loan = loanRepository.findById(payment.getLoanId())
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found with id: " + payment.getLoanId()));
+
+        // 4. 関連するPaymentDetailの取得
+        PaymentDetail paymentDetail = paymentDetailRepository.findByPaymentId(payment.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("PaymentDetail not found for payment: " + payment.getId()));
+
+        // 5. Paymentを取り消し状態に変更
+        payment.cancel();
+        Payment cancelledPayment = paymentRepository.save(payment);
+
+        // 6. PaymentDetailの状態を元に戻す
+        paymentDetail.markAsUnpaid();
+        paymentDetailRepository.save(paymentDetail);
+
+        // 7. Loanの残高を復元
+        restoreLoanBalanceAndStatus(loan, paymentDetail);
+
+        // 8. 投資家の投資額を復元（元本返済分のみ）
+        restoreInvestorInvestmentAmounts(payment.getPaymentDistributions());
+
+        return cancelledPayment;
+    }
+
+    /**
+     * Loanの残高と状態を復元する
+     */
+    private void restoreLoanBalanceAndStatus(Loan loan, PaymentDetail paymentDetail) {
+        // 未払い残高を復元（取り消された元本分を加算）
+        Money restoredBalance = loan.getOutstandingBalance().add(paymentDetail.getPrincipalPayment());
+        loan.setOutstandingBalance(restoredBalance);
+
+        // Loan状態の復元
+        // 完済状態（COMPLETED）だった場合はACTIVE状態に戻す
+        if (loan.getStatus() == LoanState.COMPLETED) {
+            executeLoanStateTransition(loan, LoanEvent.PAYMENT_CANCELLED);
+            loan.setStatus(LoanState.ACTIVE);
+        }
+        // 初回支払いが取り消された場合はDRAFT状態に戻すかを判定
+        else if (loan.getStatus() == LoanState.ACTIVE) {
+            // 他に完了済みの支払いがあるかチェック
+            List<Payment> completedPayments = paymentRepository.findByLoanIdAndStatusOrderByPaymentDateDesc(
+                    loan.getId(), com.example.syndicatelending.transaction.entity.TransactionStatus.COMPLETED);
+            
+            if (completedPayments.size() <= 1) { // 取り消し対象の支払いのみの場合
+                executeLoanStateTransition(loan, LoanEvent.PAYMENT_CANCELLED);
+                loan.setStatus(LoanState.DRAFT);
+            }
+        }
+
+        loanRepository.save(loan);
+    }
+
+    /**
+     * 投資家の投資額を復元する（元本返済分のみ）
+     */
+    private void restoreInvestorInvestmentAmounts(List<PaymentDistribution> distributions) {
+        for (PaymentDistribution distribution : distributions) {
+            Investor investor = investorRepository.findById(distribution.getInvestorId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Investor not found with id: " + distribution.getInvestorId()));
+            
+            // 元本返済分だけ投資額を復元（増額）
+            Money principalRestoration = distribution.getPrincipalAmount();
+            investor.increaseInvestmentAmount(principalRestoration);
             investorRepository.save(investor);
         }
     }

@@ -188,6 +188,8 @@ export const paymentApi = {
   create: (data: CreatePaymentRequest) => apiClient.post<Payment>('/loans/payments', data),
   processScheduledPayment: (paymentDetailId: number) => 
     apiClient.post<Payment>(`/loans/payments/scheduled/${paymentDetailId}`),
+  cancelPayment: (paymentId: number) => 
+    apiClient.delete<Payment>(`/loans/payments/${paymentId}/cancel`),
 };
 
 // PaymentDetail API

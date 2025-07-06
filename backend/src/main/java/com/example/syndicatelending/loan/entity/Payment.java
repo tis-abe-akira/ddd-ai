@@ -126,4 +126,11 @@ public class Payment extends Transaction {
         this.paymentDistributions = paymentDistributions;
     }
 
+    /**
+     * 支払いを取り消し状態に変更する
+     */
+    public void cancel() {
+        setStatus(com.example.syndicatelending.transaction.entity.TransactionStatus.CANCELLED);
+    }
+
 }

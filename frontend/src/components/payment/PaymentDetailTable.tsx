@@ -65,7 +65,7 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
       `Interest: ${formatCurrency(paymentDetail.interestPayment)}\n` +
       `Total: ${formatCurrency(paymentDetail.principalPayment + paymentDetail.interestPayment)}\n` +
       `Due Date: ${formatDate(paymentDetail.dueDate)}\n\n` +
-      `This action cannot be undone.`
+      `This action can be cancelled later if needed.`
     );
 
     if (!confirmPayment) return;
@@ -83,6 +83,43 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
     } catch (error: any) {
       console.error('Payment processing failed:', error);
       alert(`Failed to process payment: ${error.message || 'Unknown error'}`);
+    } finally {
+      setProcessingPayments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(paymentDetail.id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleCancelPayment = async (paymentDetail: PaymentDetail) => {
+    const confirmCancel = window.confirm(
+      `Cancel payment for Payment #${paymentDetail.paymentNumber}?\n\n` +
+      `This will revert the payment and restore the loan balance.\n` +
+      `The payment detail will return to PENDING status.\n\n` +
+      `Are you sure you want to proceed?`
+    );
+
+    if (!confirmCancel) return;
+
+    if (!paymentDetail.paymentId) {
+      alert('Cannot cancel payment: Payment ID is missing');
+      return;
+    }
+
+    try {
+      setProcessingPayments(prev => new Set(prev).add(paymentDetail.id));
+      
+      await paymentApi.cancelPayment(paymentDetail.paymentId);
+      
+      // Success notification
+      alert(`Payment #${paymentDetail.paymentNumber} has been cancelled successfully!`);
+      
+      // Refresh the data
+      onPaymentSuccess?.();
+    } catch (error: any) {
+      console.error('Payment cancellation failed:', error);
+      alert(`Failed to cancel payment: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessingPayments(prev => {
         const newSet = new Set(prev);
@@ -191,6 +228,21 @@ const PaymentDetailTable: React.FC<PaymentDetailTableProps> = ({
                         </div>
                       ) : (
                         'Pay'
+                      )}
+                    </button>
+                  ) : paymentDetail.paymentStatus === 'PAID' && paymentDetail.paymentId ? (
+                    <button
+                      onClick={() => handleCancelPayment(paymentDetail)}
+                      disabled={processingPayments.has(paymentDetail.id)}
+                      className="bg-warning hover:bg-warning/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-3 rounded-lg transition-colors duration-200 text-sm"
+                    >
+                      {processingPayments.has(paymentDetail.id) ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Cancelling...
+                        </div>
+                      ) : (
+                        'Cancel'
                       )}
                     </button>
                   ) : (

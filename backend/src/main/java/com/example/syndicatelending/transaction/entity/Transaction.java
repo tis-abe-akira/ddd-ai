@@ -176,7 +176,9 @@ public abstract class Transaction {
      * @return キャンセル可能な場合true
      */
     public boolean isCancellable() {
-        return this.status == TransactionStatus.PENDING || this.status == TransactionStatus.PROCESSING;
+        return this.status == TransactionStatus.PENDING || 
+               this.status == TransactionStatus.PROCESSING || 
+               this.status == TransactionStatus.COMPLETED;
     }
     
     /**

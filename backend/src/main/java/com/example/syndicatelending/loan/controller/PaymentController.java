@@ -42,4 +42,10 @@ public class PaymentController {
         Payment payment = paymentService.processScheduledPayment(paymentDetailId);
         return ResponseEntity.ok(payment);
     }
+
+    @DeleteMapping("/{paymentId}/cancel")
+    public ResponseEntity<Payment> cancelPayment(@PathVariable Long paymentId) {
+        Payment payment = paymentService.cancelPayment(paymentId);
+        return ResponseEntity.ok(payment);
+    }
 }
