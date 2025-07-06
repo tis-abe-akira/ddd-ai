@@ -62,7 +62,8 @@ public class Loan {
 
     /** 返済サイクル（例: MONTHLY, QUARTERLY等） */
     @Column(nullable = false)
-    private String repaymentCycle;
+    @Enumerated(EnumType.STRING)
+    private RepaymentCycle repaymentCycle;
 
     /** 返済方法（元利均等、バレット返済等） */
     @Column(nullable = false)
@@ -118,7 +119,7 @@ public class Loan {
      * 支払いスケジュールも自動生成する。
      */
     public Loan(Long facilityId, Long borrowerId, Money principalAmount, Percentage annualInterestRate,
-            LocalDate drawdownDate, Integer repaymentPeriodMonths, String repaymentCycle,
+            LocalDate drawdownDate, Integer repaymentPeriodMonths, RepaymentCycle repaymentCycle,
             RepaymentMethod repaymentMethod, String currency) {
         this.facilityId = facilityId;
         this.borrowerId = borrowerId;
@@ -206,11 +207,11 @@ public class Loan {
         this.repaymentPeriodMonths = repaymentPeriodMonths;
     }
 
-    public String getRepaymentCycle() {
+    public RepaymentCycle getRepaymentCycle() {
         return repaymentCycle;
     }
 
-    public void setRepaymentCycle(String repaymentCycle) {
+    public void setRepaymentCycle(RepaymentCycle repaymentCycle) {
         this.repaymentCycle = repaymentCycle;
     }
 
@@ -332,30 +333,31 @@ public class Loan {
     private List<PaymentDetail> generateEqualInstallmentSchedule() {
         List<PaymentDetail> details = new ArrayList<>();
 
-        // 月利を計算
-        BigDecimal monthlyRate = this.annualInterestRate.getValue().divide(new BigDecimal("12"), 10,
-                RoundingMode.HALF_UP);
+        // 返済サイクルに基づく利率を計算
+        BigDecimal cycleRate = this.annualInterestRate.getValue()
+                .multiply(BigDecimal.valueOf(this.repaymentCycle.getMonths()))
+                .divide(new BigDecimal("12"), 10, RoundingMode.HALF_UP);
 
-        // 毎月の支払額を計算（元利均等）
+        // 返済回数を計算（返済サイクルに基づく）
+        int numberOfPayments = this.repaymentCycle.getTotalPayments(this.repaymentPeriodMonths);
+        
         BigDecimal principalBd = this.principalAmount.getAmount();
-        int numberOfPayments = this.repaymentPeriodMonths;
-
-        BigDecimal monthlyPayment = calculateEqualInstallmentPayment(principalBd, monthlyRate, numberOfPayments);
+        BigDecimal cyclePayment = calculateEqualInstallmentPayment(principalBd, cycleRate, numberOfPayments);
 
         BigDecimal remainingBalance = principalBd;
-        LocalDate paymentDate = this.drawdownDate.plusMonths(1);
+        LocalDate paymentDate = this.drawdownDate.plusMonths(this.repaymentCycle.getMonths());
 
         for (int i = 1; i <= numberOfPayments; i++) {
-            // 利息部分を計算
-            BigDecimal interestPayment = remainingBalance.multiply(monthlyRate).setScale(0, RoundingMode.HALF_UP);
+            // 利息部分を計算（サイクル期間の利息）
+            BigDecimal interestPayment = remainingBalance.multiply(cycleRate).setScale(0, RoundingMode.HALF_UP);
 
             // 元本部分を計算
-            BigDecimal principalPayment = monthlyPayment.subtract(interestPayment);
+            BigDecimal principalPayment = cyclePayment.subtract(interestPayment);
 
             // 最終回の調整
             if (i == numberOfPayments) {
                 principalPayment = remainingBalance;
-                monthlyPayment = principalPayment.add(interestPayment);
+                cyclePayment = principalPayment.add(interestPayment);
             }
 
             // 残高を更新
@@ -371,7 +373,7 @@ public class Loan {
                     Money.of(remainingBalance));
 
             details.add(detail);
-            paymentDate = paymentDate.plusMonths(1);
+            paymentDate = paymentDate.plusMonths(this.repaymentCycle.getMonths());
         }
 
         return details;
@@ -385,16 +387,20 @@ public class Loan {
     private List<PaymentDetail> generateBulletPaymentSchedule() {
         List<PaymentDetail> details = new ArrayList<>();
 
-        // 月利を計算
-        BigDecimal monthlyRate = this.annualInterestRate.getValue().divide(new BigDecimal("12"), 10,
-                RoundingMode.HALF_UP);
+        // 返済サイクルに基づく利率を計算
+        BigDecimal cycleRate = this.annualInterestRate.getValue()
+                .multiply(BigDecimal.valueOf(this.repaymentCycle.getMonths()))
+                .divide(new BigDecimal("12"), 10, RoundingMode.HALF_UP);
+        
         BigDecimal principalBd = this.principalAmount.getAmount();
-
-        LocalDate paymentDate = this.drawdownDate.plusMonths(1);
+        
+        // 返済回数を計算（返済サイクルに基づく）
+        int numberOfPayments = this.repaymentCycle.getTotalPayments(this.repaymentPeriodMonths);
+        LocalDate paymentDate = this.drawdownDate.plusMonths(this.repaymentCycle.getMonths());
 
         // 利息のみの支払い（最終回を除く）
-        for (int i = 1; i < this.repaymentPeriodMonths; i++) {
-            BigDecimal interestPayment = principalBd.multiply(monthlyRate).setScale(0, RoundingMode.HALF_UP);
+        for (int i = 1; i < numberOfPayments; i++) {
+            BigDecimal interestPayment = principalBd.multiply(cycleRate).setScale(0, RoundingMode.HALF_UP);
 
             PaymentDetail detail = new PaymentDetail(
                     this,
@@ -406,16 +412,16 @@ public class Loan {
             );
 
             details.add(detail);
-            paymentDate = paymentDate.plusMonths(1);
+            paymentDate = paymentDate.plusMonths(this.repaymentCycle.getMonths());
         }
 
         // 最終回：元本 + 利息
-        if (this.repaymentPeriodMonths > 0) {
-            BigDecimal finalInterestPayment = principalBd.multiply(monthlyRate).setScale(0, RoundingMode.HALF_UP);
+        if (numberOfPayments > 0) {
+            BigDecimal finalInterestPayment = principalBd.multiply(cycleRate).setScale(0, RoundingMode.HALF_UP);
 
             PaymentDetail finalDetail = new PaymentDetail(
                     this,
-                    this.repaymentPeriodMonths,
+                    numberOfPayments,
                     this.principalAmount, // 元本全額
                     Money.of(finalInterestPayment),
                     paymentDate,

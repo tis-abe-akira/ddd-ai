@@ -6,6 +6,8 @@ interface FacilityTableProps {
   searchTerm?: string;
   onEdit?: (facility: Facility) => void;
   onDelete?: (facility: Facility) => void;
+  onDetail?: (facility: Facility) => void;
+  onFacilitiesChange?: (facilities: Facility[]) => void;
   refreshTrigger?: number;
 }
 
@@ -13,6 +15,8 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
   searchTerm = '',
   onEdit,
   onDelete,
+  onDetail,
+  onFacilitiesChange,
   refreshTrigger = 0
 }) => {
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -29,12 +33,17 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
     try {
       setLoading(true);
       const response = await facilityApi.getAll(currentPage, undefined, searchTerm || undefined);
-      setFacilities(response.data.content);
+      const fetchedFacilities = response.data.content;
+      setFacilities(fetchedFacilities);
       setTotalPages(response.data.totalPages);
       setTotalElements(response.data.totalElements);
+      
+      // 親コンポーネントに最新のfacilitiesデータを通知
+      onFacilitiesChange?.(fetchedFacilities);
     } catch (error) {
       console.error('Failed to fetch facilities:', error);
       setFacilities([]);
+      onFacilitiesChange?.([]);
     } finally {
       setLoading(false);
     }
@@ -65,14 +74,23 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case 'DRAFT':
-        return 'Draft';
+        return { 
+          label: 'Draft', 
+          tooltip: 'Draft - Facility can be edited and modified. No drawdowns have been executed yet.' 
+        };
       case 'FIXED':
-        return 'Fixed';
+        return { 
+          label: 'Fixed', 
+          tooltip: 'Fixed - Facility is finalized after drawdown execution. Cannot be modified anymore.' 
+        };
       default:
-        return status;
+        return { 
+          label: status, 
+          tooltip: 'Unknown facility status' 
+        };
     }
   };
 
@@ -146,7 +164,11 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                   const isValidSharePie = Math.abs(totalShare - 1.0) < 0.0001;
                   
                   return (
-                    <tr key={facility.id} className="hover:bg-secondary-600/50 transition-colors">
+                    <tr 
+                      key={facility.id} 
+                      className="hover:bg-secondary-600/50 transition-colors cursor-pointer"
+                      onClick={() => onDetail?.(facility)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-accent-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -181,8 +203,11 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(facility.status)}`}>
-                          {getStatusLabel(facility.status)}
+                        <span 
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-help ${getStatusColor(facility.status)}`}
+                          title={getStatusInfo(facility.status).tooltip}
+                        >
+                          {getStatusInfo(facility.status).label}
                         </span>
                         <div className="text-accent-400 text-xs mt-1">
                           v{facility.version}
@@ -192,7 +217,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                         <div className="flex items-center gap-2">
                           {onEdit && facility.status === 'DRAFT' && (
                             <button
-                              onClick={() => onEdit(facility)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(facility);
+                              }}
                               className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
                               title="Edit"
                             >
@@ -203,7 +231,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                           )}
                           {onDelete && facility.status === 'DRAFT' && (
                             <button
-                              onClick={() => onDelete(facility)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(facility);
+                              }}
                               className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
                               title="Delete"
                             >

@@ -157,6 +157,42 @@ mvn test jacoco:report
   - 取引手数料・エージェント手数料：エージェントバンク収益
 - **手数料計算検証**: 計算基準額×手数料率=手数料額の整合性チェック
 
+## 重要な設計判断
+
+### 参照整合性保護におけるBoundedContext間依存について
+
+**背景**: Syndicate/Facilityに参加中のBorrower/Investorを削除すると「Unknown」表示になり、データ整合性が破綻する問題が発生。
+
+**検討した解決策**:
+1. **ドメイン層での相互依存**: 各ドメインが直接他ドメインを参照
+2. **Domain Events**: 非同期イベントによる結果整合性
+3. **Application Service層での制御**: 上位層で複数ドメインを調整
+
+**採用した解決策**: **Application Service層での制御**
+
+**判断理由**:
+- **ビジネス要件**: 金融系システムでデータ整合性は最重要、「Unknown」表示は業務上致命的
+- **システム規模**: 単一アプリケーション、限定的エンティティ数、小規模チーム
+- **実用性重視**: 理論的純粋性より確実なビジネスルール実装を優先
+- **将来への配慮**: ドメイン層は純粋性保持、Application層の依存は最小限に制限
+
+**実装方針**:
+```java
+// Application Service層で相互依存を受け入れ
+@Service 
+public class BorrowerService {
+    // Syndicate参加チェックのためSyndicateRepositoryを参照
+    public void deleteBorrower(Long borrowerId) {
+        if (syndicateRepository.existsByBorrowerId(borrowerId)) {
+            throw new BusinessRuleViolationException("参加中のSyndicateがあるため削除できません");
+        }
+        borrowerRepository.deleteById(borrowerId);
+    }
+}
+```
+
+**将来のマイクロサービス化への対応**: Domain Eventsパターンへの移行準備として、現在の実装を最小限に留める。
+
 ---
 
 ## タスク完了時の文書更新確認プロセス

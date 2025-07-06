@@ -3,8 +3,10 @@ package com.example.syndicatelending.loan.service;
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.loan.entity.Loan;
 import com.example.syndicatelending.loan.entity.Drawdown;
+import com.example.syndicatelending.loan.entity.PaymentDetail;
 import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
+import com.example.syndicatelending.loan.repository.PaymentDetailRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +27,12 @@ public class LoanService {
     
     private final LoanRepository loanRepository;
     private final DrawdownRepository drawdownRepository;
+    private final PaymentDetailRepository paymentDetailRepository;
     
-    public LoanService(LoanRepository loanRepository, DrawdownRepository drawdownRepository) {
+    public LoanService(LoanRepository loanRepository, DrawdownRepository drawdownRepository, PaymentDetailRepository paymentDetailRepository) {
         this.loanRepository = loanRepository;
         this.drawdownRepository = drawdownRepository;
+        this.paymentDetailRepository = paymentDetailRepository;
     }
     
     /**
@@ -98,5 +102,15 @@ public class LoanService {
      */
     public List<Loan> getLoansByFacilityIdAndBorrowerId(Long facilityId, Long borrowerId) {
         return loanRepository.findByFacilityIdAndBorrowerId(facilityId, borrowerId);
+    }
+
+    /**
+     * ローンIDに関連するPaymentDetailを取得します。
+     * 
+     * @param loanId ローンID
+     * @return PaymentDetailのリスト
+     */
+    public List<PaymentDetail> getPaymentDetailsByLoanId(Long loanId) {
+        return paymentDetailRepository.findByLoanIdOrderByPaymentNumber(loanId);
     }
 }

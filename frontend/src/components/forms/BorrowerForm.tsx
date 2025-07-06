@@ -3,16 +3,33 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createBorrowerSchema, type CreateBorrowerFormData, creditRatingOptions, defaultBorrowerValues } from '../../schemas/borrower';
 import { borrowerApi } from '../../lib/api';
-import type { ApiError } from '../../types/api';
+import type { ApiError, Borrower, CreateBorrowerRequest, UpdateBorrowerRequest } from '../../types/api';
 
 interface BorrowerFormProps {
-  onSuccess?: (borrower: any) => void;
+  onSuccess?: (borrower: Borrower) => void;
   onCancel?: () => void;
+  editData?: Borrower; // 編集モード用のデータ
+  mode?: 'create' | 'edit'; // モード指定
 }
 
-const BorrowerForm: React.FC<BorrowerFormProps> = ({ onSuccess, onCancel }) => {
+const BorrowerForm: React.FC<BorrowerFormProps> = ({ onSuccess, onCancel, editData, mode = 'create' }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 編集モード用のデフォルト値を生成
+  const getInitialValues = (): CreateBorrowerFormData => {
+    if (mode === 'edit' && editData) {
+      return {
+        name: editData.name,
+        email: editData.email,
+        phoneNumber: editData.phoneNumber,
+        companyId: editData.companyId || '',
+        creditLimit: editData.creditLimit,
+        creditRating: editData.creditRating
+      };
+    }
+    return defaultBorrowerValues;
+  };
 
   const {
     register,
@@ -21,7 +38,7 @@ const BorrowerForm: React.FC<BorrowerFormProps> = ({ onSuccess, onCancel }) => {
     reset,
   } = useForm<CreateBorrowerFormData>({
     resolver: zodResolver(createBorrowerSchema),
-    defaultValues: defaultBorrowerValues,
+    defaultValues: getInitialValues(),
   });
 
   const onSubmit = async (data: CreateBorrowerFormData) => {
@@ -29,9 +46,34 @@ const BorrowerForm: React.FC<BorrowerFormProps> = ({ onSuccess, onCancel }) => {
     setSubmitError(null);
 
     try {
-      const response = await borrowerApi.create(data);
-      const borrower = response.data;
+      let response;
       
+      if (mode === 'edit' && editData) {
+        // 編集モード: update API呼び出し
+        const updateRequest: UpdateBorrowerRequest = {
+          name: data.name,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          companyId: data.companyId,
+          creditLimit: data.creditLimit,
+          creditRating: data.creditRating,
+          version: editData.version // 楽観的ロック用
+        };
+        response = await borrowerApi.update(editData.id, updateRequest);
+      } else {
+        // 新規作成モード: create API呼び出し
+        const createRequest: CreateBorrowerRequest = {
+          name: data.name,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          companyId: data.companyId,
+          creditLimit: data.creditLimit,
+          creditRating: data.creditRating
+        };
+        response = await borrowerApi.create(createRequest);
+      }
+      
+      const borrower = response.data;
       reset();
       onSuccess?.(borrower);
     } catch (error) {
@@ -45,8 +87,12 @@ const BorrowerForm: React.FC<BorrowerFormProps> = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-2">New Borrower Registration</h2>
-        <p className="text-accent-400 text-sm">Enter the borrower's basic information</p>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {mode === 'edit' ? 'Edit Borrower' : 'New Borrower Registration'}
+        </h2>
+        <p className="text-accent-400 text-sm">
+          {mode === 'edit' ? 'Update the borrower information' : 'Enter the borrower\'s basic information'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -179,7 +225,10 @@ const BorrowerForm: React.FC<BorrowerFormProps> = ({ onSuccess, onCancel }) => {
             disabled={isSubmitting}
             className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-primary-900 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            {isSubmitting ? 'Registering...' : 'Register'}
+            {isSubmitting 
+              ? (mode === 'edit' ? 'Updating...' : 'Registering...') 
+              : (mode === 'edit' ? 'Update' : 'Register')
+            }
           </button>
           
           {onCancel && (

@@ -32,5 +32,13 @@ public enum LoanEvent {
      * - ACTIVE/OVERDUE → COMPLETED への遷移トリガー
      * - 全ての元本・利息返済完了時に発火
      */
-    FINAL_PAYMENT
+    FINAL_PAYMENT,
+    
+    /**
+     * 支払い取り消しイベント
+     * - COMPLETED → ACTIVE への遷移トリガー（最終支払い以外の取り消し）
+     * - ACTIVE → DRAFT への遷移トリガー（初回支払い取り消し）
+     * - 支払い取り消し時に発火
+     */
+    PAYMENT_CANCELLED
 }

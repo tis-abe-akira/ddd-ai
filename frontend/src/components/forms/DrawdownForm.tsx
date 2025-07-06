@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createDrawdownSchema, type CreateDrawdownFormData, defaultDrawdownValues, DRAWDOWN_FORM_STEPS, purposeOptions } from '../../schemas/drawdown';
 import FacilitySelectForDrawdown from '../drawdown/FacilitySelectForDrawdown';
 import RepaymentTerms from '../drawdown/RepaymentTerms';
-import { drawdownApi } from '../../lib/api';
-import type { ApiError, Drawdown, CreateDrawdownRequest, Facility } from '../../types/api';
+import { drawdownApi, loanApi } from '../../lib/api';
+import type { ApiError, Drawdown, CreateDrawdownRequest, UpdateDrawdownRequest, Facility, Loan } from '../../types/api';
 
 interface DrawdownFormProps {
   onSuccess?: (drawdown: Drawdown) => void;
   onCancel?: () => void;
+  initialData?: Drawdown;
+  isEditMode?: boolean;
 }
 
-const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
+const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel, initialData, isEditMode = false }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -34,8 +36,52 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
 
   const watchedValues = watch();
 
+  // Initialize form with existing data in edit mode
+  useEffect(() => {
+    const initializeEditForm = async () => {
+      if (isEditMode && initialData) {
+        // Skip facility selection step in edit mode and start from step 2
+        setCurrentStep(2);
+        
+        // Set facility data (not editable in edit mode)
+        setValue('facilityId', initialData.facilityId || 0);
+        setValue('borrowerId', initialData.borrowerId || 0);
+        
+        // Set drawdown data
+        setValue('amount', initialData.amount);
+        setValue('currency', initialData.currency);
+        setValue('purpose', initialData.purpose);
+        setValue('drawdownDate', initialData.transactionDate);
+        
+        // Fetch loan data if available
+        if (initialData.loanId) {
+          try {
+            const loanResponse = await loanApi.getById(initialData.loanId);
+            const loan: Loan = loanResponse.data;
+            
+            // Set loan data from actual loan record
+            setValue('annualInterestRate', typeof loan.annualInterestRate === 'number' ? loan.annualInterestRate : 5.0);
+            setValue('repaymentPeriodMonths', loan.repaymentPeriodMonths || 12);
+            setValue('repaymentCycle', loan.repaymentCycle || 'MONTHLY');
+            setValue('repaymentMethod', loan.repaymentMethod || 'EQUAL_INSTALLMENT');
+          } catch (error) {
+            console.error('Failed to fetch loan data:', error);
+            // Fallback to placeholder values
+            setValue('annualInterestRate', 5.0);
+            setValue('repaymentPeriodMonths', 12);
+            setValue('repaymentCycle', 'MONTHLY');
+            setValue('repaymentMethod', 'EQUAL_INSTALLMENT');
+          }
+        }
+      }
+    };
+
+    initializeEditForm();
+  }, [isEditMode, initialData, setValue]);
+
   const validateCurrentStep = () => {
     const values = getValues();
+    console.log('Current step:', currentStep, 'Values:', values); // Debug log
     switch (currentStep) {
       case 1:
         return values.facilityId !== undefined;
@@ -43,6 +89,17 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
         return values.amount && values.purpose && values.drawdownDate;
       case 3:
         return values.annualInterestRate && values.repaymentPeriodMonths && values.repaymentCycle && values.repaymentMethod;
+      case 4:
+        // Step 4 needs all required values for submission
+        return values.facilityId !== undefined && 
+               values.borrowerId !== undefined &&
+               values.amount && 
+               values.purpose && 
+               values.drawdownDate &&
+               values.annualInterestRate && 
+               values.repaymentPeriodMonths && 
+               values.repaymentCycle && 
+               values.repaymentMethod;
       default:
         return true;
     }
@@ -77,30 +134,57 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
   };
 
   const onSubmit = async (data: CreateDrawdownFormData) => {
+    console.log('Form submitted with data:', data); // Debug log
+    console.log('Edit mode:', isEditMode, 'Initial data:', initialData); // Debug log
+    
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      const drawdownRequest: CreateDrawdownRequest = {
-        facilityId: data.facilityId,
-        borrowerId: data.borrowerId,
-        amount: data.amount,
-        currency: data.currency,
-        purpose: data.purpose,
-        annualInterestRate: data.annualInterestRate,
-        drawdownDate: data.drawdownDate,
-        repaymentPeriodMonths: data.repaymentPeriodMonths,
-        repaymentCycle: data.repaymentCycle,
-        repaymentMethod: data.repaymentMethod,
-      };
+      let response;
       
-      const response = await drawdownApi.create(drawdownRequest);
-      const newDrawdown = response.data;
+      if (isEditMode && initialData) {
+        // Update existing drawdown
+        const updateRequest: UpdateDrawdownRequest = {
+          amount: data.amount,
+          currency: data.currency,
+          purpose: data.purpose,
+          annualInterestRate: data.annualInterestRate,
+          drawdownDate: data.drawdownDate,
+          repaymentPeriodMonths: data.repaymentPeriodMonths,
+          repaymentCycle: data.repaymentCycle,
+          repaymentMethod: data.repaymentMethod,
+          version: initialData.version,
+        };
+        
+        response = await drawdownApi.update(initialData.id, updateRequest);
+      } else {
+        // Create new drawdown
+        const createRequest: CreateDrawdownRequest = {
+          facilityId: data.facilityId,
+          borrowerId: data.borrowerId,
+          amount: data.amount,
+          currency: data.currency,
+          purpose: data.purpose,
+          annualInterestRate: data.annualInterestRate,
+          drawdownDate: data.drawdownDate,
+          repaymentPeriodMonths: data.repaymentPeriodMonths,
+          repaymentCycle: data.repaymentCycle,
+          repaymentMethod: data.repaymentMethod,
+        };
+        
+        response = await drawdownApi.create(createRequest);
+      }
       
-      reset();
-      setCurrentStep(1);
-      setSelectedFacility(null);
-      onSuccess?.(newDrawdown);
+      const updatedDrawdown = response.data;
+      
+      if (!isEditMode) {
+        reset();
+        setCurrentStep(1);
+        setSelectedFacility(null);
+      }
+      
+      onSuccess?.(updatedDrawdown);
     } catch (error) {
       const apiError = error as ApiError;
       setSubmitError(apiError.message || 'An error occurred');
@@ -321,22 +405,27 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
   };
 
   const isStepValid = validateCurrentStep();
+  
+  // Debug info in development
+  console.log('Step valid:', isStepValid, 'Current step:', currentStep, 'Is submitting:', isSubmitting);
 
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
       {/* Step Indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          {DRAWDOWN_FORM_STEPS.map((step, index) => (
+          {DRAWDOWN_FORM_STEPS
+            .filter(step => !isEditMode || step.id !== 1) // Skip Step 1 in edit mode
+            .map((step, index, filteredSteps) => (
             <div key={step.id} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 currentStep === step.id
                   ? 'bg-accent-500 text-white'
-                  : currentStep > step.id
+                  : currentStep > step.id || (isEditMode && step.id === 1)
                   ? 'bg-success text-white'
                   : 'bg-secondary-600 text-accent-400'
               }`}>
-                {currentStep > step.id ? (
+                {currentStep > step.id || (isEditMode && step.id === 1) ? (
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
@@ -345,7 +434,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
                 )}
               </div>
               
-              {index < DRAWDOWN_FORM_STEPS.length - 1 && (
+              {index < filteredSteps.length - 1 && (
                 <div className={`w-16 h-1 mx-2 ${
                   currentStep > step.id ? 'bg-success' : 'bg-secondary-600'
                 }`} />
@@ -356,10 +445,10 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
         
         <div className="mt-4">
           <h2 className="text-xl font-bold text-white">
-            {DRAWDOWN_FORM_STEPS[currentStep - 1].title}
+            {DRAWDOWN_FORM_STEPS.find(step => step.id === currentStep)?.title || 'Unknown Step'}
           </h2>
           <p className="text-accent-400 text-sm">
-            {DRAWDOWN_FORM_STEPS[currentStep - 1].description}
+            {DRAWDOWN_FORM_STEPS.find(step => step.id === currentStep)?.description || ''}
           </p>
         </div>
       </div>
@@ -379,7 +468,7 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
 
         {/* Navigation Buttons */}
         <div className="flex gap-4">
-          {currentStep > 1 && (
+          {currentStep > (isEditMode ? 2 : 1) && (
             <button
               type="button"
               onClick={prevStep}
@@ -404,7 +493,9 @@ const DrawdownForm: React.FC<DrawdownFormProps> = ({ onSuccess, onCancel }) => {
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'Executing Drawdown...' : 'Execute Drawdown'}
+{isSubmitting 
+                ? (isEditMode ? 'Updating Drawdown...' : 'Executing Drawdown...') 
+                : (isEditMode ? 'Update Drawdown' : 'Execute Drawdown')}
             </button>
           )}
           

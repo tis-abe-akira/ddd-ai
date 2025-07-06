@@ -42,20 +42,11 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
 
     const monthlyRate = annualInterestRate / 12;
     
-    if (repaymentMethod === 'BULLET') {
+    if (repaymentMethod === 'BULLET_PAYMENT') {
       // バレット返済：満期に一括返済
       const totalInterest = amount * annualInterestRate * (repaymentPeriodMonths / 12);
       return {
         monthlyPayment: 0,
-        totalPayment: amount + totalInterest,
-        totalInterest
-      };
-    } else if (repaymentMethod === 'INTEREST_ONLY') {
-      // 利息のみ返済
-      const monthlyInterest = amount * monthlyRate;
-      const totalInterest = monthlyInterest * repaymentPeriodMonths;
-      return {
-        monthlyPayment: monthlyInterest,
         totalPayment: amount + totalInterest,
         totalInterest
       };
@@ -213,11 +204,10 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-primary-900 rounded-lg p-4">
               <div className="text-accent-400 text-sm">
-                {repaymentMethod === 'BULLET' ? '最終返済額' : 
-                 repaymentMethod === 'INTEREST_ONLY' ? '月次利息' : '月次返済額'}
+                {repaymentMethod === 'BULLET_PAYMENT' ? '最終返済額' : '月次返済額'}
               </div>
               <div className="text-white text-xl font-bold">
-                {repaymentMethod === 'BULLET' 
+                {repaymentMethod === 'BULLET_PAYMENT' 
                   ? formatCurrency(estimation.totalPayment)
                   : formatCurrency(estimation.monthlyPayment)
                 }

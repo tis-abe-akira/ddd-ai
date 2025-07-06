@@ -7,6 +7,8 @@ interface DrawdownTableProps {
   searchTerm?: string;
   facilityFilter?: number;
   onView?: (drawdown: Drawdown) => void;
+  onEdit?: (drawdown: Drawdown) => void;
+  onDelete?: (drawdown: Drawdown) => void;
   refreshTrigger?: number;
 }
 
@@ -14,6 +16,8 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
   searchTerm = '',
   facilityFilter,
   onView,
+  onEdit,
+  onDelete,
   refreshTrigger = 0
 }) => {
   const navigate = useNavigate();
@@ -66,32 +70,73 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
     }).format(amount);
   };
 
-  const getStatusColor = (transactionDate: string) => {
-    const drawdownDate = new Date(transactionDate);
-    const today = new Date();
-    const daysDiff = Math.ceil((drawdownDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff > 0) {
-      return 'bg-warning/20 text-warning'; // 未来（予定）
-    } else if (daysDiff === 0) {
-      return 'bg-accent-500/20 text-accent-500'; // 今日
-    } else {
-      return 'bg-success/20 text-success'; // 実行済み
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-warning/20 text-warning';
+      case 'PROCESSING':
+        return 'bg-accent-500/20 text-accent-500';
+      case 'COMPLETED':
+        return 'bg-success/20 text-success';
+      case 'FAILED':
+        return 'bg-error/20 text-error';
+      case 'CANCELLED':
+        return 'bg-secondary-600 text-accent-400';
+      case 'REFUNDED':
+        return 'bg-purple-500/20 text-purple-400';
+      default:
+        return 'bg-secondary-600 text-accent-400';
     }
   };
 
-  const getStatusLabel = (transactionDate: string) => {
-    const drawdownDate = new Date(transactionDate);
-    const today = new Date();
-    const daysDiff = Math.ceil((drawdownDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff > 0) {
-      return 'Scheduled';
-    } else if (daysDiff === 0) {
-      return 'Executing';
-    } else {
-      return 'Completed';
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return { 
+          label: 'Pending', 
+          tooltip: 'Pending - Transaction has been created but not yet started processing.' 
+        };
+      case 'PROCESSING':
+        return { 
+          label: 'Processing', 
+          tooltip: 'Processing - Transaction is currently being executed.' 
+        };
+      case 'COMPLETED':
+        return { 
+          label: 'Completed', 
+          tooltip: 'Completed - Transaction has been successfully executed and finalized.' 
+        };
+      case 'FAILED':
+        return { 
+          label: 'Failed', 
+          tooltip: 'Failed - Transaction execution failed due to system error or business rule violation.' 
+        };
+      case 'CANCELLED':
+        return { 
+          label: 'Cancelled', 
+          tooltip: 'Cancelled - Transaction was intentionally cancelled by user or system.' 
+        };
+      case 'REFUNDED':
+        return { 
+          label: 'Refunded', 
+          tooltip: 'Refunded - Completed transaction has been refunded due to correction or contract change.' 
+        };
+      default:
+        return { 
+          label: status, 
+          tooltip: 'Unknown transaction status' 
+        };
     }
+  };
+
+  const canEdit = (status: string) => {
+    // PENDING, FAILED状態では編集可能
+    return status === 'PENDING' || status === 'FAILED';
+  };
+
+  const canDelete = (status: string) => {
+    // PENDING, FAILED状態では削除可能（COMPLETED, CANCELLED, REFUNDEDは削除不可）
+    return status === 'PENDING' || status === 'FAILED';
   };
 
   const filteredDrawdowns = drawdowns.filter(drawdown => {
@@ -226,59 +271,51 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(drawdown.transactionDate)}`}>
-                          {getStatusLabel(drawdown.transactionDate)}
+                        <span 
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-help ${getStatusColor(drawdown.status)}`}
+                          title={getStatusInfo(drawdown.status).tooltip}
+                        >
+                          {getStatusInfo(drawdown.status).label}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          {onView && (
+                          {onEdit && canEdit(drawdown.status) && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onView(drawdown);
+                                onEdit(drawdown);
                               }}
                               className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
-                              title="View Details"
+                              title="Edit"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                             </button>
                           )}
-                          
-                          {/* AmountPie詳細モーダル（簡易版） */}
-                          <div className="group relative">
-                            <button 
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
+                          {onDelete && canDelete(drawdown.status) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(drawdown);
+                              }}
+                              className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
+                              title="Delete"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
-                            
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-10">
-                              <div className="bg-secondary-600 border border-secondary-500 rounded-lg p-3 min-w-64 shadow-lg">
-                                <div className="text-white text-sm font-medium mb-2">Investor Allocation Details</div>
-                                <div className="space-y-1">
-                                  {drawdown.amountPies?.slice(0, 5).map((pie, index) => (
-                                    <div key={index} className="flex justify-between text-xs">
-                                      <span className="text-accent-400">Investor #{pie.investorId}</span>
-                                      <span className="text-white">{formatCurrency(pie.amount, drawdown.currency)}</span>
-                                    </div>
-                                  )) || []}
-                                  {(drawdown.amountPies?.length || 0) > 5 && (
-                                    <div className="text-accent-400 text-xs text-center">
-                                      +{(drawdown.amountPies?.length || 0) - 5} more...
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                          )}
+                          {(!canEdit(drawdown.status) && !canDelete(drawdown.status)) && (
+                            <div className="text-accent-400 text-xs">
+                              {drawdown.status === 'PROCESSING' ? 'Processing...' : 
+                               drawdown.status === 'COMPLETED' ? 'Completed' : 
+                               drawdown.status === 'CANCELLED' ? 'Cancelled' : 
+                               'No Actions'}
                             </div>
-                          </div>
+                          )}
                         </div>
                       </td>
                     </tr>

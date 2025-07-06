@@ -51,6 +51,19 @@ public class PaymentDetail {
     @Convert(converter = MoneyAttributeConverter.class)
     private Money remainingBalance;
 
+    /** 支払い状態 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    /** 実際の支払い日（支払い済みの場合のみ設定） */
+    @Column(name = "actual_payment_date")
+    private LocalDate actualPaymentDate;
+
+    /** 関連するPayment ID（支払い済みの場合のみ設定） */
+    @Column(name = "payment_id")
+    private Long paymentId;
+
     /** レコード作成日時 */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -163,10 +176,70 @@ public class PaymentDetail {
         this.updatedAt = updatedAt;
     }
 
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public LocalDate getActualPaymentDate() {
+        return actualPaymentDate;
+    }
+
+    public void setActualPaymentDate(LocalDate actualPaymentDate) {
+        this.actualPaymentDate = actualPaymentDate;
+    }
+
+    public Long getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(Long paymentId) {
+        this.paymentId = paymentId;
+    }
+
     /**
      * 総返済額（元本 + 利息）を計算する。
      */
     public Money getTotalPayment() {
         return principalPayment.add(interestPayment);
+    }
+
+    /**
+     * 支払い可能かどうかを判定
+     * @return 支払い可能な場合true
+     */
+    public boolean isPayable() {
+        return paymentStatus.isPayable();
+    }
+
+    /**
+     * 支払い済みかどうかを判定
+     * @return 支払い済みの場合true
+     */
+    public boolean isPaid() {
+        return paymentStatus.isPaid();
+    }
+
+    /**
+     * 支払いを完了とマークする
+     * @param paymentDate 実際の支払い日
+     * @param paymentId 関連するPayment ID
+     */
+    public void markAsPaid(LocalDate paymentDate, Long paymentId) {
+        this.paymentStatus = PaymentStatus.PAID;
+        this.actualPaymentDate = paymentDate;
+        this.paymentId = paymentId;
+    }
+
+    /**
+     * 支払いを未払い状態に戻す（支払い取り消し時）
+     */
+    public void markAsUnpaid() {
+        this.paymentStatus = PaymentStatus.PENDING;
+        this.actualPaymentDate = null;
+        this.paymentId = null;
     }
 }

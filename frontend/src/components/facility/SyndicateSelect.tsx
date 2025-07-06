@@ -6,9 +6,10 @@ interface SyndicateSelectProps {
   value?: number;
   onChange: (syndicateId: number | undefined) => void;
   error?: string;
+  disabled?: boolean;
 }
 
-const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, error }) => {
+const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, error, disabled = false }) => {
   const [syndicates, setSyndicates] = useState<Syndicate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,8 +33,10 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
   };
 
   const filteredSyndicates = syndicates.filter(syndicate =>
-    syndicate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    syndicate.id.toString().includes(searchTerm)
+    // DRAFTステータスのSyndicateのみ表示（1 Syndicate = 1 Facilityのビジネスルール）
+    syndicate.status === 'DRAFT' &&
+    (syndicate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     syndicate.id.toString().includes(searchTerm))
   );
 
   const selectedSyndicate = syndicates.find(s => s.id === value);
@@ -46,17 +49,16 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
     });
   };
 
-  const getStatusColor = (syndicate: Syndicate) => {
-    const daysSinceCreation = Math.floor(
-      (Date.now() - new Date(syndicate.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysSinceCreation <= 7) {
-      return 'text-success';
-    } else if (daysSinceCreation <= 30) {
-      return 'text-accent-500';
-    } else {
-      return 'text-accent-400';
+  const getStatusDisplay = (syndicate: Syndicate) => {
+    switch (syndicate.status) {
+      case 'DRAFT':
+        return { text: 'Draft', color: 'text-success', tooltip: 'Available for facility creation' };
+      case 'ACTIVE':
+        return { text: 'Active', color: 'text-accent-500', tooltip: 'Already used for facility creation' };
+      case 'CLOSED':
+        return { text: 'Closed', color: 'text-accent-400', tooltip: 'No longer active' };
+      default:
+        return { text: 'Unknown', color: 'text-accent-400', tooltip: 'Unknown status' };
     }
   };
 
@@ -69,9 +71,12 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
       {/* Select Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 text-left bg-secondary-600 border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 transition-colors ${
-          error ? 'border-error' : 'border-secondary-500'
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-4 py-3 text-left border rounded-lg focus:outline-none transition-colors ${
+          disabled 
+            ? 'bg-secondary-700 border-secondary-600 cursor-not-allowed opacity-60' 
+            : `bg-secondary-600 border-secondary-500 focus:ring-2 focus:ring-accent-500 ${error ? 'border-error' : ''}`
         }`}
       >
         <div className="flex items-center justify-between">
@@ -86,8 +91,11 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                   ID: {selectedSyndicate.id} | メンバー: {selectedSyndicate.memberInvestorIds.length}名
                 </div>
               </div>
-              <div className={`ml-auto px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedSyndicate)}`}>
-                組成済み
+              <div 
+                className={`ml-auto px-2 py-1 rounded text-xs font-medium cursor-help ${getStatusDisplay(selectedSyndicate).color}`}
+                title={getStatusDisplay(selectedSyndicate).tooltip}
+              >
+                {getStatusDisplay(selectedSyndicate).text}
               </div>
             </div>
           ) : (
@@ -100,7 +108,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
       </button>
 
       {/* Dropdown */}
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-10 w-full mt-1 bg-secondary-600 border border-secondary-500 rounded-lg shadow-lg max-h-96 overflow-hidden">
           {/* Search Input */}
           <div className="p-3 border-b border-secondary-500">
@@ -124,7 +132,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
               <div className="p-4 text-center text-accent-400">読み込み中...</div>
             ) : filteredSyndicates.length === 0 ? (
               <div className="p-4 text-center text-accent-400">
-                {searchTerm ? '検索結果が見つかりません' : 'シンジケートが組成されていません'}
+                {searchTerm ? '検索結果が見つかりません' : 'Facility組成可能なシンジケートがありません'}
               </div>
             ) : (
               filteredSyndicates.map((syndicate) => (
@@ -154,11 +162,14 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(syndicate)}`}>
-                        ID: {syndicate.id}
+                      <div 
+                        className={`px-2 py-1 rounded text-xs font-medium cursor-help ${getStatusDisplay(syndicate).color}`}
+                        title={getStatusDisplay(syndicate).tooltip}
+                      >
+                        {getStatusDisplay(syndicate).text}
                       </div>
                       <div className="text-accent-400 text-xs mt-1">
-                        v{syndicate.version}
+                        ID: {syndicate.id} | v{syndicate.version}
                       </div>
                     </div>
                   </div>

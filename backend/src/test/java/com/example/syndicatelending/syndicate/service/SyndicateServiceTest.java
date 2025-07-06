@@ -4,6 +4,8 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.party.repository.InvestorRepository;
+import com.example.syndicatelending.party.repository.BorrowerRepository;
+import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.entity.InvestorType;
 import com.example.syndicatelending.syndicate.dto.UpdateSyndicateRequest;
@@ -27,11 +29,15 @@ class SyndicateServiceTest {
     private SyndicateRepository syndicateRepository;
     @Mock
     private InvestorRepository investorRepository;
+    @Mock
+    private BorrowerRepository borrowerRepository;
+    @Mock
+    private FacilityRepository facilityRepository;
     private SyndicateService syndicateService;
 
     @BeforeEach
     void setUp() {
-        syndicateService = new SyndicateService(syndicateRepository, investorRepository);
+        syndicateService = new SyndicateService(syndicateRepository, investorRepository, borrowerRepository, facilityRepository);
     }
 
     @Test

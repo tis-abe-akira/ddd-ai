@@ -7,11 +7,14 @@ import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.loan.dto.CreateDrawdownRequest;
+import com.example.syndicatelending.loan.dto.UpdateDrawdownRequest;
 import com.example.syndicatelending.loan.entity.Drawdown;
 import com.example.syndicatelending.loan.entity.Loan;
+import com.example.syndicatelending.loan.entity.RepaymentCycle;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.loan.repository.LoanRepository;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
+import com.example.syndicatelending.transaction.entity.TransactionStatus;
 import com.example.syndicatelending.loan.entity.AmountPie;
 import com.example.syndicatelending.loan.dto.AmountPieDto;
 import com.example.syndicatelending.facility.entity.SharePie;
@@ -201,6 +204,211 @@ public class DrawdownService {
         return drawdownRepository.findByFacilityId(facilityId);
     }
 
+    /**
+     * ドローダウンの削除
+     * 
+     * ドローダウンを削除し、関連するデータを適切にクリーンアップします。
+     * - PENDING, FAILED状態のドローダウンのみ削除可能
+     * - 投資家の投資額を元に戻す
+     * - 関連するローンとPaymentDetailも削除
+     * 
+     * @param id 削除するドローダウンのID
+     * @throws ResourceNotFoundException ドローダウンが存在しない場合
+     * @throws BusinessRuleViolationException 削除不可能な状態の場合
+     */
+    @Transactional
+    public void deleteDrawdown(Long id) {
+        // 1. ドローダウンの存在確認
+        Drawdown drawdown = drawdownRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Drawdown not found with id: " + id));
+
+        // 2. 削除可能状態の確認 (PENDING, FAILED のみ削除可能)
+        if (!canDelete(drawdown.getStatus())) {
+            throw new BusinessRuleViolationException(
+                    "Cannot delete drawdown with status: " + drawdown.getStatus() + 
+                    ". Only PENDING or FAILED drawdowns can be deleted.");
+        }
+
+        // 3. 投資家の投資額を元に戻す
+        revertInvestorAmounts(drawdown.getAmountPies());
+
+        // 4. 関連するローンの削除 (ローンが存在する場合)
+        if (drawdown.getLoanId() != null) {
+            loanRepository.deleteById(drawdown.getLoanId());
+        }
+
+        // 5. Facilityの状態をDRAFTに戻す（他にDrawdownが無い場合のみ）
+        revertFacilityStateIfNeeded(drawdown.getFacilityId(), drawdown.getId());
+
+        // 6. ドローダウンの削除 (AmountPieはCascadeで自動削除)
+        drawdownRepository.delete(drawdown);
+    }
+
+    /**
+     * 削除可能状態かどうかを判定
+     */
+    private boolean canDelete(TransactionStatus status) {
+        return status == TransactionStatus.PENDING || status == TransactionStatus.FAILED;
+    }
+
+    /**
+     * ドローダウンの更新
+     * 
+     * PENDING, FAILED状態のドローダウンのみ更新可能
+     * 既存の投資額配分を調整し、新しい値で再計算する
+     * 
+     * @param id ドローダウンID
+     * @param request 更新リクエスト
+     * @return 更新されたDrawdownエンティティ
+     * @throws ResourceNotFoundException ドローダウンが存在しない場合
+     * @throws BusinessRuleViolationException 更新不可能な状態の場合
+     */
+    @Transactional
+    public Drawdown updateDrawdown(Long id, UpdateDrawdownRequest request) {
+        // 1. ドローダウンの存在確認
+        Drawdown drawdown = drawdownRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Drawdown not found with id: " + id));
+
+        // 2. 更新可能状態の確認 (PENDING, FAILED のみ更新可能)
+        if (!canEdit(drawdown.getStatus())) {
+            throw new BusinessRuleViolationException(
+                    "Cannot update drawdown with status: " + drawdown.getStatus() + 
+                    ". Only PENDING or FAILED drawdowns can be updated.");
+        }
+
+        // 3. 楽観的ロックの確認
+        if (!drawdown.getVersion().equals(request.getVersion())) {
+            throw new BusinessRuleViolationException(
+                    "Drawdown has been modified by another user. Please refresh and try again.");
+        }
+
+        // 4. 既存の投資額を元に戻す
+        revertInvestorAmounts(drawdown.getAmountPies());
+
+        // 5. ドローダウンの更新
+        drawdown.setAmount(Money.of(request.getAmount()));
+        drawdown.setCurrency(request.getCurrency());
+        drawdown.setPurpose(request.getPurpose());
+        drawdown.setTransactionDate(request.getDrawdownDate());
+
+        // 6. 関連するローンの更新
+        if (drawdown.getLoanId() != null) {
+            Loan loan = loanRepository.findById(drawdown.getLoanId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Loan not found with id: " + drawdown.getLoanId()));
+            
+            loan.setPrincipalAmount(Money.of(request.getAmount()));
+            loan.setAnnualInterestRate(Percentage.of(request.getAnnualInterestRate()));
+            loan.setDrawdownDate(request.getDrawdownDate());
+            loan.setRepaymentPeriodMonths(request.getRepaymentPeriodMonths());
+            loan.setRepaymentCycle(RepaymentCycle.valueOf(request.getRepaymentCycle()));
+            loan.setRepaymentMethod(request.getRepaymentMethod());
+            loan.setCurrency(request.getCurrency());
+            
+            // 支払いスケジュールを再生成
+            loan.generatePaymentSchedule();
+            loanRepository.save(loan);
+        }
+
+        // 7. AmountPieの再計算
+        List<AmountPie> newAmountPies = new ArrayList<>();
+        if (request.getAmountPies() != null && !request.getAmountPies().isEmpty()) {
+            // 明示的指定ありの場合
+            BigDecimal total = request.getAmountPies().stream().map(AmountPieDto::getAmount).reduce(BigDecimal.ZERO,
+                    BigDecimal::add);
+            if (total.compareTo(request.getAmount()) != 0) {
+                throw new BusinessRuleViolationException("AmountPieの合計がDrawdown金額と一致しません");
+            }
+            for (AmountPieDto dto : request.getAmountPies()) {
+                AmountPie pie = new AmountPie();
+                pie.setInvestorId(dto.getInvestorId());
+                pie.setAmount(dto.getAmount());
+                pie.setCurrency(dto.getCurrency());
+                pie.setDrawdown(drawdown);
+                newAmountPies.add(pie);
+            }
+        } else {
+            // SharePieで按分
+            List<SharePie> sharePies = sharePieRepository.findByFacility_Id(drawdown.getFacilityId());
+            BigDecimal total = BigDecimal.ZERO;
+            for (SharePie sharePie : sharePies) {
+                AmountPie pie = new AmountPie();
+                pie.setInvestorId(sharePie.getInvestorId());
+                BigDecimal investorAmount = request.getAmount().multiply(sharePie.getShare().getValue());
+                investorAmount = investorAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+                pie.setAmount(investorAmount);
+                pie.setCurrency(request.getCurrency());
+                pie.setDrawdown(drawdown);
+                newAmountPies.add(pie);
+                total = total.add(investorAmount);
+            }
+            // 端数調整
+            if (!newAmountPies.isEmpty()) {
+                AmountPie last = newAmountPies.get(newAmountPies.size() - 1);
+                BigDecimal diff = request.getAmount().subtract(total);
+                last.setAmount(last.getAmount().add(diff));
+            }
+        }
+
+        // 8. 既存のAmountPieを削除し、新しいものに置き換え
+        // Hibernateのorphan removalを適切に処理するため、既存のアイテムを個別に削除
+        List<AmountPie> existingAmountPies = drawdown.getAmountPies();
+        existingAmountPies.clear();
+        
+        // 新しいAmountPieを追加
+        for (AmountPie newPie : newAmountPies) {
+            newPie.setDrawdown(drawdown);
+            existingAmountPies.add(newPie);
+        }
+
+        // 9. 更新されたドローダウンを保存
+        Drawdown savedDrawdown = drawdownRepository.save(drawdown);
+
+        // 10. 新しい投資額配分を適用
+        updateInvestorAmounts(newAmountPies);
+
+        return savedDrawdown;
+    }
+
+    /**
+     * 編集可能状態かどうかを判定
+     */
+    private boolean canEdit(TransactionStatus status) {
+        return status == TransactionStatus.PENDING || status == TransactionStatus.FAILED;
+    }
+
+    /**
+     * Facilityの状態をDRAFTに戻す（必要な場合のみ）
+     * 
+     * 削除対象以外に他のDrawdownが存在しない場合のみ、FacilityをDRAFT状態に戻す
+     */
+    private void revertFacilityStateIfNeeded(Long facilityId, Long excludeDrawdownId) {
+        // 削除対象以外のDrawdownが存在するかチェック
+        List<Drawdown> otherDrawdowns = drawdownRepository.findByFacilityId(facilityId)
+                .stream()
+                .filter(d -> !d.getId().equals(excludeDrawdownId))
+                .toList();
+        
+        // 他にDrawdownが無い場合のみ、FacilityをDRAFTに戻す
+        if (otherDrawdowns.isEmpty()) {
+            facilityService.revertToDraft(facilityId);
+        }
+    }
+
+    /**
+     * 投資家の投資額を元に戻す
+     */
+    private void revertInvestorAmounts(List<AmountPie> amountPies) {
+        for (AmountPie amountPie : amountPies) {
+            Investor investor = investorRepository.findById(amountPie.getInvestorId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Investor not found with id: " + amountPie.getInvestorId()));
+            
+            Money investmentAmount = Money.of(amountPie.getAmount());
+            investor.decreaseInvestmentAmount(investmentAmount);
+            investorRepository.save(investor);
+        }
+    }
+
     private void validateDrawdownRequest(CreateDrawdownRequest request) {
         Facility facility = facilityRepository.findById(request.getFacilityId())
                 .orElseThrow(
@@ -242,7 +450,7 @@ public class DrawdownService {
                 Percentage.of(request.getAnnualInterestRate()),
                 request.getDrawdownDate(),
                 request.getRepaymentPeriodMonths(),
-                request.getRepaymentCycle(),
+                RepaymentCycle.valueOf(request.getRepaymentCycle()),
                 request.getRepaymentMethod(),
                 request.getCurrency());
     }

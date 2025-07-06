@@ -36,4 +36,16 @@ public class PaymentController {
         Payment payment = paymentService.getPaymentById(id);
         return ResponseEntity.ok(payment);
     }
+
+    @PostMapping("/scheduled/{paymentDetailId}")
+    public ResponseEntity<Payment> processScheduledPayment(@PathVariable Long paymentDetailId) {
+        Payment payment = paymentService.processScheduledPayment(paymentDetailId);
+        return ResponseEntity.ok(payment);
+    }
+
+    @DeleteMapping("/{paymentId}/cancel")
+    public ResponseEntity<Payment> cancelPayment(@PathVariable Long paymentId) {
+        Payment payment = paymentService.cancelPayment(paymentId);
+        return ResponseEntity.ok(payment);
+    }
 }

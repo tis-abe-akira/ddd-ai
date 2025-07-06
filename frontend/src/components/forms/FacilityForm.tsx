@@ -1,21 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFacilitySchema, type CreateFacilityFormData, defaultFacilityValues, FACILITY_FORM_STEPS, currencyOptions } from '../../schemas/facility';
 import SyndicateSelect from '../facility/SyndicateSelect';
 import SharePieAllocation from '../facility/SharePieAllocation';
-import { facilityApi } from '../../lib/api';
-import type { ApiError, Facility, CreateFacilityRequest } from '../../types/api';
+import { facilityApi, syndicateApi, borrowerApi } from '../../lib/api';
+import type { ApiError, Facility, CreateFacilityRequest, UpdateFacilityRequest, SyndicateDetail, Borrower } from '../../types/api';
 
 interface FacilityFormProps {
   onSuccess?: (facility: Facility) => void;
   onCancel?: () => void;
+  mode?: 'create' | 'edit';
+  editData?: Facility;
 }
 
-const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
+const FacilityForm: React.FC<FacilityFormProps> = ({ 
+  onSuccess, 
+  onCancel, 
+  mode = 'create', 
+  editData 
+}) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedSyndicate, setSelectedSyndicate] = useState<SyndicateDetail | null>(null);
+  const [selectedBorrower, setSelectedBorrower] = useState<Borrower | null>(null);
+
+  const getInitialValues = (): CreateFacilityFormData => {
+    if (mode === 'edit' && editData) {
+      return {
+        syndicateId: editData.syndicateId,
+        commitment: editData.commitment,
+        currency: editData.currency,
+        startDate: editData.startDate,
+        endDate: editData.endDate,
+        interestTerms: editData.interestTerms,
+        sharePies: editData.sharePies?.map(pie => ({
+          investorId: pie.investorId,
+          share: pie.share
+        })) || []
+      };
+    }
+    return defaultFacilityValues;
+  };
 
   const {
     register,
@@ -27,11 +54,40 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
     reset,
   } = useForm<CreateFacilityFormData>({
     resolver: zodResolver(createFacilitySchema),
-    defaultValues: defaultFacilityValues,
+    defaultValues: getInitialValues(),
     mode: 'onChange'
   });
 
   const watchedValues = watch();
+
+  // Fetch syndicate details when syndicateId changes
+  useEffect(() => {
+    const fetchSyndicateAndBorrower = async () => {
+      if (watchedValues.syndicateId) {
+        try {
+          const syndicateResponse = await syndicateApi.getById(watchedValues.syndicateId);
+          const syndicateData = syndicateResponse.data;
+          setSelectedSyndicate(syndicateData);
+          
+          if (syndicateData.borrowerId) {
+            const borrowerResponse = await borrowerApi.getById(syndicateData.borrowerId);
+            setSelectedBorrower(borrowerResponse.data);
+          } else {
+            setSelectedBorrower(null);
+          }
+        } catch (error) {
+          console.error('Failed to fetch syndicate or borrower details:', error);
+          setSelectedSyndicate(null);
+          setSelectedBorrower(null);
+        }
+      } else {
+        setSelectedSyndicate(null);
+        setSelectedBorrower(null);
+      }
+    };
+
+    fetchSyndicateAndBorrower();
+  }, [watchedValues.syndicateId]);
 
   const validateCurrentStep = () => {
     const values = getValues();
@@ -64,25 +120,46 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
     setSubmitError(null);
 
     try {
-      const facilityRequest: CreateFacilityRequest = {
-        syndicateId: data.syndicateId,
-        commitment: data.commitment,
-        currency: data.currency,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        interestTerms: data.interestTerms,
-        sharePies: data.sharePies.map(pie => ({
-          investorId: pie.investorId,
-          share: pie.share
-        }))
-      };
-      
-      const response = await facilityApi.create(facilityRequest);
-      const newFacility = response.data;
-      
-      reset();
-      setCurrentStep(1);
-      onSuccess?.(newFacility);
+      if (mode === 'create') {
+        const facilityRequest: CreateFacilityRequest = {
+          syndicateId: data.syndicateId,
+          commitment: data.commitment,
+          currency: data.currency,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          interestTerms: data.interestTerms,
+          sharePies: data.sharePies.map(pie => ({
+            investorId: pie.investorId,
+            share: pie.share
+          }))
+        };
+        
+        const response = await facilityApi.create(facilityRequest);
+        const newFacility = response.data;
+        
+        reset();
+        setCurrentStep(1);
+        onSuccess?.(newFacility);
+      } else if (mode === 'edit' && editData) {
+        const updateRequest: UpdateFacilityRequest = {
+          syndicateId: data.syndicateId,
+          commitment: data.commitment,
+          currency: data.currency,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          interestTerms: data.interestTerms,
+          sharePies: data.sharePies.map(pie => ({
+            investorId: pie.investorId,
+            share: pie.share
+          })),
+          version: editData.version
+        };
+        
+        const response = await facilityApi.update(editData.id, updateRequest);
+        const updatedFacility = response.data;
+        
+        onSuccess?.(updatedFacility);
+      }
     } catch (error) {
       const apiError = error as ApiError;
       setSubmitError(apiError.message || 'An error occurred');
@@ -106,12 +183,18 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Syndicate Selection</h3>
-              <p className="text-accent-400 text-sm mb-6">Select the syndicate for this facility</p>
+              <p className="text-accent-400 text-sm mb-6">
+                {mode === 'edit' 
+                  ? 'Syndicate cannot be changed after creation' 
+                  : 'Select the syndicate for this facility'
+                }
+              </p>
               
               <SyndicateSelect
                 value={watchedValues.syndicateId}
                 onChange={(syndicateId) => setValue('syndicateId', syndicateId)}
                 error={errors.syndicateId?.message}
+                disabled={mode === 'edit'}
               />
             </div>
           </div>
@@ -129,6 +212,33 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
                 <div>
                   <label htmlFor="commitment" className="block text-sm font-medium text-white mb-2">
                     Facility Amount <span className="text-error">*</span>
+                    {/* Credit Limit Display - Inline with label */}
+                    {selectedBorrower && (
+                      <span className="ml-4 text-xs">
+                        <span className="text-accent-400">Credit Limit:</span>
+                        <span className="ml-1 font-bold text-white">
+                          {new Intl.NumberFormat('ja-JP', {
+                            style: 'currency',
+                            currency: 'JPY', // Borrower doesn't have currency field, use JPY
+                            minimumFractionDigits: 0,
+                            notation: 'compact'
+                          }).format(selectedBorrower.creditLimit)}
+                        </span>
+                        <span className="ml-2 text-accent-400">Available:</span>
+                        <span className={`ml-1 font-medium ${
+                          (selectedBorrower.creditLimit - selectedBorrower.currentFacilityAmount) > 0 
+                            ? 'text-success' 
+                            : 'text-warning'
+                        }`}>
+                          {new Intl.NumberFormat('ja-JP', {
+                            style: 'currency',
+                            currency: 'JPY', // Borrower doesn't have currency field, use JPY
+                            minimumFractionDigits: 0,
+                            notation: 'compact'
+                          }).format(selectedBorrower.creditLimit - selectedBorrower.currentFacilityAmount)}
+                        </span>
+                      </span>
+                    )}
                   </label>
                   <input
                     {...register('commitment', { valueAsNumber: true })}
@@ -380,7 +490,10 @@ const FacilityForm: React.FC<FacilityFormProps> = ({ onSuccess, onCancel }) => {
               disabled={isSubmitting || !isStepValid}
               className="flex-1 bg-success hover:bg-success/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              {isSubmitting ? 'Creating Facility...' : 'Create Facility'}
+              {isSubmitting 
+                ? (mode === 'edit' ? 'Updating Facility...' : 'Creating Facility...') 
+                : (mode === 'edit' ? 'Update Facility' : 'Create Facility')
+              }
             </button>
           )}
           

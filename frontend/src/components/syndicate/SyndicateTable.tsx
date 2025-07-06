@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { syndicateApi } from '../../lib/api';
-import type { Syndicate } from '../../types/api';
+import type { Syndicate, SyndicateDetail } from '../../types/api';
 
 interface SyndicateTableProps {
   searchTerm?: string;
-  onEdit?: (syndicate: Syndicate) => void;
-  onDelete?: (syndicate: Syndicate) => void;
+  onEdit?: (syndicate: SyndicateDetail) => void;
+  onDelete?: (syndicate: SyndicateDetail) => void;
   refreshTrigger?: number;
 }
 
@@ -15,7 +15,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
   onDelete,
   refreshTrigger = 0
 }) => {
-  const [syndicates, setSyndicates] = useState<Syndicate[]>([]);
+  const [syndicates, setSyndicates] = useState<SyndicateDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -28,7 +28,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
   const fetchSyndicates = async () => {
     try {
       setLoading(true);
-      const response = await syndicateApi.getAll(currentPage, undefined, searchTerm || undefined);
+      const response = await syndicateApi.getAllWithDetailsPaged(currentPage, undefined, searchTerm || undefined);
       setSyndicates(response.data.content);
       setTotalPages(response.data.totalPages);
       setTotalElements(response.data.totalElements);
@@ -45,19 +45,45 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
-  const getStatusBadge = (syndicate: Syndicate) => {
-    // シンジケートのステータスを決定するロジック
-    // 現在はシンプルにcreatedAtベースで判断
-    const daysSinceCreation = Math.floor(
-      (Date.now() - new Date(syndicate.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysSinceCreation <= 7) {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full">New</span>;
-    } else if (daysSinceCreation <= 30) {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full">Active</span>;
-    } else {
-      return <span className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full">Completed</span>;
+  const getStatusBadge = (syndicate: SyndicateDetail) => {
+    // バックエンドのSyndicate.statusフィールドを使用
+    switch (syndicate.status) {
+      case 'DRAFT':
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-success/20 text-success rounded-full cursor-help"
+            title="Draft - Syndicate is available for facility creation. Can be edited and used to create new facilities."
+          >
+            Draft
+          </span>
+        );
+      case 'ACTIVE':
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-accent-500/20 text-accent-500 rounded-full cursor-help"
+            title="Active - Syndicate has been used to create a facility. No longer available for new facility creation (1 Syndicate = 1 Facility rule)."
+          >
+            Active
+          </span>
+        );
+      case 'CLOSED':
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full cursor-help"
+            title="Closed - Syndicate has been closed and is no longer active. Cannot be used for any operations."
+          >
+            Closed
+          </span>
+        );
+      default:
+        return (
+          <span 
+            className="inline-flex px-2 py-1 text-xs font-medium bg-gray-600 text-gray-400 rounded-full cursor-help"
+            title="Unknown status"
+          >
+            Unknown
+          </span>
+        );
     }
   };
 
@@ -102,10 +128,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                     Syndicate Name
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    Borrower ID
+                    Borrower
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
-                    Lead Bank ID
+                    Lead Bank
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
                     Members
@@ -136,19 +162,21 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-white font-mono">{syndicate.borrowerId}</div>
+                      <div className="text-white font-medium">{syndicate.borrowerName}</div>
+                      <div className="text-accent-400 text-xs">ID: {syndicate.borrowerId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-white font-mono">{syndicate.leadBankId}</div>
+                      <div className="text-white font-medium">{syndicate.leadBankName}</div>
+                      <div className="text-accent-400 text-xs">ID: {syndicate.leadBankId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <span className="text-white font-medium">{syndicate.memberInvestorIds.length}</span>
+                        <span className="text-white font-medium">{syndicate.memberInvestorNames.length}</span>
                         <span className="text-accent-400 text-sm ml-1">members</span>
                       </div>
                       <div className="text-accent-400 text-xs">
-                        IDs: {syndicate.memberInvestorIds.slice(0, 3).join(', ')}
-                        {syndicate.memberInvestorIds.length > 3 && ` +${syndicate.memberInvestorIds.length - 3}`}
+                        {syndicate.memberInvestorNames.slice(0, 2).join(', ')}
+                        {syndicate.memberInvestorNames.length > 2 && ` +${syndicate.memberInvestorNames.length - 2}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -164,7 +192,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                       <div className="flex items-center gap-2">
                         {onEdit && (
                           <button
-                            onClick={() => onEdit(syndicate)}
+                            onClick={() => {
+                              console.log('Edit button clicked!', syndicate);
+                              onEdit(syndicate);
+                            }}
                             className="p-2 text-accent-400 hover:text-accent-300 hover:bg-secondary-600 rounded-lg transition-colors"
                             title="Edit"
                           >
@@ -175,7 +206,10 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
                         )}
                         {onDelete && (
                           <button
-                            onClick={() => onDelete(syndicate)}
+                            onClick={() => {
+                              console.log('Delete button clicked!', syndicate);
+                              onDelete(syndicate);
+                            }}
                             className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
                             title="Delete"
                           >
@@ -244,6 +278,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
           </div>
         </div>
       )}
+
     </div>
   );
 };

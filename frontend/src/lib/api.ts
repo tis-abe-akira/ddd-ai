@@ -5,17 +5,23 @@ import type {
   Company, 
   Investor, 
   Syndicate,
+  SyndicateDetail,
   Facility,
   Loan,
   Drawdown,
   Payment,
+  PaymentDetail,
   CreateBorrowerRequest,
+  UpdateBorrowerRequest,
   CreateCompanyRequest,
   CreateInvestorRequest,
+  UpdateInvestorRequest,
   CreateSyndicateRequest,
+  UpdateSyndicateRequest,
   CreateFacilityRequest,
   UpdateFacilityRequest,
   CreateDrawdownRequest,
+  UpdateDrawdownRequest,
   CreatePaymentRequest,
   ApiResponse,
   ApiError,
@@ -72,7 +78,7 @@ export const borrowerApi = {
   },
   getById: (id: number) => apiClient.get<Borrower>(`/parties/borrowers/${id}`),
   create: (data: CreateBorrowerRequest) => apiClient.post<Borrower>('/parties/borrowers', data),
-  update: (id: number, data: Partial<CreateBorrowerRequest>) => 
+  update: (id: number, data: UpdateBorrowerRequest) => 
     apiClient.put<Borrower>(`/parties/borrowers/${id}`, data),
   delete: (id: number) => apiClient.delete(`/parties/borrowers/${id}`),
 };
@@ -90,7 +96,7 @@ export const investorApi = {
   },
   getById: (id: number) => apiClient.get<Investor>(`/parties/investors/${id}`),
   create: (data: CreateInvestorRequest) => apiClient.post<Investor>('/parties/investors', data),
-  update: (id: number, data: Partial<CreateInvestorRequest>) => 
+  update: (id: number, data: UpdateInvestorRequest) => 
     apiClient.put<Investor>(`/parties/investors/${id}`, data),
   delete: (id: number) => apiClient.delete(`/parties/investors/${id}`),
 };
@@ -107,9 +113,20 @@ export const syndicateApi = {
     
     return apiClient.get<PageResponse<Syndicate>>(`/syndicates?${params.toString()}`);
   },
+  getAllWithDetails: () => apiClient.get<SyndicateDetail[]>('/syndicates/details'),
+  getAllWithDetailsPaged: (page?: number, size?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    if (search) params.append('search', search);
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<SyndicateDetail>>(`/syndicates/details/paged?${params.toString()}`);
+  },
   getById: (id: number) => apiClient.get<Syndicate>(`/syndicates/${id}`),
+  getByIdWithDetails: (id: number) => apiClient.get<SyndicateDetail>(`/syndicates/${id}/details`),
   create: (data: CreateSyndicateRequest) => apiClient.post<Syndicate>('/syndicates', data),
-  update: (id: number, data: Partial<CreateSyndicateRequest>) => 
+  update: (id: number, data: UpdateSyndicateRequest) => 
     apiClient.put<Syndicate>(`/syndicates/${id}`, data),
   delete: (id: number) => apiClient.delete(`/syndicates/${id}`),
 };
@@ -147,6 +164,8 @@ export const drawdownApi = {
   getById: (id: number) => apiClient.get<Drawdown>(`/loans/drawdowns/${id}`),
   getByFacilityId: (facilityId: number) => apiClient.get<Drawdown[]>(`/loans/drawdowns/facility/${facilityId}`),
   create: (data: CreateDrawdownRequest) => apiClient.post<Drawdown>('/loans/drawdowns', data),
+  update: (id: number, data: UpdateDrawdownRequest) => apiClient.put<Drawdown>(`/loans/drawdowns/${id}`, data),
+  delete: (id: number) => apiClient.delete(`/loans/drawdowns/${id}`),
 };
 
 // Loans
@@ -167,6 +186,15 @@ export const loanApi = {
 export const paymentApi = {
   getByLoanId: (loanId: number) => apiClient.get<Payment[]>(`/loans/payments/loan/${loanId}`),
   create: (data: CreatePaymentRequest) => apiClient.post<Payment>('/loans/payments', data),
+  processScheduledPayment: (paymentDetailId: number) => 
+    apiClient.post<Payment>(`/loans/payments/scheduled/${paymentDetailId}`),
+  cancelPayment: (paymentId: number) => 
+    apiClient.delete<Payment>(`/loans/payments/${paymentId}/cancel`),
+};
+
+// PaymentDetail API
+export const paymentDetailApi = {
+  getByLoanId: (loanId: number) => apiClient.get<PaymentDetail[]>(`/loans/${loanId}/payment-details`),
 };
 
 // Utility function for handling API responses

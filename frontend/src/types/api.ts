@@ -17,6 +17,7 @@ export interface Borrower {
   companyId: string;
   creditLimit: number;
   creditRating: CreditRating;
+  currentFacilityAmount: number; // 既存Facility総額（動的計算）
 }
 
 export interface Investor {
@@ -37,6 +38,24 @@ export interface Syndicate {
   leadBankId: number;
   borrowerId: number;
   memberInvestorIds: number[];
+  status: SyndicateStatus;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export type SyndicateStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
+
+export interface SyndicateDetail {
+  id: number;
+  name: string;
+  borrowerId: number;
+  borrowerName: string;
+  leadBankId: number;
+  leadBankName: string;
+  memberInvestorIds: number[];
+  memberInvestorNames: string[];
+  status: SyndicateStatus;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -60,9 +79,11 @@ export type InvestorType =
 
 export type FacilityStatus = 'DRAFT' | 'FIXED';
 
-export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
+export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
 
-export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET' | 'INTEREST_ONLY';
+export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
+
+export type RepaymentCycle = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUALLY' | 'ANNUALLY';
 
 export type Industry = 
   | 'FINANCE' 
@@ -98,6 +119,16 @@ export interface CreateBorrowerRequest {
   creditRating: CreditRating;
 }
 
+export interface UpdateBorrowerRequest {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  companyId: string;
+  creditLimit: number;
+  creditRating: CreditRating;
+  version: number;
+}
+
 export interface CreateCompanyRequest {
   companyName: string;
   registrationNumber: string;
@@ -115,11 +146,29 @@ export interface CreateInvestorRequest {
   investorType: InvestorType;
 }
 
+export interface UpdateInvestorRequest {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  companyId?: string;
+  investmentCapacity: number;
+  investorType: InvestorType;
+  version: number;
+}
+
 export interface CreateSyndicateRequest {
   name: string;
   leadBankId: number;
   borrowerId: number;
   memberInvestorIds: number[];
+}
+
+export interface UpdateSyndicateRequest {
+  name: string;
+  leadBankId: number;
+  borrowerId: number;
+  memberInvestorIds: number[];
+  version: number;
 }
 
 export interface Facility {
@@ -162,12 +211,14 @@ export interface CreateSharePieRequest {
 }
 
 export interface UpdateFacilityRequest {
+  syndicateId: number;
   commitment?: number;
   currency?: string;
   startDate?: string;
   endDate?: string;
   interestTerms?: string;
   sharePies?: CreateSharePieRequest[];
+  version: number;
 }
 
 export interface Loan {
@@ -195,11 +246,14 @@ export interface Drawdown {
   currency: string;
   purpose: string;
   transactionDate: string;
+  status: TransactionStatus;
   amountPies: AmountPie[];
   createdAt: string;
   updatedAt: string;
   version: number;
 }
+
+export type TransactionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
 export interface AmountPie {
   id: number;
@@ -224,6 +278,19 @@ export interface CreateDrawdownRequest {
   amountPies?: CreateAmountPieRequest[];
 }
 
+export interface UpdateDrawdownRequest {
+  amount: number;
+  currency: string;
+  purpose: string;
+  annualInterestRate: number;
+  drawdownDate: string;
+  repaymentPeriodMonths: number;
+  repaymentCycle: string;
+  repaymentMethod: RepaymentMethod;
+  version: number;
+  amountPies?: CreateAmountPieRequest[];
+}
+
 export interface CreateAmountPieRequest {
   investorId: number;
   amount: number;
@@ -243,6 +310,22 @@ export interface Payment {
   updatedAt: string;
   version: number;
 }
+
+export interface PaymentDetail {
+  id: number;
+  paymentNumber: number;
+  principalPayment: number;
+  interestPayment: number;
+  dueDate: string;
+  remainingBalance: number;
+  paymentStatus: PaymentStatus;
+  actualPaymentDate?: string;
+  paymentId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE';
 
 export interface PaymentDistribution {
   id: number;

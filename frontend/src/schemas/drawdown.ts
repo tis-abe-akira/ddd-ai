@@ -70,7 +70,7 @@ export const createDrawdownSchema = z.object({
     .min(1, 'Please select repayment cycle'),
   
   repaymentMethod: z
-    .enum(['EQUAL_INSTALLMENT', 'BULLET', 'INTEREST_ONLY'], {
+    .enum(['EQUAL_INSTALLMENT', 'BULLET_PAYMENT'], {
       required_error: 'Please select repayment method',
       invalid_type_error: 'Please select a valid repayment method'
     })
@@ -96,8 +96,7 @@ export const defaultDrawdownValues: Partial<CreateDrawdownFormData> = {
 // 返済方法オプション
 export const repaymentMethodOptions = [
   { value: 'EQUAL_INSTALLMENT', label: 'Equal Installment', description: 'Fixed monthly payment' },
-  { value: 'BULLET', label: 'Bullet Payment', description: 'Lump sum payment at maturity' },
-  { value: 'INTEREST_ONLY', label: 'Interest Only', description: 'Interest payments during term, principal at maturity' },
+  { value: 'BULLET_PAYMENT', label: 'Bullet Payment', description: 'Lump sum payment at maturity' },
 ] as const;
 
 // 返済サイクルオプション

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { investorApi } from '../../lib/api';
-import type { Investor } from '../../types/api';
+import { investorApi, syndicateApi } from '../../lib/api';
+import type { Investor, SyndicateDetail } from '../../types/api';
 import type { SharePieFormData } from '../../schemas/facility';
 
 interface SharePieAllocationProps {
@@ -17,23 +17,47 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
   error
 }) => {
   const [investors, setInvestors] = useState<Investor[]>([]);
+  const [syndicateDetail, setSyndicateDetail] = useState<SyndicateDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedInvestorId, setSelectedInvestorId] = useState<number | undefined>();
   const [sharePercentage, setSharePercentage] = useState<string>('');
 
   useEffect(() => {
-    fetchInvestors();
-  }, []);
+    fetchData();
+  }, [syndicateId]);
 
-  const fetchInvestors = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      // 全件取得（選択用）
-      const response = await investorApi.getAll(0, 100);
-      setInvestors(response.data.content.filter(investor => investor.isActive));
+      
+      // 全投資家を取得
+      const investorsResponse = await investorApi.getAll(0, 100);
+      const allInvestors = investorsResponse.data.content.filter(investor => investor.isActive);
+      
+      if (syndicateId) {
+        // Syndicateの詳細を取得
+        const syndicateResponse = await syndicateApi.getByIdWithDetails(syndicateId);
+        const syndicateData = syndicateResponse.data;
+        setSyndicateDetail(syndicateData);
+        
+        // Syndicateに参加している投資家のIDリスト
+        const participatingInvestorIds = [
+          syndicateData.leadBankId,
+          ...syndicateData.memberInvestorIds
+        ];
+        
+        // Syndicateに参加している投資家のみをフィルタリング
+        const participatingInvestors = allInvestors.filter(investor => 
+          participatingInvestorIds.includes(investor.id)
+        );
+        setInvestors(participatingInvestors);
+      } else {
+        // syndicateIdが指定されていない場合は全投資家を表示
+        setInvestors(allInvestors);
+      }
     } catch (err) {
-      console.error('Failed to fetch investors:', err);
+      console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
@@ -127,9 +151,20 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-white mb-4">
+        <label className="block text-sm font-medium text-white mb-2">
           Investor Share Allocation <span className="text-error">*</span>
         </label>
+        
+        {syndicateDetail && (
+          <div className="mb-4 p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
+            <div className="flex items-center gap-2 text-accent-400 text-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Syndicate "{syndicateDetail.name}" の参加投資家のみが選択可能です ({investors.length}名)
+            </div>
+          </div>
+        )}
 
         {/* Current Allocations */}
         <div className="space-y-3">

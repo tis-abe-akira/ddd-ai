@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
@@ -93,8 +94,17 @@ public class PartyService {
 
     // Borrower operations
     public Borrower createBorrower(CreateBorrowerRequest request) {
-        // Skip company validation - companyId is now treated as optional reference string
-        // No longer validate against actual Company entities
+        // Validate company existence if companyId is provided
+        if (request.getCompanyId() != null && !request.getCompanyId().isEmpty()) {
+            try {
+                Long companyIdLong = Long.parseLong(request.getCompanyId());
+                if (!companyRepository.existsById(companyIdLong)) {
+                    throw new ResourceNotFoundException("Company not found with ID: " + request.getCompanyId());
+                }
+            } catch (NumberFormatException e) {
+                throw new ResourceNotFoundException("Invalid company ID format: " + request.getCompanyId());
+            }
+        }
         // CreditRatingのバリデーション振る舞いを利用
         if (!request.isCreditLimitOverride()) {
             if (request.getCreditRating() == null || request.getCreditLimit() == null ||
@@ -118,8 +128,14 @@ public class PartyService {
 
     @Transactional(readOnly = true)
     public Borrower getBorrowerById(Long id) {
-        return borrowerRepository.findById(id)
+        Borrower borrower = borrowerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + id));
+        
+        // 既存Facility総額を動的計算して設定
+        BigDecimal totalFacilityAmount = facilityRepository.getTotalFacilityAmountByBorrowerId(id);
+        borrower.setCurrentFacilityAmount(totalFacilityAmount != null ? totalFacilityAmount.doubleValue() : 0.0);
+        
+        return borrower;
     }
 
     @Transactional(readOnly = true)
@@ -169,6 +185,12 @@ public class PartyService {
         if (!borrowerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Borrower not found with ID: " + id);
         }
+        
+        // Syndicate参加チェック
+        if (syndicateRepository.existsByBorrowerId(id)) {
+            throw new BusinessRuleViolationException("参加中のSyndicateがあるため、Borrowerを削除できません。Syndicateから除外してから削除してください。");
+        }
+        
         borrowerRepository.deleteById(id);
     }
 
@@ -235,6 +257,17 @@ public class PartyService {
         if (!investorRepository.existsById(id)) {
             throw new ResourceNotFoundException("Investor not found with ID: " + id);
         }
+        
+        // Syndicate参加チェック（Lead BankまたはMember Investor）
+        if (syndicateRepository.existsByLeadBankIdOrMemberInvestorIdsContaining(id, id)) {
+            throw new BusinessRuleViolationException("参加中のSyndicateがあるため、Investorを削除できません。Syndicateから除外してから削除してください。");
+        }
+        
+        // Facility参加チェック（SharePie）
+        if (facilityRepository.existsActiveFacilityForInvestor(id)) {
+            throw new BusinessRuleViolationException("参加中のFacilityがあるため、Investorを削除できません。Facilityから除外してから削除してください。");
+        }
+        
         investorRepository.deleteById(id);
     }
 

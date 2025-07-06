@@ -25,7 +25,7 @@ class LoanPaymentScheduleTest {
                 Percentage.of(new BigDecimal("0.05")), // 年利5%
                 LocalDate.of(2024, 1, 1), // drawdownDate
                 12, // 12ヶ月
-                "MONTHLY", // repaymentCycle
+                RepaymentCycle.MONTHLY, // repaymentCycle
                 RepaymentMethod.EQUAL_INSTALLMENT,
                 "JPY"
         );
@@ -67,7 +67,7 @@ class LoanPaymentScheduleTest {
                 Percentage.of(new BigDecimal("0.05")),
                 LocalDate.of(2024, 1, 1),
                 6,
-                "MONTHLY",
+                RepaymentCycle.MONTHLY,
                 RepaymentMethod.BULLET_PAYMENT,
                 "JPY"
         );
@@ -104,7 +104,7 @@ class LoanPaymentScheduleTest {
                 Percentage.of(BigDecimal.ZERO),
                 LocalDate.of(2024, 1, 1),
                 12,
-                "MONTHLY",
+                RepaymentCycle.MONTHLY,
                 RepaymentMethod.EQUAL_INSTALLMENT,
                 "JPY"
         );
@@ -133,7 +133,7 @@ class LoanPaymentScheduleTest {
                 Percentage.of(new BigDecimal("0.05")),
                 LocalDate.of(2024, 1, 1),
                 6,
-                "MONTHLY",
+                RepaymentCycle.MONTHLY,
                 RepaymentMethod.EQUAL_INSTALLMENT,
                 "JPY"
         );

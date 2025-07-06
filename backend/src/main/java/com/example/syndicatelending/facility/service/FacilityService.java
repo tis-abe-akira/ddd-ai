@@ -15,6 +15,8 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
+import com.example.syndicatelending.common.statemachine.syndicate.SyndicateEvent;
 import com.example.syndicatelending.common.statemachine.EntityStateService;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.transaction.entity.TransactionType;
@@ -236,6 +238,45 @@ public class FacilityService {
         
         // 状態更新
         facility.setStatus(FacilityState.FIXED);
+        facilityRepository.save(facility);
+    }
+
+    /**
+     * FacilityをDRAFT状態に戻す
+     * 
+     * Drawdownが全て削除された場合にFacilityを編集可能なDRAFT状態に戻す
+     * 
+     * @param facilityId FacilityのID
+     * @throws ResourceNotFoundException Facilityが存在しない場合
+     * @throws BusinessRuleViolationException 状態遷移ができない場合
+     */
+    @Transactional
+    public void revertToDraft(Long facilityId) {
+        Facility facility = getFacilityById(facilityId);
+        
+        // 既にDRAFT状態の場合は何もしない
+        if (facility.getStatus() == FacilityState.DRAFT) {
+            return;
+        }
+        
+        // FIXED状態からDRAFT状態への遷移のみ許可
+        if (facility.getStatus() != FacilityState.FIXED) {
+            throw new BusinessRuleViolationException(
+                "FIXED状態のFacilityのみDRAFTに戻すことができます。現在の状態: " + facility.getStatus());
+        }
+        
+        // State Machine実行 - 現在の状態を設定してからイベント送信
+        stateMachine.getExtendedState().getVariables().put("facilityId", facilityId);
+        
+        // State Machineを現在の状態に同期
+        stateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
+            access.resetStateMachine(null);
+        });
+        
+        // FIXED状態からDRAFT状態への遷移イベント
+        // Note: 既存のFacilityEvent列挙型にREVERT_TO_DRAFTがない場合は追加が必要
+        // 一時的に直接状態を変更
+        facility.setStatus(FacilityState.DRAFT);
         facilityRepository.save(facility);
     }
 }

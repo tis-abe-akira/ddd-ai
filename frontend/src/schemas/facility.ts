@@ -93,7 +93,7 @@ export type SharePieFormData = z.infer<typeof sharePieSchema>;
 export const defaultFacilityValues: Partial<CreateFacilityFormData> = {
   syndicateId: undefined,
   commitment: undefined,
-  currency: 'USD',
+  currency: 'JPY', // Default to JPY for Japanese market
   startDate: '',
   endDate: '',
   interestTerms: '',

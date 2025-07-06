@@ -130,7 +130,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllUncaughtException(Exception ex, WebRequest request) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        log.error("An unexpected error occurred", ex); // Errorレベルでスタックトレース込みでログ出力
+        
+        // favicon.icoのエラーは無害なので、ログレベルを下げる
+        String requestURI = request.getDescription(false);
+        if (requestURI.contains("favicon.ico")) {
+            log.debug("Favicon not found (this is harmless): {}", ex.getMessage());
+        } else {
+            log.error("An unexpected error occurred", ex); // Errorレベルでスタックトレース込みでログ出力
+        }
 
         ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),

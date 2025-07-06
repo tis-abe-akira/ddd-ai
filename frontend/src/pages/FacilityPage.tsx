@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import FacilityForm from '../components/forms/FacilityForm';
 import FacilityTable from '../components/facility/FacilityTable';
+import FacilityDetail from '../components/facility/FacilityDetail';
+import { facilityApi } from '../lib/api';
 import type { Facility } from '../types/api';
 
 const FacilityPage: React.FC = () => {
@@ -9,10 +11,40 @@ const FacilityPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
+  const [editData, setEditData] = useState<Facility | undefined>(undefined);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+
+  // Quick Stats計算
+  const calculateStats = () => {
+    const draftCount = facilities.filter(f => f.status === 'DRAFT').length;
+    const fixedCount = facilities.filter(f => f.status === 'FIXED').length;
+    const totalAmount = facilities.reduce((sum, f) => sum + f.commitment, 0);
+    
+    return { draftCount, fixedCount, totalAmount };
+  };
+
+  const { draftCount, fixedCount, totalAmount } = calculateStats();
+
+  const formatCurrency = (amount: number) => {
+    // Facilitiesの通貨は混在可能だが、主要通貨として最初のFacilityの通貨を使用
+    const currency = facilities.length > 0 ? facilities[0].currency : 'JPY';
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      notation: 'compact'
+    }).format(amount);
+  };
 
   const handleSuccess = (facility: Facility) => {
-    setSuccessMessage(`Facility "#${facility.id}" has been created successfully.`);
+    const action = editMode === 'edit' ? 'updated' : 'created';
+    setSuccessMessage(`Facility "#${facility.id}" has been ${action} successfully.`);
     setShowForm(false);
+    setEditMode('create');
+    setEditData(undefined);
     setRefreshTrigger(prev => prev + 1);
     // 成功メッセージを3秒後に消去
     setTimeout(() => setSuccessMessage(null), 3000);
@@ -20,23 +52,45 @@ const FacilityPage: React.FC = () => {
 
   const handleCancel = () => {
     setShowForm(false);
+    setEditMode('create');
+    setEditData(undefined);
   };
 
   const handleDelete = async (facility: Facility) => {
     if (window.confirm(`Are you sure you want to delete facility "#${facility.id}"?`)) {
       try {
-        // TODO: API呼び出し実装
-        console.log('Delete facility:', facility.id);
+        await facilityApi.delete(facility.id);
+        setSuccessMessage(`Facility "#${facility.id}" has been deleted successfully.`);
         setRefreshTrigger(prev => prev + 1);
-      } catch (error) {
+        // 成功メッセージを3秒後に消去
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error: any) {
         console.error('Failed to delete facility:', error);
+        const errorMessage = error?.message || 'Failed to delete facility. Please try again.';
+        alert(errorMessage);
       }
     }
   };
 
   const handleEdit = (facility: Facility) => {
-    // TODO: 編集機能実装
     console.log('Edit facility:', facility);
+    setEditMode('edit');
+    setEditData(facility);
+    setShowForm(true);
+  };
+
+  const handleDetail = (facility: Facility) => {
+    setSelectedFacility(facility);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelectedFacility(null);
+  };
+
+  const handleFacilitiesChange = (updatedFacilities: Facility[]) => {
+    setFacilities(updatedFacilities);
   };
 
   return (
@@ -49,13 +103,28 @@ const FacilityPage: React.FC = () => {
             <p className="text-accent-400">Create and manage financing facilities</p>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+                setEditMode('create');
+                setEditData(undefined);
+              } else {
+                setEditMode('create');
+                setEditData(undefined);
+                setShowForm(true);
+              }
+            }}
             className="bg-accent-500 hover:bg-accent-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {showForm ? 'Close Form' : 'New Facility'}
+            {showForm 
+              ? 'Close Form' 
+              : editMode === 'edit' 
+                ? 'New Facility' 
+                : 'New Facility'
+            }
           </button>
         </div>
 
@@ -75,6 +144,8 @@ const FacilityPage: React.FC = () => {
             <FacilityForm 
               onSuccess={handleSuccess}
               onCancel={handleCancel}
+              mode={editMode}
+              editData={editData}
             />
           </div>
         )}
@@ -121,15 +192,20 @@ const FacilityPage: React.FC = () => {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <div className="text-accent-400 text-sm">Draft</div>
-                  <div className="text-white text-2xl font-bold">-</div>
+                  <div className="text-white text-2xl font-bold">{draftCount}</div>
+                  <div className="text-accent-400 text-xs mt-1">Editable facilities</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <div className="text-accent-400 text-sm">Fixed</div>
-                  <div className="text-white text-2xl font-bold">-</div>
+                  <div className="text-white text-2xl font-bold">{fixedCount}</div>
+                  <div className="text-accent-400 text-xs mt-1">Confirmed facilities</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
                   <div className="text-accent-400 text-sm">Total Facility Amount</div>
-                  <div className="text-white text-2xl font-bold">-</div>
+                  <div className="text-white text-2xl font-bold">
+                    {facilities.length > 0 ? formatCurrency(totalAmount) : '¥0'}
+                  </div>
+                  <div className="text-accent-400 text-xs mt-1">Combined commitment</div>
                 </div>
               </div>
             </div>
@@ -142,9 +218,18 @@ const FacilityPage: React.FC = () => {
             searchTerm={searchTerm}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onDetail={handleDetail}
+            onFacilitiesChange={handleFacilitiesChange}
             refreshTrigger={refreshTrigger}
           />
         )}
+
+        {/* Detail Modal */}
+        <FacilityDetail
+          facility={selectedFacility}
+          isOpen={showDetail}
+          onClose={handleCloseDetail}
+        />
       </div>
     </Layout>
   );

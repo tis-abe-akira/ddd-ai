@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * PaymentDetailエンティティのリポジトリインターフェース。
@@ -52,4 +53,12 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, Lo
      * @param loanId ローンID
      */
     void deleteByLoanId(Long loanId);
+
+    /**
+     * 指定されたPaymentIDに関連するPaymentDetailを取得します。
+     *
+     * @param paymentId PaymentID
+     * @return PaymentDetail（存在しない場合は空のOptional）
+     */
+    Optional<PaymentDetail> findByPaymentId(Long paymentId);
 }

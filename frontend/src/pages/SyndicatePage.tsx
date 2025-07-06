@@ -2,17 +2,23 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import SyndicateForm from '../components/forms/SyndicateForm';
 import SyndicateTable from '../components/syndicate/SyndicateTable';
-import type { Syndicate } from '../types/api';
+import { syndicateApi } from '../lib/api';
+import type { Syndicate, SyndicateDetail } from '../types/api';
 
 const SyndicatePage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
+  const [editData, setEditData] = useState<SyndicateDetail | undefined>(undefined);
 
   const handleSuccess = (syndicate: Syndicate) => {
-    setSuccessMessage(`Syndicate "${syndicate.name}" has been created successfully.`);
+    const action = editMode === 'edit' ? 'updated' : 'created';
+    setSuccessMessage(`Syndicate "${syndicate.name}" has been ${action} successfully.`);
     setShowForm(false);
+    setEditMode('create');
+    setEditData(undefined);
     setRefreshTrigger(prev => prev + 1);
     // 成功メッセージを3秒後に消去
     setTimeout(() => setSuccessMessage(null), 3000);
@@ -20,23 +26,31 @@ const SyndicatePage: React.FC = () => {
 
   const handleCancel = () => {
     setShowForm(false);
+    setEditMode('create');
+    setEditData(undefined);
   };
 
-  const handleDelete = async (syndicate: Syndicate) => {
+  const handleDelete = async (syndicate: SyndicateDetail) => {
     if (window.confirm(`Are you sure you want to delete syndicate "${syndicate.name}"?`)) {
       try {
-        // TODO: API呼び出し実装
-        console.log('Delete syndicate:', syndicate.id);
+        await syndicateApi.delete(syndicate.id);
+        setSuccessMessage(`Syndicate "${syndicate.name}" has been deleted successfully.`);
         setRefreshTrigger(prev => prev + 1);
-      } catch (error) {
+        // 成功メッセージを3秒後に消去
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error: any) {
         console.error('Failed to delete syndicate:', error);
+        const errorMessage = error?.message || 'Failed to delete syndicate. Please try again.';
+        alert(errorMessage);
       }
     }
   };
 
-  const handleEdit = (syndicate: Syndicate) => {
-    // TODO: 編集機能実装
+  const handleEdit = (syndicate: SyndicateDetail) => {
     console.log('Edit syndicate:', syndicate);
+    setEditMode('edit');
+    setEditData(syndicate);
+    setShowForm(true);
   };
 
   return (
@@ -49,13 +63,28 @@ const SyndicatePage: React.FC = () => {
             <p className="text-accent-400">Create and manage syndicate formations</p>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+                setEditMode('create');
+                setEditData(undefined);
+              } else {
+                setEditMode('create');
+                setEditData(undefined);
+                setShowForm(true);
+              }
+            }}
             className="bg-accent-500 hover:bg-accent-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {showForm ? 'Close Form' : 'New Syndicate'}
+{showForm 
+              ? 'Close Form' 
+              : editMode === 'edit' 
+                ? 'New Syndicate' 
+                : 'New Syndicate'
+            }
           </button>
         </div>
 
@@ -75,6 +104,8 @@ const SyndicatePage: React.FC = () => {
             <SyndicateForm 
               onSuccess={handleSuccess}
               onCancel={handleCancel}
+              mode={editMode}
+              editData={editData}
             />
           </div>
         )}
