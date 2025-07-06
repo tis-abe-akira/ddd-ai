@@ -311,6 +311,22 @@ export interface Payment {
   version: number;
 }
 
+export interface PaymentDetail {
+  id: number;
+  paymentNumber: number;
+  principalPayment: number;
+  interestPayment: number;
+  dueDate: string;
+  remainingBalance: number;
+  paymentStatus: PaymentStatus;
+  actualPaymentDate?: string;
+  paymentId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE';
+
 export interface PaymentDistribution {
   id: number;
   paymentId: number;

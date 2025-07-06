@@ -10,6 +10,7 @@ import type {
   Loan,
   Drawdown,
   Payment,
+  PaymentDetail,
   CreateBorrowerRequest,
   UpdateBorrowerRequest,
   CreateCompanyRequest,
@@ -185,6 +186,13 @@ export const loanApi = {
 export const paymentApi = {
   getByLoanId: (loanId: number) => apiClient.get<Payment[]>(`/loans/payments/loan/${loanId}`),
   create: (data: CreatePaymentRequest) => apiClient.post<Payment>('/loans/payments', data),
+  processScheduledPayment: (paymentDetailId: number) => 
+    apiClient.post<Payment>(`/loans/payments/scheduled/${paymentDetailId}`),
+};
+
+// PaymentDetail API
+export const paymentDetailApi = {
+  getByLoanId: (loanId: number) => apiClient.get<PaymentDetail[]>(`/loans/${loanId}/payment-details`),
 };
 
 // Utility function for handling API responses

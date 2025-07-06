@@ -1,6 +1,7 @@
 package com.example.syndicatelending.loan.controller;
 
 import com.example.syndicatelending.loan.entity.Loan;
+import com.example.syndicatelending.loan.entity.PaymentDetail;
 import com.example.syndicatelending.loan.service.LoanService;
 
 import org.springframework.data.domain.Page;
@@ -84,5 +85,17 @@ public class LoanController {
     public ResponseEntity<List<Loan>> getLoansByBorrowerId(@PathVariable Long borrowerId) {
         List<Loan> loans = loanService.getLoansByBorrowerId(borrowerId);
         return ResponseEntity.ok(loans);
+    }
+
+    /**
+     * ローンIDに関連するPaymentDetailを取得します。
+     * 
+     * @param loanId ローンID
+     * @return PaymentDetailのリスト
+     */
+    @GetMapping("/{loanId}/payment-details")
+    public ResponseEntity<List<PaymentDetail>> getPaymentDetailsByLoanId(@PathVariable Long loanId) {
+        List<PaymentDetail> paymentDetails = loanService.getPaymentDetailsByLoanId(loanId);
+        return ResponseEntity.ok(paymentDetails);
     }
 }

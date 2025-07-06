@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { drawdownApi, loanApi, paymentApi } from '../lib/api';
-import type { Drawdown, Loan, Payment } from '../types/api';
+import PaymentDetailTable from '../components/payment/PaymentDetailTable';
+import { drawdownApi, loanApi, paymentApi, paymentDetailApi } from '../lib/api';
+import type { Drawdown, Loan, Payment, PaymentDetail } from '../types/api';
 
 const DrawdownDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,9 +11,11 @@ const DrawdownDetailPage: React.FC = () => {
   const [drawdown, setDrawdown] = useState<Drawdown | null>(null);
   const [loan, setLoan] = useState<Loan | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [loanLoading, setLoanLoading] = useState(false);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentDetailsLoading, setPaymentDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,6 +49,9 @@ const DrawdownDetailPage: React.FC = () => {
       
       // 支払い履歴を取得
       await fetchPayments(loanId);
+      
+      // 支払い詳細を取得
+      await fetchPaymentDetails(loanId);
     } catch (error) {
       console.error('Failed to fetch loan detail:', error);
       // Loanが見つからない場合は警告として表示
@@ -65,6 +71,30 @@ const DrawdownDetailPage: React.FC = () => {
       setPayments([]);
     } finally {
       setPaymentsLoading(false);
+    }
+  };
+
+  const fetchPaymentDetails = async (loanId: number) => {
+    try {
+      setPaymentDetailsLoading(true);
+      const paymentDetailsResponse = await paymentDetailApi.getByLoanId(loanId);
+      setPaymentDetails(paymentDetailsResponse.data);
+    } catch (error) {
+      console.error('Failed to fetch payment details:', error);
+      // 支払い詳細がない場合は空配列として扱う
+      setPaymentDetails([]);
+    } finally {
+      setPaymentDetailsLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (loan) {
+      // 支払い成功後、関連データを再取得
+      await fetchPayments(loan.id);
+      await fetchPaymentDetails(loan.id);
+      // ローン情報も更新（残高情報等）
+      await fetchLoanDetail(loan.id);
     }
   };
 
@@ -318,17 +348,23 @@ const DrawdownDetailPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">Payment Schedule & History</h2>
             <div className="text-sm text-accent-400">
-              {loan?.paymentDetails?.length || 0} scheduled, {payments.length} completed
+              {paymentDetails.length} scheduled, {payments.length} completed
             </div>
           </div>
           
-          {(loanLoading || paymentsLoading) ? (
+          {(loanLoading || paymentsLoading || paymentDetailsLoading) ? (
             <div className="bg-secondary-600 rounded-lg p-4">
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-500"></div>
                 <span className="ml-3 text-accent-400">Loading payment information...</span>
               </div>
             </div>
+          ) : paymentDetails.length > 0 ? (
+            <PaymentDetailTable
+              paymentDetails={paymentDetails}
+              currency={loan?.currency || 'USD'}
+              onPaymentSuccess={handlePaymentSuccess}
+            />
           ) : loan?.paymentDetails && loan.paymentDetails.length > 0 ? (
             <div className="space-y-4">
               {loan.paymentDetails.map((scheduledPayment, index) => {
