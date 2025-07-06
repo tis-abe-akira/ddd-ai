@@ -17,10 +17,11 @@ import java.util.EnumSet;
  * BoundedContext間の整合性を保つ。
  * 
  * 状態遷移：
- * DRAFT（作成直後・変更可能） → FIXED（確定済み・変更不可）
+ * DRAFT（作成直後・変更可能） ↔ FIXED（確定済み・変更不可）
  * 
  * 遷移条件：
- * DRAWDOWN_EXECUTED イベント発生時
+ * DRAWDOWN_EXECUTED イベント: DRAFT → FIXED
+ * REVERT_TO_DRAFT イベント: FIXED → DRAFT（全ドローダウン削除時）
  */
 @Configuration
 @EnableStateMachine
@@ -47,6 +48,7 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
      * 
      * ビジネスルール：
      * - ドローダウン実行時にFacilityを確定状態に変更（DRAFT → FIXED）
+     * - FIXED状態からDRAFT状態への復帰（全ドローダウン削除時のみ）
      * - 確定後は持分比率（SharePie）等の変更を禁止
      * - FIXED状態では2度目のドローダウンを禁止
      * - クロスBoundedContext整合性の維持
@@ -58,12 +60,20 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
     public void configure(StateMachineTransitionConfigurer<FacilityState, FacilityEvent> transitions) throws Exception {
         transitions
             .withExternal()
-                // 外部遷移: DRAFT状態からFIXED状態への一方向遷移
+                // 外部遷移: DRAFT状態からFIXED状態への遷移
                 .source(FacilityState.DRAFT).target(FacilityState.FIXED)
                 // トリガーイベント: ドローダウン実行時に発火
                 .event(FacilityEvent.DRAWDOWN_EXECUTED)
                 // ガード条件: DRAFT状態でのみドローダウン実行を許可
-                .guard(drawdownOnlyFromDraftGuard());
+                .guard(drawdownOnlyFromDraftGuard())
+            .and()
+            .withExternal()
+                // 外部遷移: FIXED状態からDRAFT状態への復帰遷移
+                .source(FacilityState.FIXED).target(FacilityState.DRAFT)
+                // トリガーイベント: 全ドローダウン削除時に発火
+                .event(FacilityEvent.REVERT_TO_DRAFT)
+                // ガード条件: 全ドローダウンが削除済みの場合のみ許可
+                .guard(revertToDraftGuard());
     }
 
     /**
@@ -81,6 +91,26 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
             FacilityState currentState = context.getStateMachine().getState().getId();
             // DRAFT状態の場合のみドローダウンを許可
             return FacilityState.DRAFT.equals(currentState);
+        };
+    }
+
+    /**
+     * DRAFT状態復帰制約ガード
+     * 
+     * FIXED状態からDRAFT状態への復帰を制御する基本的なガード。
+     * 詳細なビジネスルール検証（Drawdown存在チェック等）は
+     * Service層で事前に実行される前提。
+     * 
+     * State Machine実装の制約により、Service層でビジネスルールが
+     * 検証済みの場合は遷移を許可する。
+     * 
+     * @return ガード条件（常に true）
+     */
+    private Guard<FacilityState, FacilityEvent> revertToDraftGuard() {
+        return context -> {
+            // Service層でビジネスルール検証が完了している前提で
+            // State Machine遷移を許可する
+            return true;
         };
     }
 }

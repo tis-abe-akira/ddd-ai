@@ -12,6 +12,7 @@ import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
+import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
@@ -61,6 +62,9 @@ public class FacilityStateMachineTest {
 
     @Autowired
     private StateMachine<FacilityState, FacilityEvent> stateMachine;
+
+    @Autowired
+    private DrawdownRepository drawdownRepository;
 
     private Syndicate testSyndicate;
     private Facility testFacility;
@@ -295,5 +299,68 @@ public class FacilityStateMachineTest {
         );
         
         assertTrue(exception.getMessage().contains("FIXED状態のFacilityは変更できません"));
+    }
+
+    @Test
+    void testRevertToDraftWithoutDrawdowns() {
+        // 修正されたrevertToDraft機能のテスト: Drawdownが存在しない場合
+        
+        // 最初にFacilityをFIXED状態にする
+        facilityService.fixFacility(testFacility.getId());
+        Facility fixedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.FIXED, fixedFacility.getStatus());
+        
+        // Drawdownが存在しないことを確認
+        assertTrue(drawdownRepository.findByFacilityId(testFacility.getId()).isEmpty());
+        
+        // revertToDraftが成功することを確認
+        assertDoesNotThrow(() -> facilityService.revertToDraft(testFacility.getId()));
+        
+        // DRAFT状態に戻ったことを確認
+        Facility revertedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.DRAFT, revertedFacility.getStatus());
+        assertTrue(revertedFacility.canBeModified());
+    }
+
+    @Test
+    void testRevertToDraftFromDraftStateDoesNothing() {
+        // DRAFT状態からのrevertToDraftは何もしない
+        assertEquals(FacilityState.DRAFT, testFacility.getStatus());
+        
+        // revertToDraftを実行
+        assertDoesNotThrow(() -> facilityService.revertToDraft(testFacility.getId()));
+        
+        // 状態は変わらずDRAFTのまま
+        Facility facility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.DRAFT, facility.getStatus());
+    }
+
+    @Test
+    void testRevertToDraftWithActiveDrawdownsThrowsException() {
+        // Drawdownが存在する場合のrevertToDraftは例外をスロー
+        
+        // FacilityをFIXED状態にする
+        facilityService.fixFacility(testFacility.getId());
+        
+        // テスト用のDrawdownを作成（実際のDrawdownエンティティを使用）
+        com.example.syndicatelending.loan.entity.Drawdown testDrawdown = 
+            new com.example.syndicatelending.loan.entity.Drawdown();
+        testDrawdown.setFacilityId(testFacility.getId());
+        testDrawdown.setBorrowerId(testBorrower.getId());
+        testDrawdown.setLoanId(1L); // 必須フィールド: Loan ID を設定
+        testDrawdown.setAmount(Money.of(new BigDecimal("100000.00")));
+        testDrawdown.setCurrency("USD");
+        testDrawdown.setPurpose("Test drawdown");
+        testDrawdown.setTransactionDate(LocalDate.now());
+        // TransactionTypeはコンストラクタで自動設定される
+        drawdownRepository.save(testDrawdown);
+        
+        // revertToDraftでBusinessRuleViolationExceptionがスローされることを確認
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> facilityService.revertToDraft(testFacility.getId())
+        );
+        
+        assertTrue(exception.getMessage().contains("関連するDrawdownが存在するため"));
     }
 }
