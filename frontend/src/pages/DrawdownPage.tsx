@@ -28,6 +28,26 @@ const DrawdownPage: React.FC = () => {
     setSelectedDrawdown(drawdown);
   };
 
+  const handleEdit = (drawdown: Drawdown) => {
+    // TODO: Implement edit functionality
+    console.log('Edit drawdown:', drawdown);
+    alert(`Edit functionality for Drawdown #${drawdown.id} will be implemented.`);
+  };
+
+  const handleDelete = (drawdown: Drawdown) => {
+    // TODO: Implement delete functionality
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete Drawdown #${drawdown.id}?\nThis action cannot be undone.`
+    );
+    
+    if (confirmDelete) {
+      console.log('Delete drawdown:', drawdown);
+      alert(`Delete functionality for Drawdown #${drawdown.id} will be implemented.`);
+      // After successful deletion, refresh the table
+      // setRefreshTrigger(prev => prev + 1);
+    }
+  };
+
   const closeDrawdownDetail = () => {
     setSelectedDrawdown(null);
   };
@@ -157,25 +177,6 @@ const DrawdownPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">Scheduled Today</div>
-                  <div className="text-white text-2xl font-bold">-</div>
-                </div>
-                <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">Executed This Month</div>
-                  <div className="text-white text-2xl font-bold">-</div>
-                </div>
-                <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">Total Executed</div>
-                  <div className="text-white text-2xl font-bold">-</div>
-                </div>
-                <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">Average Amount</div>
-                  <div className="text-white text-2xl font-bold">-</div>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -186,6 +187,8 @@ const DrawdownPage: React.FC = () => {
             searchTerm={searchTerm}
             facilityFilter={facilityFilter}
             onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
             refreshTrigger={refreshTrigger}
           />
         )}
