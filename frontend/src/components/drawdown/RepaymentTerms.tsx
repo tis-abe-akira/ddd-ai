@@ -34,7 +34,7 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
   amount,
   errors
 }) => {
-  // 返済金額の概算計算
+  // Calculate estimated repayment amounts
   const calculateEstimatedPayment = () => {
     if (!amount || !annualInterestRate || !repaymentPeriodMonths) {
       return { monthlyPayment: 0, totalPayment: 0, totalInterest: 0 };
@@ -43,7 +43,7 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
     const monthlyRate = annualInterestRate / 12;
     
     if (repaymentMethod === 'BULLET_PAYMENT') {
-      // バレット返済：満期に一括返済
+      // Bullet payment: lump sum at maturity
       const totalInterest = amount * annualInterestRate * (repaymentPeriodMonths / 12);
       return {
         monthlyPayment: 0,
@@ -51,7 +51,7 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
         totalInterest
       };
     } else {
-      // 元利均等返済
+      // Equal installment payment
       if (monthlyRate === 0) {
         const monthlyPayment = amount / repaymentPeriodMonths;
         return {
@@ -75,7 +75,7 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ja-JP', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency || 'USD',
       minimumFractionDigits: 0,
@@ -91,21 +91,21 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-2">返済条件</h3>
-        <p className="text-accent-400 text-sm mb-6">金利条件と返済スケジュールを設定してください</p>
+        <h3 className="text-lg font-semibold text-white mb-2">Repayment Terms</h3>
+        <p className="text-accent-400 text-sm mb-6">Set interest rate conditions and repayment schedule</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Annual Interest Rate */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              年利 <span className="text-error">*</span>
+              Annual Interest Rate <span className="text-error">*</span>
             </label>
             <div className="relative">
               <input
                 type="number"
                 value={annualInterestRate * 100}
                 onChange={(e) => onInterestRateChange(parseFloat(e.target.value) / 100 || 0)}
-                placeholder="例: 2.5"
+                placeholder="e.g., 2.5"
                 step="0.01"
                 min="0"
                 max="100"
@@ -116,38 +116,38 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
             {errors?.annualInterestRate && (
               <p className="mt-1 text-sm text-error">{errors.annualInterestRate}</p>
             )}
-            <p className="mt-1 text-xs text-accent-400">例: 2.5% = 年利2.5%</p>
+            <p className="mt-1 text-xs text-accent-400">e.g., 2.5% = 2.5% annual interest</p>
           </div>
 
           {/* Repayment Period */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              返済期間 <span className="text-error">*</span>
+              Repayment Period <span className="text-error">*</span>
             </label>
             <div className="relative">
               <input
                 type="number"
                 value={repaymentPeriodMonths}
                 onChange={(e) => onPeriodChange(parseInt(e.target.value) || 0)}
-                placeholder="例: 12"
+                placeholder="e.g., 12"
                 min="1"
                 max="600"
                 className="w-full px-4 py-3 pr-12 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
-              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-accent-400 text-sm">ヶ月</span>
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-accent-400 text-sm">months</span>
             </div>
             {errors?.repaymentPeriodMonths && (
               <p className="mt-1 text-sm text-error">{errors.repaymentPeriodMonths}</p>
             )}
             <p className="mt-1 text-xs text-accent-400">
-              {repaymentPeriodMonths > 0 && `約${Math.round(repaymentPeriodMonths / 12 * 10) / 10}年`}
+              {repaymentPeriodMonths > 0 && `Approx. ${Math.round(repaymentPeriodMonths / 12 * 10) / 10} years`}
             </p>
           </div>
 
           {/* Repayment Cycle */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              返済サイクル <span className="text-error">*</span>
+              Repayment Cycle <span className="text-error">*</span>
             </label>
             <select
               value={repaymentCycle}
@@ -168,7 +168,7 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
           {/* Repayment Method */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              返済方法 <span className="text-error">*</span>
+              Repayment Method <span className="text-error">*</span>
             </label>
             <select
               value={repaymentMethod}
@@ -198,13 +198,13 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
             <svg className="w-5 h-5 text-accent-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            返済シミュレーション
+            Repayment Simulation
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-primary-900 rounded-lg p-4">
               <div className="text-accent-400 text-sm">
-                {repaymentMethod === 'BULLET_PAYMENT' ? '最終返済額' : '月次返済額'}
+                {repaymentMethod === 'BULLET_PAYMENT' ? 'Final Payment' : 'Monthly Payment'}
               </div>
               <div className="text-white text-xl font-bold">
                 {repaymentMethod === 'BULLET_PAYMENT' 
@@ -215,14 +215,14 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
             </div>
             
             <div className="bg-primary-900 rounded-lg p-4">
-              <div className="text-accent-400 text-sm">総返済額</div>
+              <div className="text-accent-400 text-sm">Total Payment</div>
               <div className="text-white text-xl font-bold">
                 {formatCurrency(estimation.totalPayment)}
               </div>
             </div>
             
             <div className="bg-primary-900 rounded-lg p-4">
-              <div className="text-accent-400 text-sm">総利息額</div>
+              <div className="text-accent-400 text-sm">Total Interest</div>
               <div className="text-white text-xl font-bold">
                 {formatCurrency(estimation.totalInterest)}
               </div>
@@ -231,13 +231,13 @@ const RepaymentTerms: React.FC<RepaymentTermsProps> = ({
 
           <div className="mt-4 pt-4 border-t border-secondary-500">
             <div className="flex justify-between text-sm">
-              <span className="text-accent-400">実効年利</span>
+              <span className="text-accent-400">Effective Annual Rate</span>
               <span className="text-white font-medium">{formatPercentage(annualInterestRate)}</span>
             </div>
             <div className="flex justify-between text-sm mt-2">
-              <span className="text-accent-400">返済期間</span>
+              <span className="text-accent-400">Repayment Period</span>
               <span className="text-white font-medium">
-                {repaymentPeriodMonths}ヶ月 ({Math.round(repaymentPeriodMonths / 12 * 10) / 10}年)
+                {repaymentPeriodMonths} months ({Math.round(repaymentPeriodMonths / 12 * 10) / 10} years)
               </span>
             </div>
           </div>

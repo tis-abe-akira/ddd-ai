@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Drawdown作成用Zodスキーマ
+// Zod schema for drawdown creation
 export const createDrawdownSchema = z.object({
   facilityId: z
     .number({
@@ -76,10 +76,10 @@ export const createDrawdownSchema = z.object({
     })
 });
 
-// TypeScriptの型を自動生成
+// Auto-generated TypeScript type
 export type CreateDrawdownFormData = z.infer<typeof createDrawdownSchema>;
 
-// フォームのデフォルト値
+// Default form values
 export const defaultDrawdownValues: Partial<CreateDrawdownFormData> = {
   facilityId: undefined,
   borrowerId: undefined,
@@ -93,13 +93,13 @@ export const defaultDrawdownValues: Partial<CreateDrawdownFormData> = {
   repaymentMethod: 'EQUAL_INSTALLMENT',
 };
 
-// 返済方法オプション
+// Repayment method options
 export const repaymentMethodOptions = [
   { value: 'EQUAL_INSTALLMENT', label: 'Equal Installment', description: 'Fixed monthly payment' },
   { value: 'BULLET_PAYMENT', label: 'Bullet Payment', description: 'Lump sum payment at maturity' },
 ] as const;
 
-// 返済サイクルオプション
+// Repayment cycle options
 export const repaymentCycleOptions = [
   { value: 'MONTHLY', label: 'Monthly', description: 'Monthly payment' },
   { value: 'QUARTERLY', label: 'Quarterly', description: 'Payment every 3 months' },
@@ -107,7 +107,7 @@ export const repaymentCycleOptions = [
   { value: 'ANNUALLY', label: 'Annually', description: 'Annual payment' },
 ] as const;
 
-// ドローダウンの目的オプション
+// Drawdown purpose options
 export const purposeOptions = [
   { value: 'Working Capital', label: 'Working Capital' },
   { value: 'Capital Investment', label: 'Capital Investment' },
@@ -117,7 +117,7 @@ export const purposeOptions = [
   { value: 'Other', label: 'Other' },
 ] as const;
 
-// ステップ定義
+// Step definitions
 export const DRAWDOWN_FORM_STEPS = [
   { id: 1, title: 'Facility Selection', description: 'Select facility to execute drawdown' },
   { id: 2, title: 'Drawdown Information', description: 'Set amount, purpose, and execution date' },

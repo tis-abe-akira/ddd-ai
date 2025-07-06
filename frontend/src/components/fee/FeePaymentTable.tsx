@@ -61,17 +61,17 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
   const getStatusLabel = (status: TransactionStatus) => {
     switch (status) {
       case 'PENDING':
-        return '保留中';
+        return 'Pending';
       case 'PROCESSING':
-        return '処理中';
+        return 'Processing';
       case 'COMPLETED':
-        return '完了';
+        return 'Completed';
       case 'FAILED':
-        return '失敗';
+        return 'Failed';
       case 'CANCELLED':
-        return 'キャンセル';
+        return 'Cancelled';
       case 'REFUNDED':
-        return '返金済み';
+        return 'Refunded';
       default:
         return status;
     }
@@ -111,10 +111,10 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
   if (feePayments.length === 0) {
     return (
       <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
-        <h3 className="text-white font-semibold mb-4">手数料支払い履歴</h3>
+        <h3 className="text-white font-semibold mb-4">Fee Payment History</h3>
         <div className="text-center py-8">
-          <div className="text-accent-400 text-lg mb-2">手数料支払いがありません</div>
-          <div className="text-accent-400 text-sm">手数料支払いが作成されると、ここに表示されます</div>
+          <div className="text-accent-400 text-lg mb-2">No fee payments found</div>
+          <div className="text-accent-400 text-sm">Fee payments will appear here once created</div>
         </div>
       </div>
     );
@@ -123,7 +123,7 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
       <h3 className="text-white font-semibold mb-4">
-        手数料支払い履歴 ({feePayments.length} 件)
+        Fee Payment History ({feePayments.length} payments)
       </h3>
       
       <div className="overflow-x-auto">
@@ -209,14 +209,14 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
                           onClick={() => onViewDetails(feePayment)}
                           className="bg-accent-500 hover:bg-accent-400 text-white font-medium py-1 px-3 rounded-lg transition-colors duration-200 text-sm"
                         >
-                          詳細
+                          Details
                         </button>
                       )}
                       {hasDistributions(feePayment) && (
                         <button
                           onClick={() => toggleRowExpansion(feePayment.id)}
                           className="bg-secondary-600 hover:bg-secondary-500 text-white font-medium py-1 px-2 rounded-lg transition-colors duration-200 text-sm"
-                          title={expandedRows.has(feePayment.id) ? '配分を隠す' : '配分を表示'}
+                          title={expandedRows.has(feePayment.id) ? 'Hide distributions' : 'Show distributions'}
                         >
                           {expandedRows.has(feePayment.id) ? (
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,7 +238,7 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
                   <tr>
                     <td colSpan={7} className="px-4 py-4 bg-secondary-600/30">
                       <div className="ml-8">
-                        <h4 className="text-white font-medium mb-3">手数料配分詳細</h4>
+                        <h4 className="text-white font-medium mb-3">Fee Distribution Details</h4>
                         <div className="bg-secondary-700 rounded-lg p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {feePayment.feeDistributions.map((distribution, index) => (

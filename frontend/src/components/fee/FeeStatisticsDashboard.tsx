@@ -65,7 +65,7 @@ const FeeStatisticsDashboard: React.FC<FeeStatisticsDashboardProps> = ({
   };
 
   const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('ja-JP', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
@@ -107,9 +107,9 @@ const FeeStatisticsDashboard: React.FC<FeeStatisticsDashboardProps> = ({
     <div className={`bg-primary-900 border border-secondary-500 rounded-xl p-6 ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-white font-semibold text-xl">手数料統計ダッシュボード</h3>
+          <h3 className="text-white font-semibold text-xl">Fee Statistics Dashboard</h3>
           <p className="text-accent-400 text-sm mt-1">
-            Facility別の手数料支払い統計と分析
+            Fee payment statistics and analysis by facility
           </p>
         </div>
         
@@ -146,15 +146,15 @@ const FeeStatisticsDashboard: React.FC<FeeStatisticsDashboardProps> = ({
 
       {!selectedFacility && (
         <div className="text-center py-12">
-          <div className="text-accent-400 text-lg mb-2">Facilityを選択してください</div>
-          <div className="text-accent-400 text-sm">統計情報を表示するにはFacilityを選択する必要があります</div>
+          <div className="text-accent-400 text-lg mb-2">Please select a facility</div>
+          <div className="text-accent-400 text-sm">You need to select a facility to display statistics</div>
         </div>
       )}
 
       {selectedFacility && !statistics && !isLoading && !error && (
         <div className="text-center py-12">
-          <div className="text-accent-400 text-lg mb-2">統計データがありません</div>
-          <div className="text-accent-400 text-sm">選択されたFacilityに手数料支払い履歴がありません</div>
+          <div className="text-accent-400 text-lg mb-2">No statistics available</div>
+          <div className="text-accent-400 text-sm">No fee payment history found for the selected facility</div>
         </div>
       )}
 
@@ -229,7 +229,7 @@ const FeeStatisticsDashboard: React.FC<FeeStatisticsDashboardProps> = ({
 
           {/* Fee Type Breakdown */}
           <div className="bg-secondary-600 rounded-lg p-6">
-            <h4 className="text-white font-semibold mb-4">手数料タイプ別内訳</h4>
+            <h4 className="text-white font-semibold mb-4">Fee Type Breakdown</h4>
             <div className="space-y-4">
               {sortedFeeTypes.map(({ feeType, count }) => {
                 const percentage = getFeeTypePercentage(feeType, count);

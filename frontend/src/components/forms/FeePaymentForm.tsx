@@ -24,7 +24,7 @@ import type {
   ApiError 
 } from '../../types/api';
 
-// フォームバリデーションスキーマ
+// Form validation schema
 const feePaymentSchema = z.object({
   facilityId: z.number().min(1, 'Facility selection is required'),
   feeType: z.enum([
@@ -45,13 +45,13 @@ const feePaymentSchema = z.object({
   feeDate: z.string().min(1, 'Fee date is required'),
   description: z.string().min(1, 'Description is required'),
 }).refine((data) => {
-  // 手数料タイプと受取人タイプの組み合わせバリデーション
+  // Validate fee type and recipient type combination
   return validateFeeTypeRecipient(data.feeType, data.recipientType);
 }, {
   message: 'Invalid recipient type for this fee type',
   path: ['recipientType']
 }).refine((data) => {
-  // 手数料計算の整合性バリデーション
+  // Validate fee calculation consistency
   if (data.calculationBase > 0 && data.feeRate > 0) {
     return validateFeeCalculation(data.calculationBase, data.feeRate, data.feeAmount);
   }
@@ -197,7 +197,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
   };
 
   const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('ja-JP', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
@@ -229,9 +229,9 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-2">手数料支払い作成</h2>
+        <h2 className="text-xl font-bold text-white mb-2">Create Fee Payment</h2>
         <p className="text-accent-400 text-sm">
-          手数料の種類、金額、受取人を指定して手数料支払いを作成します
+          Specify fee type, amount, and recipient to create a fee payment
         </p>
       </div>
 
@@ -264,7 +264,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
         {/* Fee Type Selection */}
         <div>
           <label htmlFor="feeType" className="block text-sm font-medium text-white mb-2">
-            手数料タイプ <span className="text-error">*</span>
+            Fee Type <span className="text-error">*</span>
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {feeTypeOptions.map(option => (
@@ -310,7 +310,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="recipientType" className="block text-sm font-medium text-white mb-2">
-              受取人タイプ <span className="text-error">*</span>
+              Recipient Type <span className="text-error">*</span>
             </label>
             <select
               {...register('recipientType')}
@@ -330,7 +330,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
           <div>
             <label htmlFor="recipientId" className="block text-sm font-medium text-white mb-2">
-              受取人 <span className="text-error">*</span>
+              Recipient <span className="text-error">*</span>
             </label>
             <select
               {...register('recipientId', { valueAsNumber: true })}
@@ -355,11 +355,11 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
         {/* Fee Calculation */}
         <div className="bg-secondary-600 rounded-lg p-4">
-          <h3 className="text-white font-medium mb-4">手数料計算</h3>
+          <h3 className="text-white font-medium mb-4">Fee Calculation</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="calculationBase" className="block text-sm font-medium text-white mb-2">
-                計算基準額
+                Calculation Base
               </label>
               <input
                 {...register('calculationBase', { valueAsNumber: true })}
@@ -376,7 +376,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
             <div>
               <label htmlFor="feeRate" className="block text-sm font-medium text-white mb-2">
-                手数料率 (%)
+                Fee Rate (%)
               </label>
               <input
                 {...register('feeRate', { valueAsNumber: true })}
@@ -393,7 +393,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
             <div>
               <label htmlFor="feeAmount" className="block text-sm font-medium text-white mb-2">
-                手数料額 <span className="text-error">*</span>
+                Fee Amount <span className="text-error">*</span>
               </label>
               <input
                 {...register('feeAmount', { valueAsNumber: true })}
@@ -411,7 +411,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
           {watchedValues.calculationBase > 0 && watchedValues.feeRate > 0 && (
             <div className="mt-3 p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
               <div className="text-sm text-accent-400">
-                計算結果: {formatCurrency(watchedValues.calculationBase * (watchedValues.feeRate / 100), watchedValues.currency)}
+                Calculated: {formatCurrency(watchedValues.calculationBase * (watchedValues.feeRate / 100), watchedValues.currency)}
               </div>
             </div>
           )}
@@ -421,7 +421,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="feeDate" className="block text-sm font-medium text-white mb-2">
-              手数料日付 <span className="text-error">*</span>
+              Fee Date <span className="text-error">*</span>
             </label>
             <input
               {...register('feeDate')}
@@ -437,7 +437,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
           <div>
             <label htmlFor="currency" className="block text-sm font-medium text-white mb-2">
-              通貨 <span className="text-error">*</span>
+              Currency <span className="text-error">*</span>
             </label>
             <input
               {...register('currency')}
@@ -455,13 +455,13 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
         {/* Description */}
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-white mb-2">
-            説明 <span className="text-error">*</span>
+            Description <span className="text-error">*</span>
           </label>
           <textarea
             {...register('description')}
             id="description"
             rows={3}
-            placeholder="手数料の詳細な説明を入力してください"
+            placeholder="Enter detailed description of the fee"
             className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           />
           {errors.description && (
@@ -483,7 +483,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
             disabled={isSubmitting}
             className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            {isSubmitting ? '作成中...' : '手数料支払い作成'}
+            {isSubmitting ? 'Creating...' : 'Create Fee Payment'}
           </button>
           
           {onCancel && (
@@ -492,7 +492,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
               onClick={onCancel}
               className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              キャンセル
+              Cancel
             </button>
           )}
         </div>

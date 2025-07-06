@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Layout from '../components/layout/Layout';
 import FeePaymentForm from '../components/forms/FeePaymentForm';
 import FeePaymentTable from '../components/fee/FeePaymentTable';
 import { feePaymentApi, facilityApi } from '../lib/api';
@@ -115,7 +116,7 @@ const FeePaymentPage: React.FC = () => {
     }
     
     // Success notification
-    alert(`手数料支払い #${feePayment.id} が正常に作成されました！`);
+    alert(`Fee payment #${feePayment.id} has been created successfully!`);
   };
 
   const handleViewDetails = (feePayment: FeePayment) => {
@@ -156,32 +157,33 @@ const FeePaymentPage: React.FC = () => {
   const feeTypeOptions = getFeeTypeOptions();
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">手数料支払い管理</h1>
-          <p className="text-accent-400 mt-2">
-            手数料の支払い作成、履歴確認、統計分析を行います
-          </p>
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Fee Payments</h1>
+            <p className="text-accent-400 mt-2">
+              Manage fee payments, view history, and analyze statistics
+            </p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
+              showForm
+                ? 'bg-secondary-600 hover:bg-secondary-500 text-white'
+                : 'bg-accent-500 hover:bg-accent-400 text-white'
+            }`}
+          >
+            {showForm ? 'Back to List' : 'New Fee Payment'}
+          </button>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
-            showForm
-              ? 'bg-secondary-600 hover:bg-secondary-500 text-white'
-              : 'bg-accent-500 hover:bg-accent-400 text-white'
-          }`}
-        >
-          {showForm ? '一覧に戻る' : '新規手数料支払い'}
-        </button>
-      </div>
 
       {/* Statistics Panel */}
       {selectedFacility && statistics && (
         <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
           <h3 className="text-white font-semibold mb-4">
-            Facility #{selectedFacility} 手数料統計
+            Facility #{selectedFacility} Fee Statistics
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-secondary-600 rounded-lg p-4">
@@ -225,7 +227,7 @@ const FeePaymentPage: React.FC = () => {
         <>
           {/* Filters */}
           <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
-            <h3 className="text-white font-semibold mb-4">フィルター</h3>
+            <h3 className="text-white font-semibold mb-4">Filters</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Facility Filter */}
               <div>
@@ -254,7 +256,7 @@ const FeePaymentPage: React.FC = () => {
               {/* Fee Type Filter */}
               <div>
                 <label htmlFor="feeTypeFilter" className="block text-sm font-medium text-white mb-2">
-                  手数料タイプ
+                  Fee Type
                 </label>
                 <select
                   id="feeTypeFilter"
@@ -277,7 +279,7 @@ const FeePaymentPage: React.FC = () => {
               {/* Start Date Filter */}
               <div>
                 <label htmlFor="startDate" className="block text-sm font-medium text-white mb-2">
-                  開始日
+                  Start Date
                 </label>
                 <input
                   type="date"
@@ -294,7 +296,7 @@ const FeePaymentPage: React.FC = () => {
               {/* End Date Filter */}
               <div>
                 <label htmlFor="endDate" className="block text-sm font-medium text-white mb-2">
-                  終了日
+                  End Date
                 </label>
                 <input
                   type="date"
@@ -315,7 +317,7 @@ const FeePaymentPage: React.FC = () => {
                 onClick={clearFilters}
                 className="bg-secondary-600 hover:bg-secondary-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
               >
-                フィルターをクリア
+                Clear Filters
               </button>
             </div>
           </div>
@@ -388,7 +390,8 @@ const FeePaymentPage: React.FC = () => {
           )}
         </>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 };
 

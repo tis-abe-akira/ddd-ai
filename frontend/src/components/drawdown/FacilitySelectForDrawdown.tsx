@@ -25,9 +25,9 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
   const fetchFacilities = async () => {
     try {
       setLoading(true);
-      // 全件取得（検索用）
+      // Get all facilities (for search)
       const response = await facilityApi.getAll(0, 100);
-      // DRAFT状態のファシリティのみフィルタ（ドローダウン実行可能）
+      // Filter only DRAFT status facilities (available for drawdown)
       setFacilities(response.data.content.filter(facility => facility.status === 'DRAFT'));
     } catch (err) {
       console.error('Failed to fetch facilities:', err);
@@ -45,7 +45,7 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
   const selectedFacility = facilities.find(f => f.id === value);
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('ja-JP', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
@@ -54,28 +54,28 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
 
-  // 利用可能額を計算（将来的にはAPIから取得）
+  // Calculate available amount (future: get from API)
   const getAvailableAmount = (facility: Facility) => {
-    // 現在は簡易実装：Commitment全額が利用可能として表示
+    // Current simple implementation: show full commitment as available
     return facility.commitment;
   };
 
   const getUtilizationPercentage = (facility: Facility) => {
-    // 現在は簡易実装：0%として表示（将来的には実際の利用額から計算）
+    // Current simple implementation: show 0% (future: calculate from actual usage)
     return 0;
   };
 
   return (
     <div className="relative">
       <label className="block text-sm font-medium text-white mb-2">
-        ファシリティを選択 <span className="text-error">*</span>
+        Select Facility <span className="text-error">*</span>
       </label>
       
       {/* Select Button */}
@@ -102,15 +102,15 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
               </div>
               <div className="ml-auto flex flex-col items-end">
                 <div className="text-success text-sm font-medium">
-                  利用可能: {formatCurrency(getAvailableAmount(selectedFacility), selectedFacility.currency)}
+                  Available: {formatCurrency(getAvailableAmount(selectedFacility), selectedFacility.currency)}
                 </div>
                 <div className="text-accent-400 text-xs">
-                  利用率: {getUtilizationPercentage(selectedFacility)}%
+                  Utilization: {getUtilizationPercentage(selectedFacility)}%
                 </div>
               </div>
             </div>
           ) : (
-            <span className="text-accent-400">ファシリティを選択してください</span>
+            <span className="text-accent-400">Please select a facility</span>
           )}
           <svg className={`w-5 h-5 text-accent-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -129,7 +129,7 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
               </svg>
               <input
                 type="text"
-                placeholder="ファシリティを検索..."
+                placeholder="Search facilities..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-primary-900 border border-secondary-500 rounded text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500"
@@ -140,13 +140,13 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
           {/* Options List */}
           <div className="max-h-60 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-accent-400">読み込み中...</div>
+              <div className="p-4 text-center text-accent-400">Loading...</div>
             ) : filteredFacilities.length === 0 ? (
               <div className="p-4 text-center text-accent-400">
-                {searchTerm ? '検索結果が見つかりません' : 'ドローダウン可能なファシリティがありません'}
+                {searchTerm ? 'No search results found' : 'No facilities available for drawdown'}
                 {!searchTerm && (
                   <div className="text-xs mt-2 text-accent-500">
-                    ドローダウンはDRAFT状態のファシリティでのみ実行できます
+                    Drawdowns can only be executed on DRAFT status facilities
                   </div>
                 )}
               </div>
@@ -174,7 +174,7 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
                         Syndicate #{facility.syndicateId} | {facility.interestTerms}
                       </div>
                       <div className="text-accent-400 text-xs">
-                        期間: {formatDate(facility.startDate)} 〜 {formatDate(facility.endDate)}
+                        Period: {formatDate(facility.startDate)} ~ {formatDate(facility.endDate)}
                       </div>
                     </div>
                     <div className="text-right">
@@ -182,10 +182,10 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
                         {formatCurrency(facility.commitment, facility.currency)}
                       </div>
                       <div className="text-success text-sm">
-                        利用可能: {formatCurrency(getAvailableAmount(facility), facility.currency)}
+                        Available: {formatCurrency(getAvailableAmount(facility), facility.currency)}
                       </div>
                       <div className="text-accent-400 text-xs">
-                        投資家: {facility.sharePies?.length || 0}名
+                        Investors: {facility.sharePies?.length || 0}
                       </div>
                     </div>
                   </div>
@@ -203,26 +203,26 @@ const FacilitySelectForDrawdown: React.FC<FacilitySelectForDrawdownProps> = ({
       {/* Selected Facility Details */}
       {selectedFacility && (
         <div className="mt-4 p-4 bg-accent-500/10 border border-accent-500/30 rounded-lg">
-          <h4 className="text-accent-500 font-medium mb-3">選択されたファシリティ詳細</h4>
+          <h4 className="text-accent-500 font-medium mb-3">Selected Facility Details</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <div className="text-accent-400">融資枠額</div>
+              <div className="text-accent-400">Commitment</div>
               <div className="text-white font-medium">
                 {formatCurrency(selectedFacility.commitment, selectedFacility.currency)}
               </div>
             </div>
             <div>
-              <div className="text-accent-400">利用可能額</div>
+              <div className="text-accent-400">Available</div>
               <div className="text-success font-medium">
                 {formatCurrency(getAvailableAmount(selectedFacility), selectedFacility.currency)}
               </div>
             </div>
             <div>
-              <div className="text-accent-400">投資家数</div>
-              <div className="text-white font-medium">{selectedFacility.sharePies?.length || 0}名</div>
+              <div className="text-accent-400">Investors</div>
+              <div className="text-white font-medium">{selectedFacility.sharePies?.length || 0}</div>
             </div>
             <div>
-              <div className="text-accent-400">ステータス</div>
+              <div className="text-accent-400">Status</div>
               <div className="text-yellow-400 font-medium">DRAFT</div>
             </div>
           </div>
