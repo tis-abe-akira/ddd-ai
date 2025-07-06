@@ -17,6 +17,7 @@ export interface Borrower {
   companyId: string;
   creditLimit: number;
   creditRating: CreditRating;
+  currentFacilityAmount: number; // 既存Facility総額（動的計算）
 }
 
 export interface Investor {

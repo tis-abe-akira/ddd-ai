@@ -219,23 +219,23 @@ const FacilityForm: React.FC<FacilityFormProps> = ({
                         <span className="ml-1 font-bold text-white">
                           {new Intl.NumberFormat('ja-JP', {
                             style: 'currency',
-                            currency: selectedBorrower.currency || 'JPY',
+                            currency: 'JPY', // Borrower doesn't have currency field, use JPY
                             minimumFractionDigits: 0,
                             notation: 'compact'
                           }).format(selectedBorrower.creditLimit)}
                         </span>
                         <span className="ml-2 text-accent-400">Available:</span>
                         <span className={`ml-1 font-medium ${
-                          (selectedBorrower.creditLimit - selectedBorrower.currentInvestment) > 0 
+                          (selectedBorrower.creditLimit - selectedBorrower.currentFacilityAmount) > 0 
                             ? 'text-success' 
                             : 'text-warning'
                         }`}>
                           {new Intl.NumberFormat('ja-JP', {
                             style: 'currency',
-                            currency: selectedBorrower.currency || 'JPY',
+                            currency: 'JPY', // Borrower doesn't have currency field, use JPY
                             minimumFractionDigits: 0,
                             notation: 'compact'
-                          }).format(selectedBorrower.creditLimit - selectedBorrower.currentInvestment)}
+                          }).format(selectedBorrower.creditLimit - selectedBorrower.currentFacilityAmount)}
                         </span>
                       </span>
                     )}

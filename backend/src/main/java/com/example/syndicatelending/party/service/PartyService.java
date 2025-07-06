@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
@@ -127,8 +128,14 @@ public class PartyService {
 
     @Transactional(readOnly = true)
     public Borrower getBorrowerById(Long id) {
-        return borrowerRepository.findById(id)
+        Borrower borrower = borrowerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + id));
+        
+        // 既存Facility総額を動的計算して設定
+        BigDecimal totalFacilityAmount = facilityRepository.getTotalFacilityAmountByBorrowerId(id);
+        borrower.setCurrentFacilityAmount(totalFacilityAmount != null ? totalFacilityAmount.doubleValue() : 0.0);
+        
+        return borrower;
     }
 
     @Transactional(readOnly = true)

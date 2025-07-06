@@ -51,6 +51,13 @@ public class Borrower {
     @Column(name = "version")
     private Long version;
 
+    /**
+     * 既存Facility総額（動的計算フィールド）
+     * データベースには保存されない
+     */
+    @Transient
+    private Double currentFacilityAmount = 0.0;
+
     public Borrower() {
     }
 
@@ -188,5 +195,13 @@ public class Borrower {
      */
     public boolean canModifyRestrictedFields() {
         return BorrowerState.ACTIVE.equals(this.status);
+    }
+
+    public Double getCurrentFacilityAmount() {
+        return currentFacilityAmount;
+    }
+
+    public void setCurrentFacilityAmount(Double currentFacilityAmount) {
+        this.currentFacilityAmount = currentFacilityAmount != null ? currentFacilityAmount : 0.0;
     }
 }
