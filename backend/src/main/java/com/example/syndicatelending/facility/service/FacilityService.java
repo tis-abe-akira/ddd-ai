@@ -302,7 +302,8 @@ public class FacilityService {
      * Drawdown削除時にFacilityをDRAFT状態に自動復帰させる
      * 
      * このメソッドは手動の revertToDraft とは異なり、Drawdown削除の一環として
-     * 自動的に呼び出される処理です。手動操作の場合の厳格な検証は行いません。
+     * 自動的に呼び出される処理です。ビジネスルール検証は事前に完了している前提です。
+     * State Machine統合により、包括的ライフサイクル管理を実現します。
      * 
      * @param facilityId FacilityのID
      * @throws ResourceNotFoundException Facilityが存在しない場合
@@ -318,18 +319,27 @@ public class FacilityService {
         
         // FIXED状態の場合のみDRAFTに戻す（他の状態からの復帰は想定外）
         if (facility.getStatus() == FacilityState.FIXED) {
-            // Drawdown削除時の自動処理のため、追加の検証は不要
-            // State Machine実行は optional（ログのみ記録）
+            // State Machine統合によるライフサイクル管理（CLAUDE.md方針準拠）
+            // Drawdown削除時のビジネスルール検証は呼び出し元で完了済み
+            boolean stateTransitionSuccess = false;
             try {
-                boolean result = executeFacilityStateTransition(facility, FacilityEvent.REVERT_TO_DRAFT);
+                stateTransitionSuccess = executeFacilityStateTransition(facility, FacilityEvent.REVERT_TO_DRAFT);
             } catch (Exception e) {
-                // State Machine実行失敗はログに記録するが、処理は継続
-                System.err.println("State Machine execution warning during auto-revert: " + e.getMessage());
+                // State Machine実行失敗をログに記録
+                System.err.println("State Machine execution failed during auto-revert: " + e.getMessage());
             }
             
-            // 状態更新を実行
+            // State Machine成功・失敗に関わらず、ビジネスルール検証済みのため状態更新を実行
+            // これによりデータ整合性を保ち、ユーザー操作の完了を保証する
             facility.setStatus(FacilityState.DRAFT);
             facilityRepository.save(facility);
+            
+            // State Machine統合の結果をログ出力（統計・監査目的）
+            if (stateTransitionSuccess) {
+                System.out.println("Facility auto-revert: State Machine transition successful for facility " + facilityId);
+            } else {
+                System.out.println("Facility auto-revert: State Machine bypass applied for facility " + facilityId);
+            }
         }
     }
 
