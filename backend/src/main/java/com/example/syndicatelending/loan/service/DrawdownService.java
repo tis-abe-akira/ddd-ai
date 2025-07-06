@@ -237,7 +237,10 @@ public class DrawdownService {
             loanRepository.deleteById(drawdown.getLoanId());
         }
 
-        // 5. ドローダウンの削除 (AmountPieはCascadeで自動削除)
+        // 5. Facilityの状態をDRAFTに戻す（他にDrawdownが無い場合のみ）
+        revertFacilityStateIfNeeded(drawdown.getFacilityId(), drawdown.getId());
+
+        // 6. ドローダウンの削除 (AmountPieはCascadeで自動削除)
         drawdownRepository.delete(drawdown);
     }
 
@@ -371,6 +374,24 @@ public class DrawdownService {
      */
     private boolean canEdit(TransactionStatus status) {
         return status == TransactionStatus.PENDING || status == TransactionStatus.FAILED;
+    }
+
+    /**
+     * Facilityの状態をDRAFTに戻す（必要な場合のみ）
+     * 
+     * 削除対象以外に他のDrawdownが存在しない場合のみ、FacilityをDRAFT状態に戻す
+     */
+    private void revertFacilityStateIfNeeded(Long facilityId, Long excludeDrawdownId) {
+        // 削除対象以外のDrawdownが存在するかチェック
+        List<Drawdown> otherDrawdowns = drawdownRepository.findByFacilityId(facilityId)
+                .stream()
+                .filter(d -> !d.getId().equals(excludeDrawdownId))
+                .toList();
+        
+        // 他にDrawdownが無い場合のみ、FacilityをDRAFTに戻す
+        if (otherDrawdowns.isEmpty()) {
+            facilityService.revertToDraft(facilityId);
+        }
     }
 
     /**
