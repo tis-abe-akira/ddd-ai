@@ -11,6 +11,8 @@ import type {
   Drawdown,
   Payment,
   PaymentDetail,
+  FeePayment,
+  FeePaymentStatistics,
   CreateBorrowerRequest,
   UpdateBorrowerRequest,
   CreateCompanyRequest,
@@ -23,6 +25,8 @@ import type {
   CreateDrawdownRequest,
   UpdateDrawdownRequest,
   CreatePaymentRequest,
+  CreateFeePaymentRequest,
+  FeeType,
   ApiResponse,
   ApiError,
   PageResponse
@@ -195,6 +199,53 @@ export const paymentApi = {
 // PaymentDetail API
 export const paymentDetailApi = {
   getByLoanId: (loanId: number) => apiClient.get<PaymentDetail[]>(`/loans/${loanId}/payment-details`),
+};
+
+// Fee Payment API
+export const feePaymentApi = {
+  // Core CRUD Operations
+  getAll: (page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<FeePayment>>(`/fees/payments?${params.toString()}`);
+  },
+  getById: (id: number) => apiClient.get<FeePayment>(`/fees/payments/${id}`),
+  create: (data: CreateFeePaymentRequest) => apiClient.post<FeePayment>('/fees/payments', data),
+  
+  // Search & Filter Operations
+  getByFacilityId: (facilityId: number, page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<FeePayment>>(`/fees/payments/facility/${facilityId}?${params.toString()}`);
+  },
+  getByType: (feeType: FeeType, page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<FeePayment>>(`/fees/payments/type/${feeType}?${params.toString()}`);
+  },
+  getByDateRange: (startDate: string, endDate: string, page?: number, size?: number) => {
+    const params = new URLSearchParams();
+    params.append('startDate', startDate);
+    params.append('endDate', endDate);
+    if (page !== undefined) params.append('page', page.toString());
+    if (size !== undefined) params.append('size', size.toString());
+    params.append('sort', 'id,desc');
+    
+    return apiClient.get<PageResponse<FeePayment>>(`/fees/payments/date-range?${params.toString()}`);
+  },
+  
+  // Analytics & Statistics
+  getStatistics: (facilityId: number) => 
+    apiClient.get<FeePaymentStatistics>(`/fees/payments/facility/${facilityId}/statistics`),
 };
 
 // Utility function for handling API responses

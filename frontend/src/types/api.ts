@@ -387,3 +387,66 @@ export interface ApiError {
   status: number;
   errors?: Record<string, string[]>;
 }
+
+// Fee Payment関連の型定義
+export type FeeType = 
+  | 'MANAGEMENT_FEE'
+  | 'ARRANGEMENT_FEE'
+  | 'COMMITMENT_FEE'
+  | 'TRANSACTION_FEE'
+  | 'LATE_FEE'
+  | 'AGENT_FEE'
+  | 'OTHER_FEE';
+
+export type RecipientType = 'BANK' | 'INVESTOR';
+
+export interface FeePayment {
+  id: number;
+  feeType: FeeType;
+  feeAmount: number;
+  currency: string;
+  feeDate: string;
+  description: string;
+  recipientType: RecipientType;
+  recipientId: number;
+  calculationBase: number;
+  feeRate: number;
+  facilityId: number;
+  feeDistributions: FeeDistribution[];
+  status: TransactionStatus;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface FeeDistribution {
+  id: number;
+  feePaymentId: number;
+  recipientType: RecipientType;
+  recipientId: number;
+  distributionAmount: number;
+  distributionRatio: number;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFeePaymentRequest {
+  feeType: FeeType;
+  feeAmount: number;
+  currency: string;
+  feeDate: string;
+  description: string;
+  recipientType: RecipientType;
+  recipientId: number;
+  calculationBase: number;
+  feeRate: number;
+  facilityId: number;
+}
+
+export interface FeePaymentStatistics {
+  totalFeePayments: number;
+  totalFeeAmount: number;
+  feePaymentCountsByType: Record<FeeType, number>;
+  currency: string;
+}

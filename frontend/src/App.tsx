@@ -5,6 +5,7 @@ import SyndicatePage from './pages/SyndicatePage';
 import FacilityPage from './pages/FacilityPage';
 import DrawdownPage from './pages/DrawdownPage';
 import DrawdownDetailPage from './pages/DrawdownDetailPage';
+import FeePaymentPage from './pages/FeePaymentPage';
 import Layout from './components/layout/Layout';
 
 function App() {
@@ -40,6 +41,9 @@ function App() {
         {/* Drawdown routes */}
         <Route path="/drawdowns" element={<DrawdownPage />} />
         <Route path="/drawdowns/:id" element={<DrawdownDetailPage />} />
+        
+        {/* Fee Payment routes */}
+        <Route path="/fees" element={<FeePaymentPage />} />
         
         {/* Placeholder routes */}
         <Route path="/loans" element={
