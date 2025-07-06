@@ -78,6 +78,11 @@ mvn test jacoco:report
    - `ResourceNotFoundException`: リソース未発見（404）
    - `GlobalExceptionHandler`: 統一的エラーレスポンス
 5. **Testing**: 各層での適切なテスト戦略（Entity -> Service -> API Integration）
+6. **State Machine実装規約**: 
+   - 全ての状態変更はState Machine経由で実行（直接的なsetStatus禁止）
+   - State Machine失敗時は業務処理を停止（Fail-Fast原則）
+   - 全てのビジネス状態遷移に対応するイベント定義
+   - 詳細: [State Machine Implementation Guidelines](docs/state-machine/standards/state-machine-guidelines.md)
 
 ## 重要なURL
 - **Backend API**: http://localhost:8080
@@ -122,6 +127,8 @@ mvn test jacoco:report
    - **Facility**: DRAFT → FIXED（ドローダウン後変更禁止）
    - **Loan**: DRAFT → ACTIVE → OVERDUE → COMPLETED（返済ライフサイクル）
    - **Party**: ACTIVE → RESTRICTED（Facility参加後制限）
+   - **実装ガイド**: [State Machine Implementation Guidelines](docs/state-machine/standards/state-machine-guidelines.md)
+   - **調査結果**: [State Machine Analysis](docs/state-machine/README.md)
 
 ## 実装済み機能
 - ✅ **Party管理**: 企業・借り手・投資家のCRUD
