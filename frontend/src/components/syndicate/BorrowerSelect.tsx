@@ -67,7 +67,7 @@ const BorrowerSelect: React.FC<BorrowerSelectProps> = ({ value, onChange, error 
   return (
     <div className="relative">
       <label className="block text-sm font-medium text-white mb-2">
-        借り手を選択 <span className="text-error">*</span>
+        Select Borrower <span className="text-error">*</span>
       </label>
       
       {/* Select Button */}
@@ -93,7 +93,7 @@ const BorrowerSelect: React.FC<BorrowerSelectProps> = ({ value, onChange, error 
               </div>
             </div>
           ) : (
-            <span className="text-accent-400">借り手を選択してください</span>
+            <span className="text-accent-400">Please select a borrower</span>
           )}
           <svg className={`w-5 h-5 text-accent-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -112,7 +112,7 @@ const BorrowerSelect: React.FC<BorrowerSelectProps> = ({ value, onChange, error 
               </svg>
               <input
                 type="text"
-                placeholder="借り手を検索..."
+                placeholder="Search borrowers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-primary-900 border border-secondary-500 rounded text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500"
@@ -123,10 +123,10 @@ const BorrowerSelect: React.FC<BorrowerSelectProps> = ({ value, onChange, error 
           {/* Options List */}
           <div className="max-h-60 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-accent-400">読み込み中...</div>
+              <div className="p-4 text-center text-accent-400">Loading...</div>
             ) : filteredBorrowers.length === 0 ? (
               <div className="p-4 text-center text-accent-400">
-                {searchTerm ? '検索結果が見つかりません' : '借り手が登録されていません'}
+                {searchTerm ? 'No search results found' : 'No borrowers registered'}
               </div>
             ) : (
               filteredBorrowers.map((borrower) => (
@@ -150,7 +150,7 @@ const BorrowerSelect: React.FC<BorrowerSelectProps> = ({ value, onChange, error 
                       <div className="text-white font-medium">{borrower.name}</div>
                       <div className="text-accent-400 text-sm">{borrower.email}</div>
                       {borrower.companyId && (
-                        <div className="text-accent-400 text-xs">会社ID: {borrower.companyId}</div>
+                        <div className="text-accent-400 text-xs">Company ID: {borrower.companyId}</div>
                       )}
                     </div>
                     <div className="text-right">

@@ -85,7 +85,7 @@ const defaultValues: FeePaymentFormData = {
   recipientId: 0,
   feeAmount: 0,
   calculationBase: 0,
-  feeRate: 1.5, // MANAGEMENT_FEEのデフォルト料率
+  feeRate: 1.5, // Default rate for MANAGEMENT_FEE
   currency: 'USD',
   feeDate: new Date().toISOString().split('T')[0],
   description: '',
@@ -177,13 +177,14 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
     }
   }, [watchedValues.calculationBase, watchedValues.feeRate, setValue]);
 
-  // Update currency and borrower when facility changes
+  // Update currency, borrower, and calculation base when facility changes
   useEffect(() => {
     const loadBorrowerFromFacility = async () => {
       if (watchedValues.facilityId > 0) {
         const selectedFacility = facilities.find(f => f.id === watchedValues.facilityId);
         if (selectedFacility) {
           setValue('currency', selectedFacility.currency);
+          setValue('calculationBase', selectedFacility.commitment);
           
           // Get syndicate details to determine borrower
           try {
@@ -431,7 +432,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
           <h3 className="text-white font-medium mb-4">Recipient Information</h3>
           
           {isRecipientAutomatic(watchedValues.feeType) ? (
-            // 自動決定される場合：情報表示のみ
+            // Automatically determined: display information only
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -453,7 +454,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
               <input type="hidden" {...register('recipientId', { valueAsNumber: true })} value={1} />
             </div>
           ) : (
-            // 手動選択が必要な場合：選択UI表示
+            // Manual selection required: show selection UI
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="recipientType" className="block text-sm font-medium text-white mb-2">
@@ -621,25 +622,6 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
           )}
         </div>
 
-        {/* Debug Information */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-            <p className="text-yellow-400 text-xs font-mono">
-              Debug: Form Valid = {Object.keys(errors).length === 0 ? 'Yes' : 'No'}
-              {Object.keys(errors).length > 0 && (
-                <span className="block mt-1">
-                  Errors: {Object.keys(errors).join(', ')}
-                </span>
-              )}
-            </p>
-            <p className="text-yellow-400 text-xs font-mono mt-1">
-              FacilityId: {watchedValues.facilityId}, BorrowerId: {watchedValues.borrowerId}
-            </p>
-            <p className="text-yellow-400 text-xs font-mono mt-1">
-              Selected Facility: {JSON.stringify(facilities.find(f => f.id === watchedValues.facilityId), null, 2)}
-            </p>
-          </div>
-        )}
 
         {/* Submit Error */}
         {submitError && (

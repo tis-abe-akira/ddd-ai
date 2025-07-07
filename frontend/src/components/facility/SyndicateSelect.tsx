@@ -42,7 +42,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
   const selectedSyndicate = syndicates.find(s => s.id === value);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -65,7 +65,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
   return (
     <div className="relative">
       <label className="block text-sm font-medium text-white mb-2">
-        シンジケートを選択 <span className="text-error">*</span>
+        Select Syndicate <span className="text-error">*</span>
       </label>
       
       {/* Select Button */}
@@ -88,7 +88,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
               <div>
                 <div className="text-white font-medium">{selectedSyndicate.name}</div>
                 <div className="text-accent-400 text-sm">
-                  ID: {selectedSyndicate.id} | メンバー: {selectedSyndicate.memberInvestorIds.length}名
+                  ID: {selectedSyndicate.id} | Members: {selectedSyndicate.memberInvestorIds.length}
                 </div>
               </div>
               <div 
@@ -99,7 +99,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
               </div>
             </div>
           ) : (
-            <span className="text-accent-400">シンジケートを選択してください</span>
+            <span className="text-accent-400">Please select a syndicate</span>
           )}
           <svg className={`w-5 h-5 text-accent-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -118,7 +118,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
               </svg>
               <input
                 type="text"
-                placeholder="シンジケートを検索..."
+                placeholder="Search syndicates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-primary-900 border border-secondary-500 rounded text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500"
@@ -129,10 +129,10 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
           {/* Options List */}
           <div className="max-h-60 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-accent-400">読み込み中...</div>
+              <div className="p-4 text-center text-accent-400">Loading...</div>
             ) : filteredSyndicates.length === 0 ? (
               <div className="p-4 text-center text-accent-400">
-                {searchTerm ? '検索結果が見つかりません' : 'Facility組成可能なシンジケートがありません'}
+                {searchTerm ? 'No search results found' : 'No syndicates available for facility creation'}
               </div>
             ) : (
               filteredSyndicates.map((syndicate) => (
@@ -155,10 +155,10 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
                     <div className="flex-1">
                       <div className="text-white font-medium">{syndicate.name}</div>
                       <div className="text-accent-400 text-sm">
-                        借り手ID: {syndicate.borrowerId} | リードバンク: {syndicate.leadBankId}
+                        Borrower ID: {syndicate.borrowerId} | Lead Bank: {syndicate.leadBankId}
                       </div>
                       <div className="text-accent-400 text-xs">
-                        メンバー数: {syndicate.memberInvestorIds.length}名 | 組成日: {formatDate(syndicate.createdAt)}
+                        Members: {syndicate.memberInvestorIds.length} | Created: {formatDate(syndicate.createdAt)}
                       </div>
                     </div>
                     <div className="text-right">

@@ -76,7 +76,7 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
   const totalPercentage = Math.round(totalShare * 100);
 
   const getInvestorName = (investorId: number) => {
-    return investors.find(inv => inv.id === investorId)?.name || `投資家ID: ${investorId}`;
+    return investors.find(inv => inv.id === investorId)?.name || `Investor ID: ${investorId}`;
   };
 
   const getInvestorTypeColor = (investorId: number) => {
@@ -161,7 +161,7 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Syndicate "{syndicateDetail.name}" の参加投資家のみが選択可能です ({investors.length}名)
+              Only investors participating in Syndicate "{syndicateDetail.name}" can be selected ({investors.length} investors)
             </div>
           </div>
         )}
@@ -242,13 +242,13 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
           <div className="mt-4 p-4 bg-accent-500/10 border border-accent-500/30 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-white mb-2">投資家</label>
+                <label className="block text-sm font-medium text-white mb-2">Investor</label>
                 <select
                   value={selectedInvestorId || ''}
                   onChange={(e) => setSelectedInvestorId(e.target.value ? Number(e.target.value) : undefined)}
                   className="w-full px-3 py-2 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500"
                 >
-                  <option value="">投資家を選択...</option>
+                  <option value="">Select investor...</option>
                   {availableInvestors.map((investor) => (
                     <option key={investor.id} value={investor.id}>
                       {investor.name} (ID: {investor.id})
@@ -258,12 +258,12 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-white mb-2">持分比率 (%)</label>
+                <label className="block text-sm font-medium text-white mb-2">Share Percentage (%)</label>
                 <input
                   type="number"
                   value={sharePercentage}
                   onChange={(e) => setSharePercentage(e.target.value)}
-                  placeholder="例: 25"
+                  placeholder="e.g. 25"
                   min="1"
                   max="100"
                   className="w-full px-3 py-2 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500"
@@ -278,7 +278,7 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
                 disabled={!selectedInvestorId || !sharePercentage}
                 className="bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
               >
-                追加
+                Add
               </button>
               <button
                 type="button"
@@ -289,7 +289,7 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
                 }}
                 className="bg-secondary-600 hover:bg-secondary-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
               >
-                キャンセル
+                Cancel
               </button>
             </div>
           </div>
@@ -303,7 +303,7 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
           : 'bg-warning/10 border-warning/30'
       }`}>
         <div className="flex items-center justify-between">
-          <span className="text-white font-medium">持分比率合計</span>
+          <span className="text-white font-medium">Total Share Percentage</span>
           <div className="flex items-center gap-2">
             <span className={`text-lg font-bold ${
               Math.abs(totalPercentage - 100) < 1 ? 'text-success' : 'text-warning'
@@ -323,8 +323,8 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
         </div>
         <div className="text-accent-400 text-sm mt-1">
           {Math.abs(totalPercentage - 100) < 1 
-            ? '持分比率の合計が100%に達しました' 
-            : `合計が100%になるように調整してください（現在: ${totalPercentage - 100 > 0 ? '+' : ''}${totalPercentage - 100}%）`
+            ? 'Total share percentage has reached 100%' 
+            : `Please adjust to reach 100% total (current: ${totalPercentage - 100 > 0 ? '+' : ''}${totalPercentage - 100}%)`
           }
         </div>
       </div>

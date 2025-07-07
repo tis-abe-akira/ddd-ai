@@ -1,28 +1,28 @@
 import type { FeeType, RecipientType } from '../types/api';
 
-// 手数料タイプの表示名とビジネスルール
+// Fee type display names and business rules
 export const FEE_TYPE_LABELS: Record<FeeType, string> = {
-  MANAGEMENT_FEE: '管理手数料',
-  ARRANGEMENT_FEE: 'アレンジメント手数料',
-  COMMITMENT_FEE: 'コミットメント手数料',
-  TRANSACTION_FEE: '取引手数料',
-  LATE_FEE: '遅延手数料',
-  AGENT_FEE: 'エージェント手数料',
-  OTHER_FEE: 'その他手数料',
+  MANAGEMENT_FEE: 'Management Fee',
+  ARRANGEMENT_FEE: 'Arrangement Fee',
+  COMMITMENT_FEE: 'Commitment Fee',
+  TRANSACTION_FEE: 'Transaction Fee',
+  LATE_FEE: 'Late Fee',
+  AGENT_FEE: 'Agent Fee',
+  OTHER_FEE: 'Other Fee',
 };
 
-// 手数料タイプの説明
+// Fee type descriptions
 export const FEE_TYPE_DESCRIPTIONS: Record<FeeType, string> = {
-  MANAGEMENT_FEE: 'ローン管理・運営に関する手数料（リードバンク収益）',
-  ARRANGEMENT_FEE: 'ローン組成・アレンジメントに関する手数料（リードバンク収益）',
-  COMMITMENT_FEE: 'コミットメント維持に関する手数料（投資家配分）',
-  TRANSACTION_FEE: '取引実行に関する手数料（バンク収益）',
-  LATE_FEE: '支払い遅延に関する手数料（投資家配分）',
-  AGENT_FEE: 'エージェント業務に関する手数料（エージェントバンク収益）',
-  OTHER_FEE: 'その他の手数料（設定可能）',
+  MANAGEMENT_FEE: 'Loan management and operation fees (Lead Bank revenue)',
+  ARRANGEMENT_FEE: 'Loan arrangement and structuring fees (Lead Bank revenue)',
+  COMMITMENT_FEE: 'Commitment maintenance fees (Investor distribution)',
+  TRANSACTION_FEE: 'Transaction execution fees (Bank revenue)',
+  LATE_FEE: 'Payment delay penalties (Investor distribution)',
+  AGENT_FEE: 'Agent services fees (Agent Bank revenue)',
+  OTHER_FEE: 'Other fees (configurable)',
 };
 
-// 手数料タイプ別の受取人制限（新RecipientTypeに対応）
+// Fee type recipient restrictions (supporting new RecipientType)
 export const getFeeTypeRecipientRestrictions = (feeType: FeeType): RecipientType[] => {
   switch (feeType) {
     case 'MANAGEMENT_FEE':
@@ -41,17 +41,17 @@ export const getFeeTypeRecipientRestrictions = (feeType: FeeType): RecipientType
   }
 };
 
-// 手数料タイプが投資家配分を必要とするかチェック
+// Check if fee type requires investor distribution
 export const requiresInvestorDistribution = (feeType: FeeType): boolean => {
   return getFeeTypeRecipientRestrictions(feeType).includes('AUTO_DISTRIBUTE');
 };
 
-// 手数料タイプがバンク収益かチェック
+// Check if fee type is bank revenue
 export const isBankRevenue = (feeType: FeeType): boolean => {
   return ['MANAGEMENT_FEE', 'ARRANGEMENT_FEE', 'TRANSACTION_FEE', 'AGENT_FEE'].includes(feeType);
 };
 
-// 受取人タイプの表示名
+// Recipient type display names
 export const RECIPIENT_TYPE_LABELS: Record<RecipientType, string> = {
   LEAD_BANK: 'Lead Bank (Auto)',
   AGENT_BANK: 'Agent Bank',
@@ -59,13 +59,13 @@ export const RECIPIENT_TYPE_LABELS: Record<RecipientType, string> = {
   AUTO_DISTRIBUTE: 'Auto Distribution',
 };
 
-// 手数料タイプのバリデーション
+// Fee type validation
 export const validateFeeTypeRecipient = (feeType: FeeType, recipientType: RecipientType): boolean => {
   const allowedRecipients = getFeeTypeRecipientRestrictions(feeType);
   return allowedRecipients.includes(recipientType);
 };
 
-// 手数料計算の検証
+// Fee calculation validation
 export const validateFeeCalculation = (
   calculationBase: number,
   feeRate: number,
@@ -76,7 +76,7 @@ export const validateFeeCalculation = (
   return Math.abs(expectedAmount - feeAmount) <= tolerance;
 };
 
-// 手数料タイプの色分け（UI用）
+// Fee type color coding (for UI)
 export const getFeeTypeColor = (feeType: FeeType): string => {
   switch (feeType) {
     case 'MANAGEMENT_FEE':
@@ -98,7 +98,7 @@ export const getFeeTypeColor = (feeType: FeeType): string => {
   }
 };
 
-// 手数料タイプの優先度（ソート用）
+// Fee type priority (for sorting)
 export const getFeeTypePriority = (feeType: FeeType): number => {
   const priorities: Record<FeeType, number> = {
     MANAGEMENT_FEE: 1,
@@ -112,7 +112,7 @@ export const getFeeTypePriority = (feeType: FeeType): number => {
   return priorities[feeType] || 999;
 };
 
-// 手数料タイプの選択肢（フォーム用）
+// Fee type options (for forms)
 export const getFeeTypeOptions = () => {
   return Object.entries(FEE_TYPE_LABELS).map(([value, label]) => ({
     value: value as FeeType,
@@ -121,7 +121,7 @@ export const getFeeTypeOptions = () => {
   }));
 };
 
-// 受取人タイプの選択肢（フォーム用）
+// Recipient type options (for forms)
 export const getRecipientTypeOptions = () => {
   return Object.entries(RECIPIENT_TYPE_LABELS).map(([value, label]) => ({
     value: value as RecipientType,
@@ -129,7 +129,7 @@ export const getRecipientTypeOptions = () => {
   }));
 };
 
-// 手数料タイプのデフォルト料率
+// Default fee rates by fee type
 export const getFeeTypeDefaultRate = (feeType: FeeType): number => {
   const defaultRates: Record<FeeType, number> = {
     MANAGEMENT_FEE: 1.5,
@@ -143,13 +143,13 @@ export const getFeeTypeDefaultRate = (feeType: FeeType): number => {
   return defaultRates[feeType] || 0.0;
 };
 
-// 受取人選択が必要かチェック
+// Check if recipient selection is required
 export const requiresRecipientSelection = (feeType: FeeType): boolean => {
   const recipientType = getFeeTypeRecipientRestrictions(feeType)[0];
   return recipientType === 'AGENT_BANK' || recipientType === 'INVESTOR';
 };
 
-// 自動受取人決定が可能かチェック
+// Check if automatic recipient determination is possible
 export const isRecipientAutomatic = (feeType: FeeType): boolean => {
   const recipientType = getFeeTypeRecipientRestrictions(feeType)[0];
   return recipientType === 'LEAD_BANK' || recipientType === 'AUTO_DISTRIBUTE';
