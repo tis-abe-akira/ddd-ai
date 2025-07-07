@@ -22,27 +22,28 @@ export const FEE_TYPE_DESCRIPTIONS: Record<FeeType, string> = {
   OTHER_FEE: 'その他の手数料（設定可能）',
 };
 
-// 手数料タイプ別の受取人制限
+// 手数料タイプ別の受取人制限（新RecipientTypeに対応）
 export const getFeeTypeRecipientRestrictions = (feeType: FeeType): RecipientType[] => {
   switch (feeType) {
     case 'MANAGEMENT_FEE':
     case 'ARRANGEMENT_FEE':
+      return ['LEAD_BANK'];
     case 'TRANSACTION_FEE':
     case 'AGENT_FEE':
-      return ['BANK'];
+      return ['AGENT_BANK'];
     case 'COMMITMENT_FEE':
     case 'LATE_FEE':
-      return ['INVESTOR'];
+      return ['AUTO_DISTRIBUTE'];
     case 'OTHER_FEE':
-      return ['BANK', 'INVESTOR'];
+      return ['INVESTOR'];
     default:
-      return ['BANK', 'INVESTOR'];
+      return ['INVESTOR'];
   }
 };
 
 // 手数料タイプが投資家配分を必要とするかチェック
 export const requiresInvestorDistribution = (feeType: FeeType): boolean => {
-  return feeType === 'COMMITMENT_FEE' || feeType === 'LATE_FEE';
+  return getFeeTypeRecipientRestrictions(feeType).includes('AUTO_DISTRIBUTE');
 };
 
 // 手数料タイプがバンク収益かチェック
@@ -52,8 +53,10 @@ export const isBankRevenue = (feeType: FeeType): boolean => {
 
 // 受取人タイプの表示名
 export const RECIPIENT_TYPE_LABELS: Record<RecipientType, string> = {
-  BANK: '銀行',
-  INVESTOR: '投資家',
+  LEAD_BANK: 'Lead Bank (Auto)',
+  AGENT_BANK: 'Agent Bank',
+  INVESTOR: 'Investor',
+  AUTO_DISTRIBUTE: 'Auto Distribution',
 };
 
 // 手数料タイプのバリデーション
@@ -124,4 +127,30 @@ export const getRecipientTypeOptions = () => {
     value: value as RecipientType,
     label,
   }));
+};
+
+// 手数料タイプのデフォルト料率
+export const getFeeTypeDefaultRate = (feeType: FeeType): number => {
+  const defaultRates: Record<FeeType, number> = {
+    MANAGEMENT_FEE: 1.5,
+    ARRANGEMENT_FEE: 2.0,
+    COMMITMENT_FEE: 0.5,
+    TRANSACTION_FEE: 0.1,
+    LATE_FEE: 5.0,
+    AGENT_FEE: 1.0,
+    OTHER_FEE: 0.0,
+  };
+  return defaultRates[feeType] || 0.0;
+};
+
+// 受取人選択が必要かチェック
+export const requiresRecipientSelection = (feeType: FeeType): boolean => {
+  const recipientType = getFeeTypeRecipientRestrictions(feeType)[0];
+  return recipientType === 'AGENT_BANK' || recipientType === 'INVESTOR';
+};
+
+// 自動受取人決定が可能かチェック
+export const isRecipientAutomatic = (feeType: FeeType): boolean => {
+  const recipientType = getFeeTypeRecipientRestrictions(feeType)[0];
+  return recipientType === 'LEAD_BANK' || recipientType === 'AUTO_DISTRIBUTE';
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { feePaymentApi, facilityApi, investorApi } from '../../lib/api';
+import { feePaymentApi, facilityApi, investorApi, borrowerApi, syndicateApi } from '../../lib/api';
 import { 
   FEE_TYPE_LABELS, 
   FEE_TYPE_DESCRIPTIONS, 
@@ -12,7 +12,10 @@ import {
   getFeeTypeRecipientRestrictions,
   validateFeeTypeRecipient,
   validateFeeCalculation,
-  getFeeTypeColor
+  getFeeTypeColor,
+  getFeeTypeDefaultRate,
+  requiresRecipientSelection,
+  isRecipientAutomatic
 } from '../../lib/feeTypes';
 import type { 
   FeePayment, 
@@ -21,12 +24,14 @@ import type {
   RecipientType,
   Facility,
   Investor,
+  Borrower,
   ApiError 
 } from '../../types/api';
 
 // Form validation schema
 const feePaymentSchema = z.object({
   facilityId: z.number().min(1, 'Facility selection is required'),
+  borrowerId: z.number().min(0, 'Borrower information is required'),
   feeType: z.enum([
     'MANAGEMENT_FEE',
     'ARRANGEMENT_FEE', 
@@ -36,8 +41,8 @@ const feePaymentSchema = z.object({
     'AGENT_FEE',
     'OTHER_FEE'
   ], { required_error: 'Fee type is required' }),
-  recipientType: z.enum(['BANK', 'INVESTOR'], { required_error: 'Recipient type is required' }),
-  recipientId: z.number().min(1, 'Recipient selection is required'),
+  recipientType: z.enum(['LEAD_BANK', 'AGENT_BANK', 'INVESTOR', 'AUTO_DISTRIBUTE'], { required_error: 'Recipient type is required' }),
+  recipientId: z.number().min(0, 'Recipient selection is required'),
   feeAmount: z.number().min(0.01, 'Fee amount must be greater than 0'),
   calculationBase: z.number().min(0, 'Calculation base must be 0 or greater'),
   feeRate: z.number().min(0, 'Fee rate must be 0 or greater'),
@@ -59,18 +64,28 @@ const feePaymentSchema = z.object({
 }, {
   message: 'Fee calculation mismatch: calculationBase × feeRate should equal feeAmount',
   path: ['feeAmount']
+}).refine((data) => {
+  // Validate borrower is determined when facility is selected
+  if (data.facilityId > 0 && data.borrowerId <= 0) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Borrower information cannot be determined from selected facility',
+  path: ['borrowerId']
 });
 
 type FeePaymentFormData = z.infer<typeof feePaymentSchema>;
 
 const defaultValues: FeePaymentFormData = {
   facilityId: 0,
+  borrowerId: 0,
   feeType: 'MANAGEMENT_FEE',
-  recipientType: 'BANK',
+  recipientType: 'LEAD_BANK',
   recipientId: 0,
   feeAmount: 0,
   calculationBase: 0,
-  feeRate: 0,
+  feeRate: 1.5, // MANAGEMENT_FEEのデフォルト料率
   currency: 'USD',
   feeDate: new Date().toISOString().split('T')[0],
   description: '',
@@ -86,8 +101,10 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [investors, setInvestors] = useState<Investor[]>([]);
+  const [borrowers, setBorrowers] = useState<Borrower[]>([]);
   const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
   const [isLoadingInvestors, setIsLoadingInvestors] = useState(false);
+  const [isLoadingBorrowers, setIsLoadingBorrowers] = useState(false);
 
   const {
     register,
@@ -104,7 +121,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
   const watchedValues = watch();
 
-  // Load facilities on component mount
+  // Load facilities and borrowers on component mount
   useEffect(() => {
     const loadFacilities = async () => {
       setIsLoadingFacilities(true);
@@ -117,7 +134,21 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
         setIsLoadingFacilities(false);
       }
     };
+
+    const loadBorrowers = async () => {
+      setIsLoadingBorrowers(true);
+      try {
+        const response = await borrowerApi.getAll();
+        setBorrowers(response.data.content);
+      } catch (error) {
+        console.error('Failed to load borrowers:', error);
+      } finally {
+        setIsLoadingBorrowers(false);
+      }
+    };
+
     loadFacilities();
+    loadBorrowers();
   }, []);
 
   // Load investors when recipient type is INVESTOR
@@ -146,35 +177,96 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
     }
   }, [watchedValues.calculationBase, watchedValues.feeRate, setValue]);
 
-  // Update currency when facility changes
+  // Update currency and borrower when facility changes
   useEffect(() => {
-    if (watchedValues.facilityId > 0) {
-      const selectedFacility = facilities.find(f => f.id === watchedValues.facilityId);
-      if (selectedFacility) {
-        setValue('currency', selectedFacility.currency);
+    const loadBorrowerFromFacility = async () => {
+      if (watchedValues.facilityId > 0) {
+        const selectedFacility = facilities.find(f => f.id === watchedValues.facilityId);
+        if (selectedFacility) {
+          setValue('currency', selectedFacility.currency);
+          
+          // Get syndicate details to determine borrower
+          try {
+            const syndicateResponse = await syndicateApi.getById(selectedFacility.syndicateId);
+            const syndicate = syndicateResponse.data;
+            if (syndicate.borrowerId) {
+              setValue('borrowerId', syndicate.borrowerId);
+            }
+          } catch (error) {
+            console.error('Failed to load syndicate details:', error);
+          }
+        }
       }
-    }
+    };
+
+    loadBorrowerFromFacility();
   }, [watchedValues.facilityId, facilities, setValue]);
 
-  // Reset recipient when fee type changes
+  // Auto-set default rate and recipient when fee type changes
   useEffect(() => {
     const allowedRecipients = getFeeTypeRecipientRestrictions(watchedValues.feeType);
     if (allowedRecipients.length === 1) {
       setValue('recipientType', allowedRecipients[0]);
     }
-    setValue('recipientId', 0); // Reset recipient selection
+    
+    // Set default fee rate
+    const defaultRate = getFeeTypeDefaultRate(watchedValues.feeType);
+    setValue('feeRate', defaultRate);
+    
+    // Reset recipient selection
+    setValue('recipientId', 0);
   }, [watchedValues.feeType, setValue]);
 
   const onSubmit = async (data: FeePaymentFormData) => {
+    console.log('onSubmit called with data:', data);
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
+      // Ensure borrowerId is set from facility if not already set
+      let borrowerId = data.borrowerId;
+      if (borrowerId <= 0 && data.facilityId > 0) {
+        const selectedFacility = facilities.find(f => f.id === data.facilityId);
+        if (selectedFacility) {
+          try {
+            const syndicateResponse = await syndicateApi.getById(selectedFacility.syndicateId);
+            const syndicate = syndicateResponse.data;
+            if (syndicate.borrowerId) {
+              borrowerId = syndicate.borrowerId;
+            }
+          } catch (error) {
+            console.error('Failed to get borrower from syndicate:', error);
+            throw new Error('Unable to determine borrower from facility');
+          }
+        }
+      }
+
+      // For API compatibility, convert RecipientType back to old format
+      let apiRecipientType: string;
+      let recipientId = data.recipientId;
+      
+      switch (data.recipientType) {
+        case 'LEAD_BANK':
+        case 'AGENT_BANK':
+          apiRecipientType = 'BANK';
+          recipientId = recipientId || 1; // Default bank ID for automatic determination
+          break;
+        case 'INVESTOR':
+        case 'AUTO_DISTRIBUTE':
+          apiRecipientType = 'INVESTOR';
+          recipientId = recipientId || 1; // Default investor ID for automatic distribution
+          break;
+        default:
+          apiRecipientType = 'BANK';
+          recipientId = 1;
+      }
+
       const createRequest: CreateFeePaymentRequest = {
         facilityId: data.facilityId,
+        borrowerId: borrowerId,
         feeType: data.feeType,
-        recipientType: data.recipientType,
-        recipientId: data.recipientId,
+        recipientType: apiRecipientType as RecipientType,
+        recipientId: recipientId,
         feeAmount: data.feeAmount,
         calculationBase: data.calculationBase,
         feeRate: data.feeRate,
@@ -182,6 +274,8 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
         feeDate: data.feeDate,
         description: data.description,
       };
+
+      console.log('Sending createRequest:', createRequest);
 
       const response = await feePaymentApi.create(createRequest);
       const feePayment = response.data;
@@ -224,7 +318,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
 
   const feeTypeOptions = getFeeTypeOptions();
   const recipientTypeOptions = getRecipientTypeOptions()
-    .filter(option => getAllowedRecipientTypes().includes(option.value));
+    .filter(option => getFeeTypeRecipientRestrictions(watchedValues.feeType).includes(option.value));
 
   return (
     <div className="bg-primary-900 border border-secondary-500 rounded-xl p-6">
@@ -244,7 +338,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
           <select
             {...register('facilityId', { valueAsNumber: true })}
             id="facilityId"
-            className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+            className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           >
             <option value={0}>Select a facility</option>
             {facilities.map(facility => (
@@ -260,6 +354,32 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
             <p className="mt-1 text-sm text-accent-400">Loading facilities...</p>
           )}
         </div>
+
+        {/* Borrower Information (Auto-determined) */}
+        {watchedValues.facilityId > 0 && (
+          <div className="bg-secondary-600 rounded-lg p-4">
+            <h3 className="text-white font-medium mb-2">Borrower Information</h3>
+            <div className="flex items-center gap-3 p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
+              <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
+              <div>
+                <span className="text-white font-medium">
+                  {(() => {
+                    if (watchedValues.borrowerId > 0) {
+                      const borrower = borrowers.find(b => b.id === watchedValues.borrowerId);
+                      return borrower ? `${borrower.name} (${borrower.email})` : 'Loading borrower information...';
+                    }
+                    return 'Borrower will be automatically determined from facility';
+                  })()}
+                </span>
+                <p className="text-accent-400 text-sm mt-1">
+                  Automatically determined from selected facility
+                </p>
+              </div>
+            </div>
+            {/* Hidden field for form submission */}
+            <input type="hidden" {...register('borrowerId', { valueAsNumber: true })} />
+          </div>
+        )}
 
         {/* Fee Type Selection */}
         <div>
@@ -306,51 +426,80 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
           )}
         </div>
 
-        {/* Recipient Type and Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="recipientType" className="block text-sm font-medium text-white mb-2">
-              Recipient Type <span className="text-error">*</span>
-            </label>
-            <select
-              {...register('recipientType')}
-              id="recipientType"
-              className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-            >
-              {recipientTypeOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {errors.recipientType && (
-              <p className="mt-1 text-sm text-error">{errors.recipientType.message}</p>
-            )}
-          </div>
+        {/* Recipient Information */}
+        <div className="bg-secondary-600 rounded-lg p-4">
+          <h3 className="text-white font-medium mb-4">Recipient Information</h3>
+          
+          {isRecipientAutomatic(watchedValues.feeType) ? (
+            // 自動決定される場合：情報表示のみ
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
+                  <div>
+                    <span className="text-white font-medium">
+                      {RECIPIENT_TYPE_LABELS[watchedValues.recipientType]}
+                    </span>
+                    <p className="text-accent-400 text-sm mt-1">
+                      {watchedValues.recipientType === 'LEAD_BANK' 
+                        ? 'Lead bank will be automatically determined from facility' 
+                        : 'Amount will be automatically distributed to investors based on ownership ratio'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* Hidden fields for form submission */}
+              <input type="hidden" {...register('recipientType')} />
+              <input type="hidden" {...register('recipientId', { valueAsNumber: true })} value={1} />
+            </div>
+          ) : (
+            // 手動選択が必要な場合：選択UI表示
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="recipientType" className="block text-sm font-medium text-white mb-2">
+                  Recipient Type <span className="text-error">*</span>
+                </label>
+                <select
+                  {...register('recipientType')}
+                  id="recipientType"
+                  className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                >
+                  {recipientTypeOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.recipientType && (
+                  <p className="mt-1 text-sm text-error">{errors.recipientType.message}</p>
+                )}
+              </div>
 
-          <div>
-            <label htmlFor="recipientId" className="block text-sm font-medium text-white mb-2">
-              Recipient <span className="text-error">*</span>
-            </label>
-            <select
-              {...register('recipientId', { valueAsNumber: true })}
-              id="recipientId"
-              className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-            >
-              <option value={0}>Select recipient</option>
-              {getRecipientOptions().map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {errors.recipientId && (
-              <p className="mt-1 text-sm text-error">{errors.recipientId.message}</p>
-            )}
-            {isLoadingInvestors && watchedValues.recipientType === 'INVESTOR' && (
-              <p className="mt-1 text-sm text-accent-400">Loading investors...</p>
-            )}
-          </div>
+              <div>
+                <label htmlFor="recipientId" className="block text-sm font-medium text-white mb-2">
+                  Recipient <span className="text-error">*</span>
+                </label>
+                <select
+                  {...register('recipientId', { valueAsNumber: true })}
+                  id="recipientId"
+                  className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                >
+                  <option value={0}>Select recipient</option>
+                  {getRecipientOptions().map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.recipientId && (
+                  <p className="mt-1 text-sm text-error">{errors.recipientId.message}</p>
+                )}
+                {isLoadingInvestors && watchedValues.recipientType === 'INVESTOR' && (
+                  <p className="mt-1 text-sm text-accent-400">Loading investors...</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Fee Calculation */}
@@ -367,7 +516,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
                 id="calculationBase"
                 step="0.01"
                 placeholder="e.g., 1000000"
-                className="w-full px-4 py-3 bg-secondary-700 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
               {errors.calculationBase && (
                 <p className="mt-1 text-sm text-error">{errors.calculationBase.message}</p>
@@ -377,14 +526,17 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
             <div>
               <label htmlFor="feeRate" className="block text-sm font-medium text-white mb-2">
                 Fee Rate (%)
+                <span className="ml-2 text-xs text-accent-400">
+                  (Default: {getFeeTypeDefaultRate(watchedValues.feeType)}%)
+                </span>
               </label>
               <input
                 {...register('feeRate', { valueAsNumber: true })}
                 type="number"
                 id="feeRate"
                 step="0.01"
-                placeholder="e.g., 1.5"
-                className="w-full px-4 py-3 bg-secondary-700 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                placeholder={`Default: ${getFeeTypeDefaultRate(watchedValues.feeType)}`}
+                className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
               {errors.feeRate && (
                 <p className="mt-1 text-sm text-error">{errors.feeRate.message}</p>
@@ -401,7 +553,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
                 id="feeAmount"
                 step="0.01"
                 placeholder="e.g., 15000"
-                className="w-full px-4 py-3 bg-secondary-700 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
               {errors.feeAmount && (
                 <p className="mt-1 text-sm text-error">{errors.feeAmount.message}</p>
@@ -428,7 +580,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
               type="date"
               id="feeDate"
               max={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
             />
             {errors.feeDate && (
               <p className="mt-1 text-sm text-error">{errors.feeDate.message}</p>
@@ -443,7 +595,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
               {...register('currency')}
               type="text"
               id="currency"
-              className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               readOnly
             />
             {errors.currency && (
@@ -462,12 +614,32 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
             id="description"
             rows={3}
             placeholder="Enter detailed description of the fee"
-            className="w-full px-4 py-3 bg-secondary-600 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+            className="w-full px-4 py-3 bg-gray-800 border border-secondary-500 rounded-lg text-white placeholder:text-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           />
           {errors.description && (
             <p className="mt-1 text-sm text-error">{errors.description.message}</p>
           )}
         </div>
+
+        {/* Debug Information */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <p className="text-yellow-400 text-xs font-mono">
+              Debug: Form Valid = {Object.keys(errors).length === 0 ? 'Yes' : 'No'}
+              {Object.keys(errors).length > 0 && (
+                <span className="block mt-1">
+                  Errors: {Object.keys(errors).join(', ')}
+                </span>
+              )}
+            </p>
+            <p className="text-yellow-400 text-xs font-mono mt-1">
+              FacilityId: {watchedValues.facilityId}, BorrowerId: {watchedValues.borrowerId}
+            </p>
+            <p className="text-yellow-400 text-xs font-mono mt-1">
+              Selected Facility: {JSON.stringify(facilities.find(f => f.id === watchedValues.facilityId), null, 2)}
+            </p>
+          </div>
+        )}
 
         {/* Submit Error */}
         {submitError && (
@@ -481,6 +653,7 @@ const FeePaymentForm: React.FC<FeePaymentFormProps> = ({ onSuccess, onCancel }) 
           <button
             type="submit"
             disabled={isSubmitting}
+            onClick={() => console.log('Submit button clicked, form errors:', errors)}
             className="flex-1 bg-accent-500 hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
             {isSubmitting ? 'Creating...' : 'Create Fee Payment'}

@@ -30,8 +30,9 @@ public class FeePayment extends Transaction {
     @Column(name = "description")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "recipient_type", nullable = false)
-    private String recipientType; // BANK, INVESTOR, BORROWER
+    private RecipientType recipientType;
 
     @Column(name = "recipient_id", nullable = false)
     private Long recipientId;
@@ -64,7 +65,7 @@ public class FeePayment extends Transaction {
     public FeePayment() {}
 
     public FeePayment(FeeType feeType, LocalDate feeDate, Money amount, 
-                     Money calculationBase, Double feeRate, String recipientType,
+                     Money calculationBase, Double feeRate, RecipientType recipientType,
                      Long recipientId, String currency, String description) {
         this.feeType = feeType;
         this.feeDate = feeDate;
@@ -107,11 +108,11 @@ public class FeePayment extends Transaction {
         this.description = description;
     }
 
-    public String getRecipientType() {
+    public RecipientType getRecipientType() {
         return recipientType;
     }
 
-    public void setRecipientType(String recipientType) {
+    public void setRecipientType(RecipientType recipientType) {
         this.recipientType = recipientType;
     }
 
@@ -162,7 +163,7 @@ public class FeePayment extends Transaction {
      * @return 投資家配分が必要な場合true
      */
     public boolean requiresInvestorDistribution() {
-        return feeType == FeeType.COMMITMENT_FEE || feeType == FeeType.LATE_FEE;
+        return FeeCalculationRule.requiresInvestorDistribution(feeType);
     }
 
     /**
@@ -170,7 +171,7 @@ public class FeePayment extends Transaction {
      * @return リードバンク収入の場合true
      */
     public boolean isLeadBankRevenue() {
-        return feeType == FeeType.ARRANGEMENT_FEE || feeType == FeeType.MANAGEMENT_FEE;
+        return FeeCalculationRule.getRecipientType(feeType) == RecipientType.LEAD_BANK;
     }
 
     /**
@@ -178,7 +179,7 @@ public class FeePayment extends Transaction {
      * @return エージェントバンク収入の場合true
      */
     public boolean isAgentBankRevenue() {
-        return feeType == FeeType.AGENT_FEE || feeType == FeeType.TRANSACTION_FEE;
+        return FeeCalculationRule.getRecipientType(feeType) == RecipientType.AGENT_BANK;
     }
 
     /**
@@ -189,7 +190,8 @@ public class FeePayment extends Transaction {
         if (calculationBase == null || feeRate == null) {
             return false;
         }
-        Money expectedAmount = calculationBase.multiply(BigDecimal.valueOf(feeRate / 100.0));
-        return getAmount() != null && getAmount().equals(expectedAmount);
+        BigDecimal expectedAmount = FeeCalculationRule.calculateFeeAmount(
+            calculationBase.getAmount(), BigDecimal.valueOf(feeRate));
+        return getAmount() != null && getAmount().getAmount().compareTo(expectedAmount) == 0;
     }
 }

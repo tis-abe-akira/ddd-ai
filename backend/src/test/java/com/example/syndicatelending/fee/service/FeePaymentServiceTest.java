@@ -12,6 +12,7 @@ import com.example.syndicatelending.fee.dto.CreateFeePaymentRequest;
 import com.example.syndicatelending.fee.entity.FeeDistribution;
 import com.example.syndicatelending.fee.entity.FeePayment;
 import com.example.syndicatelending.fee.entity.FeeType;
+import com.example.syndicatelending.fee.entity.RecipientType;
 import com.example.syndicatelending.fee.repository.FeePaymentRepository;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.entity.Investor;
@@ -147,7 +148,7 @@ class FeePaymentServiceTest {
         assertEquals(Money.of(new BigDecimal("25000.00")), feePayment.getAmount());
         assertEquals(Money.of(new BigDecimal("5000000.00")), feePayment.getCalculationBase());
         assertEquals(0.5, feePayment.getFeeRate());
-        assertEquals("BANK", feePayment.getRecipientType());
+        assertEquals(RecipientType.LEAD_BANK, feePayment.getRecipientType());
         assertEquals(investor1.getId(), feePayment.getRecipientId());
         assertEquals("USD", feePayment.getCurrency());
         assertEquals("2025年1月分管理手数料", feePayment.getDescription());
@@ -239,7 +240,7 @@ class FeePaymentServiceTest {
         );
 
         assertTrue(exception.getMessage().contains("Fee amount calculation mismatch"));
-        assertTrue(exception.getMessage().contains("Expected: 25000.00000"));
+        assertTrue(exception.getMessage().contains("Expected: 25000.00"));
         assertTrue(exception.getMessage().contains("Actual: 30000.00"));
     }
 
@@ -264,7 +265,7 @@ class FeePaymentServiceTest {
             () -> feePaymentService.createFeePayment(request)
         );
 
-        assertTrue(exception.getMessage().contains("Management/Arrangement fee recipient must be BANK"));
+        assertTrue(exception.getMessage().contains("recipient must be BANK"));
     }
 
     @Test

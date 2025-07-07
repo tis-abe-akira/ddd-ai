@@ -398,7 +398,7 @@ export type FeeType =
   | 'AGENT_FEE'
   | 'OTHER_FEE';
 
-export type RecipientType = 'BANK' | 'INVESTOR';
+export type RecipientType = 'LEAD_BANK' | 'AGENT_BANK' | 'INVESTOR' | 'AUTO_DISTRIBUTE';
 
 export interface FeePayment {
   id: number;
@@ -442,6 +442,7 @@ export interface CreateFeePaymentRequest {
   calculationBase: number;
   feeRate: number;
   facilityId: number;
+  borrowerId: number;
 }
 
 export interface FeePaymentStatistics {
