@@ -4,6 +4,8 @@ import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.MoneyAttributeConverter;
 import com.example.syndicatelending.transaction.entity.Transaction;
 import com.example.syndicatelending.transaction.entity.TransactionType;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -124,6 +126,7 @@ public class FeePayment extends Transaction {
         this.recipientId = recipientId;
     }
 
+    @JsonIgnore
     public Money getCalculationBase() {
         return calculationBase;
     }
@@ -193,5 +196,23 @@ public class FeePayment extends Transaction {
         BigDecimal expectedAmount = FeeCalculationRule.calculateFeeAmount(
             calculationBase.getAmount(), BigDecimal.valueOf(feeRate));
         return getAmount() != null && getAmount().getAmount().compareTo(expectedAmount) == 0;
+    }
+
+    /**
+     * JSON serialization用のgetterメソッド
+     * Transaction.amountをfeeAmountとしてシリアライズ
+     */
+    @JsonProperty("feeAmount")
+    public Double getFeeAmountAsDouble() {
+        return getAmount() != null ? getAmount().getAmount().doubleValue() : 0.0;
+    }
+
+    /**
+     * JSON serialization用のgetterメソッド
+     * calculationBaseをnumberとしてシリアライズ
+     */
+    @JsonProperty("calculationBase")
+    public Double getCalculationBaseAsDouble() {
+        return calculationBase != null ? calculationBase.getAmount().doubleValue() : 0.0;
     }
 }
