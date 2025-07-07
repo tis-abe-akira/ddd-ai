@@ -5,6 +5,7 @@ import com.example.syndicatelending.fee.dto.CreateFeePaymentRequest;
 import com.example.syndicatelending.fee.entity.FeeDistribution;
 import com.example.syndicatelending.fee.entity.FeePayment;
 import com.example.syndicatelending.fee.entity.FeeType;
+import com.example.syndicatelending.fee.entity.RecipientType;
 import com.example.syndicatelending.fee.service.FeePaymentService;
 import com.example.syndicatelending.transaction.entity.TransactionStatus;
 import com.example.syndicatelending.transaction.entity.TransactionType;
@@ -178,7 +179,7 @@ class FeePaymentControllerTest {
             Money.of(new BigDecimal("25000.00")),
             Money.of(new BigDecimal("5000000.00")),
             0.5,
-            "BANK",
+            RecipientType.LEAD_BANK,
             1L,
             "USD",
             "Test Management Fee"
@@ -214,7 +215,7 @@ class FeePaymentControllerTest {
             Money.of(new BigDecimal("12500.00")),
             Money.of(new BigDecimal("5000000.00")),
             0.25,
-            "INVESTOR",
+            RecipientType.AUTO_DISTRIBUTE,
             1L,
             "USD",
             "Test Commitment Fee"
