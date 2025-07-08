@@ -154,9 +154,9 @@ public class FacilityValidator {
                             "指定されたInvestorが存在しません: id=" + pie.getInvestorId()));
 
             // アクティブ状態チェック
-            if (!investor.getIsActive()) {
+            if (investor.isRestricted()) {
                 throw new BusinessRuleViolationException(
-                        "非アクティブなInvestorは投資できません: investorId=" + pie.getInvestorId());
+                        "制限状態のInvestorは投資できません: investorId=" + pie.getInvestorId());
             }
 
             // Syndicateメンバーシップチェック

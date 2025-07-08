@@ -18,6 +18,7 @@ import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,7 @@ public class DrawdownFacilityIntegrationTest {
         testInvestor.setCurrentInvestmentAmount(Money.of(new BigDecimal("0.00")));
         testInvestor.setCreatedAt(LocalDateTime.now());
         testInvestor.setUpdatedAt(LocalDateTime.now());
-        testInvestor.setIsActive(true);
+        testInvestor.setStatus(InvestorState.ACTIVE);
         testInvestor = investorRepository.save(testInvestor);
 
         // テスト用Syndicateを作成

@@ -6,6 +6,7 @@ import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -220,7 +221,7 @@ public class PartyService {
 
     @Transactional(readOnly = true)
     public Page<Investor> getActiveInvestors(Pageable pageable) {
-        return investorRepository.findAll((root, query, cb) -> cb.isTrue(root.get("isActive")), pageable);
+        return investorRepository.findAll((root, query, cb) -> cb.equal(root.get("status"), InvestorState.ACTIVE), pageable);
     }
 
     // ==============================================================

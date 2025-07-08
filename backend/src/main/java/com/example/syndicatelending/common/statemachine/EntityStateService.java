@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * エンティティ間の状態管理を統合的に行うサービス
@@ -250,13 +251,27 @@ public class EntityStateService {
     /**
      * FacilityのSharePieからInvestor IDリストを取得
      * 
+     * LeadBankとSharePieの投資家IDを両方含めて返す
+     * 
      * @param facility Facilityエンティティ
-     * @return Investor IDのリスト
+     * @return Investor IDのリスト（LeadBank含む）
      */
     private List<Long> getInvestorIdsFromFacility(Facility facility) {
-        return facility.getSharePies().stream()
+        // SyndicateからLeadBank IDを取得
+        Syndicate syndicate = syndicateRepository.findById(facility.getSyndicateId())
+            .orElseThrow(() -> new IllegalStateException("Syndicate not found: " + facility.getSyndicateId()));
+        
+        // SharePieからInvestor IDを取得
+        List<Long> investorIds = facility.getSharePies().stream()
             .map(SharePie::getInvestorId)
             .distinct()
-            .toList();
+            .collect(Collectors.toList());
+        
+        // LeadBank IDを追加（重複を避けるため、まず存在チェック）
+        if (syndicate.getLeadBankId() != null && !investorIds.contains(syndicate.getLeadBankId())) {
+            investorIds.add(syndicate.getLeadBankId());
+        }
+        
+        return investorIds;
     }
 }

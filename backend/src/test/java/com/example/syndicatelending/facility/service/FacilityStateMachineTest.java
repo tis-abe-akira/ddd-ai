@@ -13,6 +13,7 @@ import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
@@ -91,7 +92,7 @@ public class FacilityStateMachineTest {
         testInvestor.setCurrentInvestmentAmount(Money.of(new BigDecimal("0.00")));
         testInvestor.setCreatedAt(java.time.LocalDateTime.now());
         testInvestor.setUpdatedAt(java.time.LocalDateTime.now());
-        testInvestor.setIsActive(true);
+        testInvestor.setStatus(InvestorState.ACTIVE);
         testInvestor = investorRepository.save(testInvestor);
 
         // テスト用Syndicateを作成
