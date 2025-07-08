@@ -18,6 +18,7 @@ export interface Borrower {
   creditLimit: number;
   creditRating: CreditRating;
   currentFacilityAmount: number; // 既存Facility総額（動的計算）
+  status: BorrowerStatus;
 }
 
 export interface Investor {
@@ -29,7 +30,7 @@ export interface Investor {
   investmentCapacity: number;
   currentInvestmentAmount: number;
   investorType: InvestorType;
-  isActive: boolean;
+  status: InvestorStatus;
 }
 
 export interface Syndicate {
@@ -80,6 +81,10 @@ export type InvestorType =
 export type FacilityStatus = 'DRAFT' | 'FIXED';
 
 export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
+
+export type BorrowerStatus = 'ACTIVE' | 'RESTRICTED';
+
+export type InvestorStatus = 'ACTIVE' | 'RESTRICTED';
 
 export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
 

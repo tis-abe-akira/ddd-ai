@@ -32,7 +32,7 @@ const InvestorCards: React.FC<InvestorCardsProps> = ({
       setLoading(true);
       // 全件取得（選択用）
       const response = await investorApi.getAll(0, 100);
-      setInvestors(response.data.content.filter(investor => investor.isActive));
+      setInvestors(response.data.content.filter(investor => investor.status === 'ACTIVE'));
     } catch (err) {
       console.error('Failed to fetch investors:', err);
     } finally {

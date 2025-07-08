@@ -162,6 +162,9 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
                   Credit Limit
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-accent-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -169,7 +172,7 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
             <tbody className="bg-primary-900 divide-y divide-secondary-500">
               {filteredBorrowers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-accent-400">
+                  <td colSpan={9} className="px-6 py-8 text-center text-accent-400">
                     {searchTerm ? 'No search results found' : 'No borrowers registered'}
                   </td>
                 </tr>
@@ -201,6 +204,15 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-accent-500">
                       {formatCurrency(borrower.creditLimit)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        borrower.status === 'ACTIVE' 
+                          ? 'bg-success/20 text-success' 
+                          : 'bg-error/20 text-error'
+                      }`}>
+                        {borrower.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">

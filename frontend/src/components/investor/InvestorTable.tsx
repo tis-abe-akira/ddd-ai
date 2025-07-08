@@ -206,11 +206,11 @@ const InvestorTable: React.FC<InvestorTableProps> = ({ onRefresh, refreshTrigger
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        investor.isActive 
+                        investor.status === 'ACTIVE' 
                           ? 'bg-success/20 text-success' 
                           : 'bg-error/20 text-error'
                       }`}>
-                        {investor.isActive ? 'Active' : 'Inactive'}
+                        {investor.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

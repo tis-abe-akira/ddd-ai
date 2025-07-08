@@ -33,7 +33,7 @@ const SharePieAllocation: React.FC<SharePieAllocationProps> = ({
       
       // 全投資家を取得
       const investorsResponse = await investorApi.getAll(0, 100);
-      const allInvestors = investorsResponse.data.content.filter(investor => investor.isActive);
+      const allInvestors = investorsResponse.data.content.filter(investor => investor.status === 'ACTIVE');
       
       if (syndicateId) {
         // Syndicateの詳細を取得
