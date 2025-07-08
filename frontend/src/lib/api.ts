@@ -243,6 +243,9 @@ export const feePaymentApi = {
     return apiClient.get<PageResponse<FeePayment>>(`/fees/payments/date-range?${params.toString()}`);
   },
   
+  // Delete Operation
+  delete: (id: number) => apiClient.delete(`/fees/payments/${id}`),
+  
   // Analytics & Statistics
   getStatistics: (facilityId: number) => 
     apiClient.get<FeePaymentStatistics>(`/fees/payments/facility/${facilityId}/statistics`),

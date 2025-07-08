@@ -154,6 +154,29 @@ public class FeePaymentService {
     }
 
     /**
+     * 手数料支払いを削除
+     * 
+     * @param feePaymentId 削除する手数料支払いID
+     * @throws ResourceNotFoundException 手数料支払いが存在しない場合
+     * @throws BusinessRuleViolationException 削除不可能な状態の場合
+     */
+    public void deleteFeePayment(Long feePaymentId) {
+        // 手数料支払いの存在確認
+        FeePayment feePayment = feePaymentRepository.findById(feePaymentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Fee payment not found: " + feePaymentId));
+        
+        // 削除可能性チェック（Transaction基底クラスのビジネスロジック活用）
+        if (!feePayment.isCancellable()) {
+            throw new BusinessRuleViolationException(
+                "Cannot delete fee payment with status: " + feePayment.getStatus() + 
+                ". Only PENDING or PROCESSING fee payments can be deleted.");
+        }
+        
+        // 削除実行（FeeDistributionもCASCADE削除される）
+        feePaymentRepository.delete(feePayment);
+    }
+
+    /**
      * 手数料配分を生成
      * 
      * @param feePayment 手数料支払い

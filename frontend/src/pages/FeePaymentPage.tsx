@@ -134,6 +134,26 @@ const FeePaymentPage: React.FC = () => {
     alert(details);
   };
 
+  const handleDelete = async (feePayment: FeePayment) => {
+    try {
+      await feePaymentApi.delete(feePayment.id);
+      
+      // Success notification
+      alert(`Fee payment #${feePayment.id} has been deleted successfully!`);
+      
+      // Reload the current page to reflect the changes
+      loadFeePayments();
+      
+      // Reload statistics if we're viewing a specific facility
+      if (selectedFacility) {
+        loadStatistics(selectedFacility);
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      alert(`Failed to delete fee payment: ${apiError.message}`);
+    }
+  };
+
   const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
@@ -341,6 +361,7 @@ const FeePaymentPage: React.FC = () => {
           <FeePaymentTable
             feePayments={feePayments}
             onViewDetails={handleViewDetails}
+            onDelete={handleDelete}
             isLoading={isLoading}
           />
 

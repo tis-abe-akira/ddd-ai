@@ -136,6 +136,18 @@ public class FeePaymentController {
     }
 
     /**
+     * 手数料支払いを削除
+     * 
+     * @param feePaymentId 削除する手数料支払いID
+     * @return 削除完了レスポンス
+     */
+    @DeleteMapping("/{feePaymentId}")
+    public ResponseEntity<Void> deleteFeePayment(@PathVariable Long feePaymentId) {
+        feePaymentService.deleteFeePayment(feePaymentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Facility別手数料統計を取得
      * 
      * @param facilityId Facility ID
