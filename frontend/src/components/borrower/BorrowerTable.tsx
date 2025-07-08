@@ -211,7 +211,7 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
                           ? 'bg-success/20 text-success' 
                           : 'bg-error/20 text-error'
                       }`}>
-                        {borrower.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                        {borrower.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -236,8 +236,13 @@ const BorrowerTable: React.FC<BorrowerTableProps> = ({ onRefresh, refreshTrigger
                               console.log('Delete borrower clicked!', borrower);
                               onDelete(borrower);
                             }}
-                            className="p-2 text-error hover:text-red-400 hover:bg-error/10 rounded-lg transition-colors"
-                            title="Delete"
+                            disabled={borrower.status === 'RESTRICTED'}
+                            className={`p-2 rounded-lg transition-colors ${
+                              borrower.status === 'RESTRICTED'
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-error hover:text-red-400 hover:bg-error/10'
+                            }`}
+                            title={borrower.status === 'RESTRICTED' ? 'Cannot delete restricted borrower' : 'Delete'}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
