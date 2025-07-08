@@ -6,7 +6,6 @@ import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
-import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,19 +25,18 @@ public class PartyService {
     private final CompanyRepository companyRepository;
     private final BorrowerRepository borrowerRepository;
     private final InvestorRepository investorRepository;
+    // Note: FacilityRepository is used only for read-only calculation of current facility amounts
+    // This is acceptable cross-context dependency for data aggregation purposes
     private final FacilityRepository facilityRepository;
-    private final SyndicateRepository syndicateRepository;
 
     public PartyService(CompanyRepository companyRepository,
             BorrowerRepository borrowerRepository,
             InvestorRepository investorRepository,
-            FacilityRepository facilityRepository,
-            SyndicateRepository syndicateRepository) {
+            FacilityRepository facilityRepository) {
         this.companyRepository = companyRepository;
         this.borrowerRepository = borrowerRepository;
         this.investorRepository = investorRepository;
         this.facilityRepository = facilityRepository;
-        this.syndicateRepository = syndicateRepository;
     }
 
     // Company operations
@@ -182,13 +180,14 @@ public class PartyService {
     }
 
     public void deleteBorrower(Long id) {
-        if (!borrowerRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Borrower not found with ID: " + id);
-        }
+        Borrower borrower = borrowerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with ID: " + id));
         
-        // Syndicate参加チェック
-        if (syndicateRepository.existsByBorrowerId(id)) {
-            throw new BusinessRuleViolationException("Cannot delete Borrower because they are participating in a Syndicate. Please remove them from the Syndicate first.");
+        // RESTRICTED状態の場合は削除禁止（Facility参加中のため）
+        if (borrower.isRestricted()) {
+            throw new BusinessRuleViolationException(
+                "Cannot delete Borrower because they are in RESTRICTED state due to Facility participation. " +
+                "Complete or cancel the Facility first.");
         }
         
         borrowerRepository.deleteById(id);
@@ -254,18 +253,14 @@ public class PartyService {
     }
 
     public void deleteInvestor(Long id) {
-        if (!investorRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Investor not found with ID: " + id);
-        }
+        Investor investor = investorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Investor not found with ID: " + id));
         
-        // Syndicate参加チェック（Lead BankまたはMember Investor）
-        if (syndicateRepository.existsByLeadBankIdOrMemberInvestorIdsContaining(id, id)) {
-            throw new BusinessRuleViolationException("Cannot delete Investor because they are participating in a Syndicate. Please remove them from the Syndicate first.");
-        }
-        
-        // Facility参加チェック（SharePie）
-        if (facilityRepository.existsActiveFacilityForInvestor(id)) {
-            throw new BusinessRuleViolationException("Cannot delete Investor because they are participating in a Facility. Please remove them from the Facility first.");
+        // RESTRICTED状態の場合は削除禁止（Facility参加中のため）
+        if (investor.isRestricted()) {
+            throw new BusinessRuleViolationException(
+                "Cannot delete Investor because they are in RESTRICTED state due to Facility participation. " +
+                "Complete or cancel the Facility first.");
         }
         
         investorRepository.deleteById(id);

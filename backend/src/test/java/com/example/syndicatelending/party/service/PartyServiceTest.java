@@ -5,8 +5,10 @@ import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
 import com.example.syndicatelending.facility.repository.FacilityRepository;
-import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.common.domain.model.Money;
+import com.example.syndicatelending.common.statemachine.party.BorrowerState;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
+import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,15 +47,13 @@ class PartyServiceTest {
         @Mock
         private FacilityRepository facilityRepository;
 
-        @Mock
-        private SyndicateRepository syndicateRepository;
 
         private PartyService partyService;
 
         @BeforeEach
         void setUp() {
                 partyService = new PartyService(companyRepository, borrowerRepository, investorRepository, 
-                                               facilityRepository, syndicateRepository);
+                                               facilityRepository);
         }
 
         @Test
@@ -410,12 +410,13 @@ class PartyServiceTest {
         @Test
         void 借り手を正常に削除できる() {
                 Long borrowerId = 1L;
+                Borrower borrower = new Borrower("Test Borrower", "test@example.com", "123-456-7890", "COMP001", Money.of(1000000), CreditRating.A);
 
-                when(borrowerRepository.existsById(borrowerId)).thenReturn(true);
+                when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(borrower));
 
                 partyService.deleteBorrower(borrowerId);
 
-                verify(borrowerRepository).existsById(borrowerId);
+                verify(borrowerRepository).findById(borrowerId);
                 verify(borrowerRepository).deleteById(borrowerId);
         }
 
@@ -423,26 +424,27 @@ class PartyServiceTest {
         void 存在しない借り手を削除しようとした場合は例外が発生する() {
                 Long borrowerId = 999L;
 
-                when(borrowerRepository.existsById(borrowerId)).thenReturn(false);
+                when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.empty());
 
                 ResourceNotFoundException exception = assertThrows(
                                 ResourceNotFoundException.class,
                                 () -> partyService.deleteBorrower(borrowerId));
 
                 assertTrue(exception.getMessage().contains("Borrower not found"));
-                verify(borrowerRepository).existsById(borrowerId);
+                verify(borrowerRepository).findById(borrowerId);
                 verify(borrowerRepository, never()).deleteById(borrowerId);
         }
 
         @Test
         void 投資家を正常に削除できる() {
                 Long investorId = 1L;
+                Investor investor = new Investor("Test Investor", "test@example.com", "123-456-7890", "COMP001", BigDecimal.valueOf(5000000), InvestorType.BANK);
 
-                when(investorRepository.existsById(investorId)).thenReturn(true);
+                when(investorRepository.findById(investorId)).thenReturn(Optional.of(investor));
 
                 partyService.deleteInvestor(investorId);
 
-                verify(investorRepository).existsById(investorId);
+                verify(investorRepository).findById(investorId);
                 verify(investorRepository).deleteById(investorId);
         }
 
@@ -450,14 +452,50 @@ class PartyServiceTest {
         void 存在しない投資家を削除しようとした場合は例外が発生する() {
                 Long investorId = 999L;
 
-                when(investorRepository.existsById(investorId)).thenReturn(false);
+                when(investorRepository.findById(investorId)).thenReturn(Optional.empty());
 
                 ResourceNotFoundException exception = assertThrows(
                                 ResourceNotFoundException.class,
                                 () -> partyService.deleteInvestor(investorId));
 
                 assertTrue(exception.getMessage().contains("Investor not found"));
-                verify(investorRepository).existsById(investorId);
+                verify(investorRepository).findById(investorId);
+                verify(investorRepository, never()).deleteById(investorId);
+        }
+
+        @Test
+        void RESTRICTED状態の借り手を削除しようとした場合は例外が発生する() {
+                Long borrowerId = 1L;
+                Borrower borrower = new Borrower("Test Borrower", "test@example.com", "123-456-7890", "COMP001", Money.of(1000000), CreditRating.A);
+                // Set borrower to RESTRICTED state
+                borrower.setStatus(BorrowerState.RESTRICTED);
+
+                when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(borrower));
+
+                BusinessRuleViolationException exception = assertThrows(
+                                BusinessRuleViolationException.class,
+                                () -> partyService.deleteBorrower(borrowerId));
+
+                assertTrue(exception.getMessage().contains("RESTRICTED state"));
+                verify(borrowerRepository).findById(borrowerId);
+                verify(borrowerRepository, never()).deleteById(borrowerId);
+        }
+
+        @Test
+        void RESTRICTED状態の投資家を削除しようとした場合は例外が発生する() {
+                Long investorId = 1L;
+                Investor investor = new Investor("Test Investor", "test@example.com", "123-456-7890", "COMP001", BigDecimal.valueOf(5000000), InvestorType.BANK);
+                // Set investor to RESTRICTED state
+                investor.setStatus(InvestorState.RESTRICTED);
+
+                when(investorRepository.findById(investorId)).thenReturn(Optional.of(investor));
+
+                BusinessRuleViolationException exception = assertThrows(
+                                BusinessRuleViolationException.class,
+                                () -> partyService.deleteInvestor(investorId));
+
+                assertTrue(exception.getMessage().contains("RESTRICTED state"));
+                verify(investorRepository).findById(investorId);
                 verify(investorRepository, never()).deleteById(investorId);
         }
 

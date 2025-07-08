@@ -19,6 +19,7 @@ public enum BorrowerState {
      * - companyId, creditRating, creditLimit は変更不可
      * - name, email, phoneNumber は変更可能
      * - Facility組成済みの状態
+     * - 削除禁止：RESTRICTED状態のBorrowerは削除不可（Facility参加中のため）
      */
     RESTRICTED
 }

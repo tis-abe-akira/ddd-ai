@@ -19,6 +19,7 @@ public enum InvestorState {
      * - companyId, investmentCapacity は変更不可
      * - name, email, phoneNumber, investorType は変更可能
      * - Facility参加済みの状態
+     * - 削除禁止：RESTRICTED状態のInvestorは削除不可（Facility参加中のため）
      */
     RESTRICTED
 }
