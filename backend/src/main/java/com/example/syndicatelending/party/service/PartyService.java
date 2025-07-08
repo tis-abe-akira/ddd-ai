@@ -188,7 +188,7 @@ public class PartyService {
         
         // Syndicate参加チェック
         if (syndicateRepository.existsByBorrowerId(id)) {
-            throw new BusinessRuleViolationException("参加中のSyndicateがあるため、Borrowerを削除できません。Syndicateから除外してから削除してください。");
+            throw new BusinessRuleViolationException("Cannot delete Borrower because they are participating in a Syndicate. Please remove them from the Syndicate first.");
         }
         
         borrowerRepository.deleteById(id);
@@ -260,12 +260,12 @@ public class PartyService {
         
         // Syndicate参加チェック（Lead BankまたはMember Investor）
         if (syndicateRepository.existsByLeadBankIdOrMemberInvestorIdsContaining(id, id)) {
-            throw new BusinessRuleViolationException("参加中のSyndicateがあるため、Investorを削除できません。Syndicateから除外してから削除してください。");
+            throw new BusinessRuleViolationException("Cannot delete Investor because they are participating in a Syndicate. Please remove them from the Syndicate first.");
         }
         
         // Facility参加チェック（SharePie）
         if (facilityRepository.existsActiveFacilityForInvestor(id)) {
-            throw new BusinessRuleViolationException("参加中のFacilityがあるため、Investorを削除できません。Facilityから除外してから削除してください。");
+            throw new BusinessRuleViolationException("Cannot delete Investor because they are participating in a Facility. Please remove them from the Facility first.");
         }
         
         investorRepository.deleteById(id);
@@ -342,22 +342,22 @@ public class PartyService {
             // companyId変更チェック
             if (!Objects.equals(existing.getCompanyId(), request.getCompanyId())) {
                 throw new BusinessRuleViolationException(
-                    "RESTRICTED状態のBorrowerはcompanyIdを変更できません。現在の値: " + existing.getCompanyId() + 
-                    ", 要求された値: " + request.getCompanyId() + ", 現在の状態: " + existing.getStatus());
+                    "Cannot modify companyId for RESTRICTED Borrower. Current value: " + existing.getCompanyId() + 
+                    ", Requested value: " + request.getCompanyId() + ", Current status: " + existing.getStatus());
             }
             
             // creditRating変更チェック
             if (!Objects.equals(existing.getCreditRating(), request.getCreditRating())) {
                 throw new BusinessRuleViolationException(
-                    "RESTRICTED状態のBorrowerはcreditRatingを変更できません。現在の値: " + existing.getCreditRating() + 
-                    ", 要求された値: " + request.getCreditRating() + ", 現在の状態: " + existing.getStatus());
+                    "Cannot modify creditRating for RESTRICTED Borrower. Current value: " + existing.getCreditRating() + 
+                    ", Requested value: " + request.getCreditRating() + ", Current status: " + existing.getStatus());
             }
             
             // creditLimit変更チェック
             if (!Objects.equals(existing.getCreditLimit(), request.getCreditLimit())) {
                 throw new BusinessRuleViolationException(
-                    "RESTRICTED状態のBorrowerはcreditLimitを変更できません。現在の値: " + existing.getCreditLimit() + 
-                    ", 要求された値: " + request.getCreditLimit() + ", 現在の状態: " + existing.getStatus());
+                    "Cannot modify creditLimit for RESTRICTED Borrower. Current value: " + existing.getCreditLimit() + 
+                    ", Requested value: " + request.getCreditLimit() + ", Current status: " + existing.getStatus());
             }
         }
     }
@@ -380,15 +380,15 @@ public class PartyService {
             // companyId変更チェック
             if (!Objects.equals(existing.getCompanyId(), request.getCompanyId())) {
                 throw new BusinessRuleViolationException(
-                    "RESTRICTED状態のInvestorはcompanyIdを変更できません。現在の値: " + existing.getCompanyId() + 
-                    ", 要求された値: " + request.getCompanyId() + ", 現在の状態: " + existing.getStatus());
+                    "Cannot modify companyId for RESTRICTED Investor. Current value: " + existing.getCompanyId() + 
+                    ", Requested value: " + request.getCompanyId() + ", Current status: " + existing.getStatus());
             }
             
             // investmentCapacity変更チェック  
             if (!Objects.equals(existing.getInvestmentCapacity(), request.getInvestmentCapacity())) {
                 throw new BusinessRuleViolationException(
-                    "RESTRICTED状態のInvestorはinvestmentCapacityを変更できません。現在の値: " + existing.getInvestmentCapacity() + 
-                    ", 要求された値: " + request.getInvestmentCapacity() + ", 現在の状態: " + existing.getStatus());
+                    "Cannot modify investmentCapacity for RESTRICTED Investor. Current value: " + existing.getInvestmentCapacity() + 
+                    ", Requested value: " + request.getInvestmentCapacity() + ", Current status: " + existing.getStatus());
             }
         }
     }
@@ -421,7 +421,7 @@ public class PartyService {
             
             return new CanUpdateResponse(
                 true, // 一部フィールドは更新可能
-                "RESTRICTED状態のため、companyId, creditRating, creditLimitは変更できません。現在の状態: " + borrower.getStatus(), 
+                "Cannot modify companyId, creditRating, creditLimit due to RESTRICTED status. Current status: " + borrower.getStatus(), 
                 fields
             );
         } else {
@@ -460,7 +460,7 @@ public class PartyService {
             
             return new CanUpdateResponse(
                 true, // 一部フィールドは更新可能
-                "RESTRICTED状態のため、companyId, investmentCapacityは変更できません。現在の状態: " + investor.getStatus(), 
+                "Cannot modify companyId, investmentCapacity due to RESTRICTED status. Current status: " + investor.getStatus(), 
                 fields
             );
         } else {

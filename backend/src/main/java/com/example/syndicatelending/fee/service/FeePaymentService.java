@@ -7,6 +7,8 @@ import com.example.syndicatelending.fee.dto.CreateFeePaymentRequest;
 import com.example.syndicatelending.fee.entity.FeeDistribution;
 import com.example.syndicatelending.fee.entity.FeePayment;
 import com.example.syndicatelending.fee.entity.FeeType;
+import com.example.syndicatelending.fee.entity.RecipientType;
+import com.example.syndicatelending.fee.entity.FeeCalculationRule;
 import com.example.syndicatelending.fee.repository.FeePaymentRepository;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
@@ -61,13 +63,16 @@ public class FeePaymentService {
         Money feeAmount = Money.of(request.getFeeAmount());
         Money calculationBase = Money.of(request.getCalculationBase());
 
+        // Convert String recipientType to RecipientType enum
+        RecipientType recipientType = convertStringToRecipientType(request.getRecipientType());
+        
         FeePayment feePayment = new FeePayment(
             request.getFeeType(),
             request.getFeeDate(),
             feeAmount,
             calculationBase,
             request.getFeeRate(),
-            request.getRecipientType(),
+            recipientType,
             request.getRecipientId(),
             request.getCurrency(),
             request.getDescription()
@@ -149,6 +154,29 @@ public class FeePaymentService {
     }
 
     /**
+     * 手数料支払いを削除
+     * 
+     * @param feePaymentId 削除する手数料支払いID
+     * @throws ResourceNotFoundException 手数料支払いが存在しない場合
+     * @throws BusinessRuleViolationException 削除不可能な状態の場合
+     */
+    public void deleteFeePayment(Long feePaymentId) {
+        // 手数料支払いの存在確認
+        FeePayment feePayment = feePaymentRepository.findById(feePaymentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Fee payment not found: " + feePaymentId));
+        
+        // 削除可能性チェック（Transaction基底クラスのビジネスロジック活用）
+        if (!feePayment.isCancellable()) {
+            throw new BusinessRuleViolationException(
+                "Cannot delete fee payment with status: " + feePayment.getStatus() + 
+                ". Only PENDING or PROCESSING fee payments can be deleted.");
+        }
+        
+        // 削除実行（FeeDistributionもCASCADE削除される）
+        feePaymentRepository.delete(feePayment);
+    }
+
+    /**
      * 手数料配分を生成
      * 
      * @param feePayment 手数料支払い
@@ -185,9 +213,9 @@ public class FeePaymentService {
      * @param request 手数料支払いリクエスト
      */
     private void validateFeePaymentRequest(CreateFeePaymentRequest request) {
-        // 手数料計算の整合性チェック
-        BigDecimal expectedAmount = request.getCalculationBase()
-            .multiply(BigDecimal.valueOf(request.getFeeRate() / 100.0));
+        // 手数料計算の整合性チェック（FeeCalculationRuleを使用）
+        BigDecimal expectedAmount = FeeCalculationRule.calculateFeeAmount(
+            request.getCalculationBase(), BigDecimal.valueOf(request.getFeeRate()));
 
         if (request.getFeeAmount().compareTo(expectedAmount) != 0) {
             throw new BusinessRuleViolationException(
@@ -212,33 +240,59 @@ public class FeePaymentService {
      * @param recipientType 受益者タイプ
      */
     private void validateFeeTypeAndRecipientType(FeeType feeType, String recipientType) {
-        switch (feeType) {
-            case MANAGEMENT_FEE:
-            case ARRANGEMENT_FEE:
+        // FeeCalculationRuleから期待される受取人タイプを取得
+        RecipientType expectedRecipientType = FeeCalculationRule.getRecipientType(feeType);
+        
+        // OLD_FEEの場合は任意の受取人を許可
+        if (feeType == FeeType.OTHER_FEE) {
+            return;
+        }
+        
+        // AUTO_DISTRIBUTEの場合はINVESTOR配分が自動実行される
+        if (expectedRecipientType == RecipientType.AUTO_DISTRIBUTE) {
+            if (!"INVESTOR".equals(recipientType)) {
+                throw new BusinessRuleViolationException(
+                    feeType + " requires investor distribution, but recipient type was: " + recipientType);
+            }
+            return;
+        }
+        
+        // 各受取人タイプの検証
+        switch (expectedRecipientType) {
+            case LEAD_BANK:
+            case AGENT_BANK:
                 if (!"BANK".equals(recipientType)) {
                     throw new BusinessRuleViolationException(
-                        "Management/Arrangement fee recipient must be BANK, but was: " + recipientType);
+                        feeType + " recipient must be BANK, but was: " + recipientType);
                 }
                 break;
-            case COMMITMENT_FEE:
-            case LATE_FEE:
+            case INVESTOR:
                 if (!"INVESTOR".equals(recipientType)) {
                     throw new BusinessRuleViolationException(
-                        "Commitment/Late fee recipient must be INVESTOR, but was: " + recipientType);
+                        feeType + " recipient must be INVESTOR, but was: " + recipientType);
                 }
-                break;
-            case TRANSACTION_FEE:
-            case AGENT_FEE:
-                if (!"BANK".equals(recipientType)) {
-                    throw new BusinessRuleViolationException(
-                        "Transaction/Agent fee recipient must be BANK, but was: " + recipientType);
-                }
-                break;
-            case OTHER_FEE:
-                // OTHER_FEEは任意の受益者タイプを許可
                 break;
             default:
-                throw new BusinessRuleViolationException("Unknown fee type: " + feeType);
+                throw new BusinessRuleViolationException("Unknown recipient type for " + feeType + ": " + expectedRecipientType);
+        }
+    }
+    
+    /**
+     * String形式の受取人タイプをRecipientType enumに変換
+     * 
+     * @param recipientTypeString String形式の受取人タイプ
+     * @return RecipientType enum
+     */
+    private RecipientType convertStringToRecipientType(String recipientTypeString) {
+        switch (recipientTypeString.toUpperCase()) {
+            case "BANK":
+                return RecipientType.LEAD_BANK; // デフォルトでLEAD_BANKとして扱う
+            case "INVESTOR":
+                return RecipientType.INVESTOR;
+            case "BORROWER":
+                return RecipientType.INVESTOR; // BORROWERもINVESTORとして扱う
+            default:
+                throw new BusinessRuleViolationException("Unknown recipient type: " + recipientTypeString);
         }
     }
 }

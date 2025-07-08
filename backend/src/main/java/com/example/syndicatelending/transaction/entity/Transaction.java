@@ -177,8 +177,7 @@ public abstract class Transaction {
      */
     public boolean isCancellable() {
         return this.status == TransactionStatus.PENDING || 
-               this.status == TransactionStatus.PROCESSING || 
-               this.status == TransactionStatus.COMPLETED;
+               this.status == TransactionStatus.PROCESSING;
     }
     
     /**

@@ -1,7 +1,5 @@
 package com.example.syndicatelending.common.statemachine;
 
-import com.example.syndicatelending.common.statemachine.facility.FacilityState;
-import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
 import com.example.syndicatelending.common.statemachine.party.BorrowerState;
 import com.example.syndicatelending.common.statemachine.party.BorrowerEvent;
 import com.example.syndicatelending.common.statemachine.party.InvestorState;

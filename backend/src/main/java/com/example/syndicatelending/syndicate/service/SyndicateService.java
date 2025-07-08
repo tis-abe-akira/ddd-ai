@@ -45,9 +45,9 @@ public class SyndicateService {
         // --- LEAD_BANK資格チェック追加 ---
         Long leadBankId = syndicate.getLeadBankId();
         Investor leadBank = investorRepository.findById(leadBankId)
-                .orElseThrow(() -> new BusinessRuleViolationException("指定されたリードバンクが存在しません: id=" + leadBankId));
+                .orElseThrow(() -> new BusinessRuleViolationException("Specified lead bank does not exist: id=" + leadBankId));
         if (leadBank.getInvestorType() != InvestorType.LEAD_BANK) {
-            throw new BusinessRuleViolationException("指定されたリードバンクはLEAD_BANKの資格を持っていません: id=" + leadBankId);
+            throw new BusinessRuleViolationException("Specified lead bank does not have LEAD_BANK qualification: id=" + leadBankId);
         }
         // ---
         return syndicateRepository.save(syndicate);
@@ -145,9 +145,9 @@ public class SyndicateService {
         // LEAD_BANK資格チェック
         Long leadBankId = request.getLeadBankId();
         Investor leadBank = investorRepository.findById(leadBankId)
-                .orElseThrow(() -> new BusinessRuleViolationException("指定されたリードバンクが存在しません: id=" + leadBankId));
+                .orElseThrow(() -> new BusinessRuleViolationException("Specified lead bank does not exist: id=" + leadBankId));
         if (leadBank.getInvestorType() != InvestorType.LEAD_BANK) {
-            throw new BusinessRuleViolationException("指定されたリードバンクはLEAD_BANKの資格を持っていません: id=" + leadBankId);
+            throw new BusinessRuleViolationException("Specified lead bank does not have LEAD_BANK qualification: id=" + leadBankId);
         }
 
         // 名前変更時の重複チェック
@@ -177,7 +177,7 @@ public class SyndicateService {
         
         // Facilityでの使用チェック
         if (facilityRepository.existsBySyndicateId(id)) {
-            throw new BusinessRuleViolationException("使用中のFacilityがあるため、Syndicateを削除できません。Facilityを削除してから削除してください。");
+            throw new BusinessRuleViolationException("Cannot delete Syndicate because it is being used by a Facility. Please delete the Facility first.");
         }
         
         syndicateRepository.deleteById(id);

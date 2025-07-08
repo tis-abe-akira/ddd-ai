@@ -24,6 +24,8 @@ import org.springframework.statemachine.StateMachine;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,8 @@ import java.time.LocalDate;
 
 @Service
 public class PaymentService {
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+    
     private final PaymentRepository paymentRepository;
     private final LoanRepository loanRepository;
     private final AmountPieRepository amountPieRepository;
@@ -234,10 +238,14 @@ public class PaymentService {
             // イベント送信
             return loanStateMachine.sendEvent(event);
         } catch (Exception e) {
-            // 状態遷移失敗時はログに記録し、処理を継続
-            // （支払い処理自体は成功させる）
-            System.err.println("Loan state transition failed for ID: " + loan.getId() + ", error: " + e.getMessage());
-            return false;
+            // Critical: State Machine失敗は業務プロセスに影響するため適切にログ記録し例外をスロー
+            // 状態管理の整合性を保つため、支払い処理も失敗させる
+            logger.error("Critical: Loan state transition failed for ID: {}, event: {}", 
+                loan.getId(), event, e);
+            
+            throw new BusinessRuleViolationException(
+                String.format("Loan state transition failed for loan %d: %s", 
+                    loan.getId(), e.getMessage()), e);
         }
     }
 

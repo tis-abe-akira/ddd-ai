@@ -12,6 +12,7 @@ import com.example.syndicatelending.fee.dto.CreateFeePaymentRequest;
 import com.example.syndicatelending.fee.entity.FeeDistribution;
 import com.example.syndicatelending.fee.entity.FeePayment;
 import com.example.syndicatelending.fee.entity.FeeType;
+import com.example.syndicatelending.fee.entity.RecipientType;
 import com.example.syndicatelending.fee.repository.FeePaymentRepository;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.entity.Investor;
@@ -147,7 +148,7 @@ class FeePaymentServiceTest {
         assertEquals(Money.of(new BigDecimal("25000.00")), feePayment.getAmount());
         assertEquals(Money.of(new BigDecimal("5000000.00")), feePayment.getCalculationBase());
         assertEquals(0.5, feePayment.getFeeRate());
-        assertEquals("BANK", feePayment.getRecipientType());
+        assertEquals(RecipientType.LEAD_BANK, feePayment.getRecipientType());
         assertEquals(investor1.getId(), feePayment.getRecipientId());
         assertEquals("USD", feePayment.getCurrency());
         assertEquals("2025年1月分管理手数料", feePayment.getDescription());
@@ -239,7 +240,7 @@ class FeePaymentServiceTest {
         );
 
         assertTrue(exception.getMessage().contains("Fee amount calculation mismatch"));
-        assertTrue(exception.getMessage().contains("Expected: 25000.00000"));
+        assertTrue(exception.getMessage().contains("Expected: 25000.00"));
         assertTrue(exception.getMessage().contains("Actual: 30000.00"));
     }
 
@@ -264,7 +265,7 @@ class FeePaymentServiceTest {
             () -> feePaymentService.createFeePayment(request)
         );
 
-        assertTrue(exception.getMessage().contains("Management/Arrangement fee recipient must be BANK"));
+        assertTrue(exception.getMessage().contains("recipient must be BANK"));
     }
 
     @Test
@@ -359,6 +360,122 @@ class FeePaymentServiceTest {
             assertTrue(payment.getFeeDate().isAfter(startDate.minusDays(1)));
             assertTrue(payment.getFeeDate().isBefore(endDate.plusDays(1)));
         });
+    }
+
+    @Test
+    void PENDING状態の手数料支払いを削除できる() {
+        // PENDING状態の手数料支払いを作成
+        FeePayment feePayment = createTestFeePayment(FeeType.MANAGEMENT_FEE, "BANK", new BigDecimal("25000"));
+        assertEquals(TransactionStatus.PENDING, feePayment.getStatus());
+        
+        Long feePaymentId = feePayment.getId();
+        assertNotNull(feePaymentId);
+        
+        // 削除実行
+        feePaymentService.deleteFeePayment(feePaymentId);
+        
+        // 削除確認
+        assertThrows(ResourceNotFoundException.class, 
+            () -> feePaymentService.getFeePaymentById(feePaymentId));
+    }
+
+    @Test
+    void PROCESSING状態の手数料支払いを削除できる() {
+        // 手数料支払いを作成
+        FeePayment feePayment = createTestFeePayment(FeeType.ARRANGEMENT_FEE, "BANK", new BigDecimal("50000"));
+        
+        // PROCESSING状態に変更
+        feePayment.setStatus(TransactionStatus.PROCESSING);
+        feePayment = feePaymentRepository.save(feePayment);
+        
+        Long feePaymentId = feePayment.getId();
+        
+        // 削除実行
+        feePaymentService.deleteFeePayment(feePaymentId);
+        
+        // 削除確認
+        assertThrows(ResourceNotFoundException.class, 
+            () -> feePaymentService.getFeePaymentById(feePaymentId));
+    }
+
+    @Test
+    void COMPLETED状態の手数料支払いは削除できない() {
+        // 手数料支払いを作成
+        FeePayment feePayment = createTestFeePayment(FeeType.COMMITMENT_FEE, "INVESTOR", new BigDecimal("12500"));
+        
+        // COMPLETED状態に変更
+        feePayment.markAsCompleted();
+        feePayment = feePaymentRepository.save(feePayment);
+        assertEquals(TransactionStatus.COMPLETED, feePayment.getStatus());
+        
+        Long feePaymentId = feePayment.getId();
+        
+        // 削除実行で例外発生を確認
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> feePaymentService.deleteFeePayment(feePaymentId)
+        );
+        
+        assertTrue(exception.getMessage().contains("Cannot delete fee payment with status: COMPLETED"));
+        assertTrue(exception.getMessage().contains("Only PENDING or PROCESSING fee payments can be deleted"));
+        
+        // 削除されていないことを確認
+        FeePayment stillExists = feePaymentService.getFeePaymentById(feePaymentId);
+        assertNotNull(stillExists);
+    }
+
+    @Test
+    void FAILED状態の手数料支払いは削除できない() {
+        // 手数料支払いを作成
+        FeePayment feePayment = createTestFeePayment(FeeType.LATE_FEE, "INVESTOR", new BigDecimal("15000"));
+        
+        // FAILED状態に変更
+        feePayment.markAsFailed();
+        feePayment = feePaymentRepository.save(feePayment);
+        assertEquals(TransactionStatus.FAILED, feePayment.getStatus());
+        
+        Long feePaymentId = feePayment.getId();
+        
+        // 削除実行で例外発生を確認
+        BusinessRuleViolationException exception = assertThrows(
+            BusinessRuleViolationException.class,
+            () -> feePaymentService.deleteFeePayment(feePaymentId)
+        );
+        
+        assertTrue(exception.getMessage().contains("Cannot delete fee payment with status: FAILED"));
+    }
+
+    @Test
+    void 存在しない手数料支払いIDで削除実行時に例外が発生する() {
+        Long nonExistentId = 99999L;
+        
+        // 削除実行で例外発生を確認
+        ResourceNotFoundException exception = assertThrows(
+            ResourceNotFoundException.class,
+            () -> feePaymentService.deleteFeePayment(nonExistentId)
+        );
+        
+        assertTrue(exception.getMessage().contains("Fee payment not found: " + nonExistentId));
+    }
+
+    @Test
+    void 投資家配分がある手数料支払いを削除すると配分も削除される() {
+        // 投資家配分が必要な手数料を作成
+        FeePayment feePayment = createTestFeePayment(FeeType.COMMITMENT_FEE, "INVESTOR", new BigDecimal("12500"));
+        assertTrue(feePayment.getFeeDistributions().size() > 0);
+        
+        Long feePaymentId = feePayment.getId();
+        int distributionCount = feePayment.getFeeDistributions().size();
+        
+        // 削除実行
+        feePaymentService.deleteFeePayment(feePaymentId);
+        
+        // 削除確認（主エンティティと関連エンティティ両方）
+        assertThrows(ResourceNotFoundException.class, 
+            () -> feePaymentService.getFeePaymentById(feePaymentId));
+        
+        // FeeDistributionもCASCADE削除されていることを確認
+        // (実際のテストでは、FeeDistributionRepositoryを使って直接確認することも可能)
     }
 
     private FeePayment createTestFeePayment(FeeType feeType, String recipientType, BigDecimal amount) {

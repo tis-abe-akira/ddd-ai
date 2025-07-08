@@ -107,7 +107,7 @@ const InvestorCards: React.FC<InvestorCardsProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
-        <span className="ml-3 text-accent-400">読み込み中...</span>
+        <span className="ml-3 text-accent-400">Loading...</span>
       </div>
     );
   }
@@ -115,15 +115,15 @@ const InvestorCards: React.FC<InvestorCardsProps> = ({
   return (
     <div>
       <label className="block text-sm font-medium text-white mb-4">
-        {mode === 'lead-bank' ? 'リードバンクを選択' : 'メンバー投資家を選択'} <span className="text-error">*</span>
+        {mode === 'lead-bank' ? 'Select Lead Bank' : 'Select Member Investors'} <span className="text-error">*</span>
       </label>
 
       {filteredInvestors.length === 0 ? (
         <div className="text-center py-8 text-accent-400">
-          {mode === 'lead-bank' ? 'LEAD_BANKタイプの投資家が見つかりません' : '投資家が見つかりません'}
+          {mode === 'lead-bank' ? 'No LEAD_BANK type investors found' : 'No investors found'}
           {mode === 'lead-bank' && (
             <div className="text-xs mt-2 text-accent-500">
-              リードバンクになれるのはLEAD_BANKタイプの投資家のみです
+              Only LEAD_BANK type investors can become lead banks
             </div>
           )}
         </div>
@@ -194,7 +194,7 @@ const InvestorCards: React.FC<InvestorCardsProps> = ({
                   {/* Investment Capacity */}
                   <div className="mb-2">
                     <div className="flex justify-between text-xs text-accent-400 mb-1">
-                      <span>投資能力</span>
+                      <span>Investment Capacity</span>
                       <span>{Math.round(capacityPercentage)}%</span>
                     </div>
                     <div className="w-full bg-primary-900 rounded-full h-2">
@@ -204,8 +204,8 @@ const InvestorCards: React.FC<InvestorCardsProps> = ({
                       ></div>
                     </div>
                     <div className="flex justify-between text-xs text-accent-400 mt-1">
-                      <span>現在: {formatCurrency(investor.currentInvestmentAmount)}</span>
-                      <span>上限: {formatCurrency(investor.investmentCapacity)}</span>
+                      <span>Current: {formatCurrency(investor.currentInvestmentAmount)}</span>
+                      <span>Limit: {formatCurrency(investor.investmentCapacity)}</span>
                     </div>
                   </div>
 
@@ -224,7 +224,7 @@ const InvestorCards: React.FC<InvestorCardsProps> = ({
       {mode === 'members' && selectedMembers.length > 0 && (
         <div className="mt-4 p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
           <div className="text-sm text-accent-500 font-medium">
-            選択済み: {selectedMembers.length}名のメンバー投資家
+            Selected: {selectedMembers.length} member investor(s)
           </div>
           <div className="text-xs text-accent-400 mt-1">
             {selectedMembers.map(id => {
