@@ -246,6 +246,69 @@ public void deleteFacility(Long id) {
 
 この教訓により、将来的な同様の問題を防止し、データ整合性を保つことができる。
 
+### 8. **State Machine実装におけるエンティティ状態管理アーキテクチャ**
+
+**アーキテクチャ判断**: 「Spring State Machineでエンティティの現在状態を反映する実装パターン」
+
+**問題の背景**: 2025年7月9日、State Machine削除処理の改善過程で以下の技術的制約が発見された：
+- Spring State MachineはSingletonとして動作し、常に初期状態から開始される
+- エンティティの実際の状態（RESTRICTED）とState Machineの状態（ACTIVE）が乖離
+- 結果として、RESTRICTED → ACTIVE への遷移が正しく実行されない
+
+**技術的制約**:
+1. **Singleton問題**: 1つのState Machineインスタンスを複数エンティティで共有
+2. **状態設定の制限**: 実行時にState Machineの現在状態を動的に設定する機能が限定的
+3. **並行性問題**: 複数のエンティティが同時にState Machineを使用する際の競合
+
+**採用したアーキテクチャパターン**: **「エンティティ状態反映型State Machine実行」**
+
+```java
+// EntityStateService.java での実装パターン
+private boolean executeBorrowerTransition(Borrower borrower, BorrowerEvent event) {
+    // 1. エンティティの現在状態でState Machineを初期化
+    StateMachine<BorrowerState, BorrowerEvent> entityStateMachine = createBorrowerStateMachine(borrower);
+    
+    // 2. State Machineの現在状態をエンティティ状態に設定
+    entityStateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
+        access.resetStateMachine(new DefaultStateMachineContext<>(
+            borrower.getStatus(), null, null, null));
+    });
+    
+    // 3. State Machineによる遷移実行とビジネスルール検証
+    boolean result = entityStateMachine.sendEvent(event);
+    
+    return result;
+}
+```
+
+**設計原則**:
+1. **状態整合性**: エンティティの実際の状態をState Machineに正確に反映
+2. **ビジネスルール集約**: State Machine設定にガード条件を集約し、重複ロジックを排除
+3. **トランザクション安全性**: エンティティごとに独立したState Machineインスタンスで競合を回避
+4. **監査可能性**: State Machine実行結果の詳細ログ出力
+
+**代替案の評価**:
+
+| アプローチ | 利点 | 欠点 | 採用判断 |
+|------------|------|------|----------|
+| **手動if文チェック** | シンプル、高速 | ビジネスルール重複、State Machine価値消失 | ❌ 不採用 |
+| **State Pattern実装** | OOP準拠、拡張性 | 実装コスト高、既存State Machine設定廃棄 | ❌ 不採用 |
+| **StateMachineFactory使用** | 正統的アプローチ | Spring Boot設定複雑化、学習コスト | 🔄 将来検討 |
+| **エンティティ状態反映** | 既存資産活用、State Machine価値保持 | resetStateMachine使用、若干の複雑性 | ✅ **採用** |
+
+**実装効果**:
+- ✅ State Machine設定のビジネスルール（ガード条件）を完全活用
+- ✅ エンティティの実際の状態からの正確な遷移実行
+- ✅ 詳細な遷移ログによる監査・デバッグ支援
+- ✅ 既存のState Machine設定資産を最大限活用
+
+**将来の改善方向**:
+1. **StateMachineFactory導入**: より正統的なインスタンス管理アプローチへの移行
+2. **State Machine永続化**: 長期実行プロセスでの状態永続化対応
+3. **パフォーマンス最適化**: 大量エンティティ処理時のState Machineプール化
+
+この判断により、Spring State Machineの価値を最大限活用しながら、エンティティ状態の正確な管理を実現した。
+
 ---
 
 ## タスク完了時の文書更新確認プロセス

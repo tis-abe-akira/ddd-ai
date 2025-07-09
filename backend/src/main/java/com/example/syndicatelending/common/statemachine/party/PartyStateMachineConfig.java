@@ -3,8 +3,11 @@ package com.example.syndicatelending.common.statemachine.party;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.StateMachineContext;
 import org.springframework.statemachine.config.StateMachineBuilder;
+import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.guard.Guard;
+import org.springframework.statemachine.support.DefaultStateMachineContext;
 
 import java.util.EnumSet;
 
@@ -49,6 +52,7 @@ public class PartyStateMachineConfig {
         return builder.build();
     }
 
+
     /**
      * Investor用State Machine Bean
      * 
@@ -80,6 +84,7 @@ public class PartyStateMachineConfig {
 
         return builder.build();
     }
+
 
     /**
      * Borrower Facility参加制約ガード

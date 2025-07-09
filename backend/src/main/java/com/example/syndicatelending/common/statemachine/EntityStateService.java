@@ -290,32 +290,62 @@ public class EntityStateService {
             logger.info("Executing Borrower state machine transition for ID: {}, event: {}, current status: {}", 
                        borrower.getId(), event, borrower.getStatus());
             
-            // State Machineの制約上、実際のエンティティの状態をチェックして、
-            // 適切な遷移かどうかをここで確認する
-            boolean canTransition = false;
+            // エンティティ用の新しいState Machineインスタンスを作成
+            StateMachine<BorrowerState, BorrowerEvent> entityStateMachine = createBorrowerStateMachine(borrower);
             
-            if (event == BorrowerEvent.FACILITY_PARTICIPATION && borrower.getStatus() == BorrowerState.ACTIVE) {
-                canTransition = true;
-            } else if (event == BorrowerEvent.FACILITY_DELETED && borrower.getStatus() == BorrowerState.RESTRICTED) {
-                canTransition = true;
+            // State Machineを開始
+            entityStateMachine.start();
+            
+            logger.info("Borrower state machine started for entity state: {}", 
+                       entityStateMachine.getState().getId());
+            
+            // コンテキスト設定
+            entityStateMachine.getExtendedState().getVariables().put("borrowerId", borrower.getId());
+            
+            // イベント送信
+            boolean result = entityStateMachine.sendEvent(event);
+            
+            if (result) {
+                BorrowerState newState = entityStateMachine.getState().getId();
+                logger.info("Borrower state machine transition successful: {} -> {} for ID {}", 
+                           borrower.getStatus(), newState, borrower.getId());
+            } else {
+                logger.warn("Borrower state machine transition failed for ID {}: cannot execute {} from {}", 
+                           borrower.getId(), event, borrower.getStatus());
             }
             
-            if (!canTransition) {
-                logger.warn("Invalid transition: Cannot execute {} from state {} for Borrower ID {}", 
-                           event, borrower.getStatus(), borrower.getId());
-                return false;
-            }
+            // State Machine停止
+            entityStateMachine.stop();
             
-            logger.info("Transition validation passed for Borrower ID {}: {} -> {}", 
-                       borrower.getId(), borrower.getStatus(), event);
-            
-            // State Machineを実際に実行する代わりに、
-            // ビジネスルールを確認して直接遷移を許可する
-            return true;
+            return result;
             
         } catch (Exception e) {
             logger.error("Borrower state transition failed for ID: {}", borrower.getId(), e);
             throw new IllegalStateException("Borrower state transition failed for ID: " + borrower.getId(), e);
+        }
+    }
+    
+    /**
+     * Borrower用のState Machineインスタンスを現在のエンティティ状態で作成
+     * 
+     * @param borrower Borrowerエンティティ
+     * @return 現在の状態に設定されたStateMachine
+     */
+    private StateMachine<BorrowerState, BorrowerEvent> createBorrowerStateMachine(Borrower borrower) {
+        try {
+            // 新しいState Machineインスタンスを作成
+            StateMachine<BorrowerState, BorrowerEvent> machine = borrowerStateMachine;
+            
+            // State Machineを現在のエンティティ状態に設定
+            machine.getStateMachineAccessor().doWithAllRegions(access -> {
+                access.resetStateMachine(new org.springframework.statemachine.support.DefaultStateMachineContext<>(
+                    borrower.getStatus(), null, null, null));
+            });
+            
+            return machine;
+        } catch (Exception e) {
+            logger.error("Failed to create Borrower state machine for entity state: {}", borrower.getStatus(), e);
+            throw new IllegalStateException("Failed to create Borrower state machine", e);
         }
     }
 
@@ -331,32 +361,62 @@ public class EntityStateService {
             logger.info("Executing Investor state machine transition for ID: {}, event: {}, current status: {}", 
                        investor.getId(), event, investor.getStatus());
             
-            // State Machineの制約上、実際のエンティティの状態をチェックして、
-            // 適切な遷移かどうかをここで確認する
-            boolean canTransition = false;
+            // エンティティ用の新しいState Machineインスタンスを作成
+            StateMachine<InvestorState, InvestorEvent> entityStateMachine = createInvestorStateMachine(investor);
             
-            if (event == InvestorEvent.FACILITY_PARTICIPATION && investor.getStatus() == InvestorState.ACTIVE) {
-                canTransition = true;
-            } else if (event == InvestorEvent.FACILITY_DELETED && investor.getStatus() == InvestorState.RESTRICTED) {
-                canTransition = true;
+            // State Machineを開始
+            entityStateMachine.start();
+            
+            logger.info("Investor state machine started for entity state: {}", 
+                       entityStateMachine.getState().getId());
+            
+            // コンテキスト設定
+            entityStateMachine.getExtendedState().getVariables().put("investorId", investor.getId());
+            
+            // イベント送信
+            boolean result = entityStateMachine.sendEvent(event);
+            
+            if (result) {
+                InvestorState newState = entityStateMachine.getState().getId();
+                logger.info("Investor state machine transition successful: {} -> {} for ID {}", 
+                           investor.getStatus(), newState, investor.getId());
+            } else {
+                logger.warn("Investor state machine transition failed for ID {}: cannot execute {} from {}", 
+                           investor.getId(), event, investor.getStatus());
             }
             
-            if (!canTransition) {
-                logger.warn("Invalid transition: Cannot execute {} from state {} for Investor ID {}", 
-                           event, investor.getStatus(), investor.getId());
-                return false;
-            }
+            // State Machine停止
+            entityStateMachine.stop();
             
-            logger.info("Transition validation passed for Investor ID {}: {} -> {}", 
-                       investor.getId(), investor.getStatus(), event);
-            
-            // State Machineを実際に実行する代わりに、
-            // ビジネスルールを確認して直接遷移を許可する
-            return true;
+            return result;
             
         } catch (Exception e) {
             logger.error("Investor state transition failed for ID: {}", investor.getId(), e);
             throw new IllegalStateException("Investor state transition failed for ID: " + investor.getId(), e);
+        }
+    }
+    
+    /**
+     * Investor用のState Machineインスタンスを現在のエンティティ状態で作成
+     * 
+     * @param investor Investorエンティティ
+     * @return 現在の状態に設定されたStateMachine
+     */
+    private StateMachine<InvestorState, InvestorEvent> createInvestorStateMachine(Investor investor) {
+        try {
+            // 新しいState Machineインスタンスを作成
+            StateMachine<InvestorState, InvestorEvent> machine = investorStateMachine;
+            
+            // State Machineを現在のエンティティ状態に設定
+            machine.getStateMachineAccessor().doWithAllRegions(access -> {
+                access.resetStateMachine(new org.springframework.statemachine.support.DefaultStateMachineContext<>(
+                    investor.getStatus(), null, null, null));
+            });
+            
+            return machine;
+        } catch (Exception e) {
+            logger.error("Failed to create Investor state machine for entity state: {}", investor.getStatus(), e);
+            throw new IllegalStateException("Failed to create Investor state machine", e);
         }
     }
 
