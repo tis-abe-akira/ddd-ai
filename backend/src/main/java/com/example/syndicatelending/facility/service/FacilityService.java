@@ -204,10 +204,61 @@ public class FacilityService {
 
     @Transactional
     public void deleteFacility(Long id) {
-        if (!facilityRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Facility not found with id: " + id);
-        }
+        // 1. Facilityの存在確認
+        Facility facility = facilityRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Facility not found with id: " + id));
+        
+        // 2. ビジネスルール検証
+        validateFacilityDeletion(facility);
+        
+        // 3. 状態復旧処理（EntityStateService経由）
+        entityStateService.onFacilityDeleted(facility);
+        
+        // 4. 関連データの削除
+        deleteRelatedData(facility);
+        
+        // 5. 物理削除
         facilityRepository.deleteById(id);
+        
+        System.out.println("Facility ID " + id + " has been successfully deleted with state recovery");
+    }
+    
+    /**
+     * Facility削除時のビジネスルール検証
+     * 
+     * @param facility 削除対象のFacility
+     * @throws BusinessRuleViolationException ビジネスルール違反時
+     */
+    private void validateFacilityDeletion(Facility facility) {
+        // アクティブなDrawdownが存在する場合は削除不可
+        boolean hasActiveDrawdowns = drawdownRepository.findAll()
+            .stream()
+            .anyMatch(drawdown -> drawdown.getFacilityId().equals(facility.getId()));
+        if (hasActiveDrawdowns) {
+            throw new BusinessRuleViolationException(
+                "アクティブなDrawdownが存在するため、Facility ID " + facility.getId() + " は削除できません");
+        }
+        
+        // 他の削除制約があれば、ここに追加
+    }
+    
+    /**
+     * Facility削除時の関連データ削除
+     * 
+     * @param facility 削除対象のFacility
+     */
+    private void deleteRelatedData(Facility facility) {
+        // SharePieの削除
+        sharePieRepository.deleteAll(facility.getSharePies());
+        
+        // FacilityInvestmentの削除
+        List<FacilityInvestment> facilityInvestments = facilityInvestmentRepository.findAll()
+            .stream()
+            .filter(fi -> fi.getFacilityId().equals(facility.getId()))
+            .collect(java.util.stream.Collectors.toList());
+        facilityInvestmentRepository.deleteAll(facilityInvestments);
+        
+        // 他の関連データがあれば、ここに追加
     }
 
     @Transactional

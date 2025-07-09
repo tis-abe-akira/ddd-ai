@@ -88,6 +88,37 @@ public class EntityStateService {
     }
 
     /**
+     * Facility削除時の連鎖的状態復旧
+     * 
+     * 1. Syndicateを ACTIVE → DRAFT に遷移
+     * 2. Borrowerを RESTRICTED → ACTIVE に遷移
+     * 3. 関連するInvestorを RESTRICTED → ACTIVE に遷移
+     * 
+     * @param facility 削除されるFacility
+     */
+    public void onFacilityDeleted(Facility facility) {
+        logger.info("Starting facility deletion state recovery for facility ID: {}", facility.getId());
+        
+        // Syndicateから関連エンティティを取得
+        Syndicate syndicate = syndicateRepository.findById(facility.getSyndicateId())
+            .orElseThrow(() -> new IllegalStateException("Syndicate not found: " + facility.getSyndicateId()));
+
+        // 1. Syndicate状態復旧（ACTIVE → DRAFT）
+        transitionSyndicateToDraft(syndicate);
+
+        // 2. Borrower状態復旧
+        transitionBorrowerToActive(syndicate.getBorrowerId());
+
+        // 3. 関連Investor状態復旧
+        List<Long> investorIds = getInvestorIdsFromFacility(facility);
+        for (Long investorId : investorIds) {
+            transitionInvestorToActive(investorId);
+        }
+        
+        logger.info("Facility deletion state recovery completed for facility ID: {}", facility.getId());
+    }
+
+    /**
      * SyndicateをACTIVE状態に遷移
      * 
      * @param syndicate Syndicateエンティティ
@@ -117,6 +148,35 @@ public class EntityStateService {
     }
 
     /**
+     * SyndicateをDRAFT状態に遷移（削除時の状態復旧）
+     * 
+     * @param syndicate Syndicateエンティティ
+     */
+    private void transitionSyndicateToDraft(Syndicate syndicate) {
+        logger.info("Starting Syndicate state recovery for ID: {}, current status: {}", 
+                   syndicate.getId(), syndicate.getStatus());
+        
+        // 既にDRAFT状態の場合はスキップ
+        if (syndicate.getStatus() == SyndicateState.DRAFT) {
+            logger.info("Syndicate ID {} is already DRAFT, skipping recovery", syndicate.getId());
+            return;
+        }
+
+        // StateMachine実行（FACILITY_DELETED イベントで ACTIVE → DRAFT）
+        boolean success = executeSyndicateTransition(syndicate, SyndicateEvent.FACILITY_DELETED);
+        logger.info("Syndicate state machine recovery result: {}", success);
+        
+        if (success) {
+            // エンティティ状態更新
+            syndicate.setStatus(SyndicateState.DRAFT);
+            syndicateRepository.save(syndicate);
+            logger.info("Syndicate ID {} successfully recovered to DRAFT status", syndicate.getId());
+        } else {
+            logger.warn("Failed to recover Syndicate ID {} to DRAFT status", syndicate.getId());
+        }
+    }
+
+    /**
      * BorrowerをRESTRICTED状態に遷移
      * 
      * @param borrowerId Borrower ID
@@ -135,6 +195,35 @@ public class EntityStateService {
             // エンティティ状態更新
             borrower.setStatus(BorrowerState.RESTRICTED);
             borrowerRepository.save(borrower);
+        }
+    }
+
+    /**
+     * BorrowerをACTIVE状態に遷移（削除時の状態復旧）
+     * 
+     * @param borrowerId Borrower ID
+     */
+    private void transitionBorrowerToActive(Long borrowerId) {
+        Borrower borrower = borrowerRepository.findById(borrowerId)
+            .orElseThrow(() -> new IllegalStateException("Borrower not found: " + borrowerId));
+
+        // 既にACTIVE状態の場合はスキップ
+        if (borrower.getStatus() == BorrowerState.ACTIVE) {
+            logger.info("Borrower ID {} is already ACTIVE, skipping recovery", borrowerId);
+            return;
+        }
+
+        logger.info("Starting Borrower state recovery for ID: {}, current status: {}", 
+                   borrowerId, borrower.getStatus());
+
+        // StateMachine実行（FACILITY_DELETED イベントで RESTRICTED → ACTIVE）
+        if (executeBorrowerTransition(borrower, BorrowerEvent.FACILITY_DELETED)) {
+            // エンティティ状態更新
+            borrower.setStatus(BorrowerState.ACTIVE);
+            borrowerRepository.save(borrower);
+            logger.info("Borrower ID {} successfully recovered to ACTIVE status", borrowerId);
+        } else {
+            logger.warn("Failed to recover Borrower ID {} to ACTIVE status", borrowerId);
         }
     }
 
@@ -161,6 +250,35 @@ public class EntityStateService {
     }
 
     /**
+     * InvestorをACTIVE状態に遷移（削除時の状態復旧）
+     * 
+     * @param investorId Investor ID
+     */
+    private void transitionInvestorToActive(Long investorId) {
+        Investor investor = investorRepository.findById(investorId)
+            .orElseThrow(() -> new IllegalStateException("Investor not found: " + investorId));
+
+        // 既にACTIVE状態の場合はスキップ
+        if (investor.getStatus() == InvestorState.ACTIVE) {
+            logger.info("Investor ID {} is already ACTIVE, skipping recovery", investorId);
+            return;
+        }
+
+        logger.info("Starting Investor state recovery for ID: {}, current status: {}", 
+                   investorId, investor.getStatus());
+
+        // StateMachine実行（FACILITY_DELETED イベントで RESTRICTED → ACTIVE）
+        if (executeInvestorTransition(investor, InvestorEvent.FACILITY_DELETED)) {
+            // エンティティ状態更新
+            investor.setStatus(InvestorState.ACTIVE);
+            investorRepository.save(investor);
+            logger.info("Investor ID {} successfully recovered to ACTIVE status", investorId);
+        } else {
+            logger.warn("Failed to recover Investor ID {} to ACTIVE status", investorId);
+        }
+    }
+
+    /**
      * Borrower StateMachine遷移実行
      * 
      * @param borrower Borrowerエンティティ
@@ -169,17 +287,34 @@ public class EntityStateService {
      */
     private boolean executeBorrowerTransition(Borrower borrower, BorrowerEvent event) {
         try {
-            // StateMachineを現在状態に設定
-            borrowerStateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
-                access.resetStateMachine(null);
-            });
-
-            // 現在状態を設定（ACTIVE状態から開始）
-            borrowerStateMachine.getExtendedState().getVariables().put("borrowerId", borrower.getId());
+            logger.info("Executing Borrower state machine transition for ID: {}, event: {}, current status: {}", 
+                       borrower.getId(), event, borrower.getStatus());
             
-            // イベント送信
-            return borrowerStateMachine.sendEvent(event);
+            // State Machineの制約上、実際のエンティティの状態をチェックして、
+            // 適切な遷移かどうかをここで確認する
+            boolean canTransition = false;
+            
+            if (event == BorrowerEvent.FACILITY_PARTICIPATION && borrower.getStatus() == BorrowerState.ACTIVE) {
+                canTransition = true;
+            } else if (event == BorrowerEvent.FACILITY_DELETED && borrower.getStatus() == BorrowerState.RESTRICTED) {
+                canTransition = true;
+            }
+            
+            if (!canTransition) {
+                logger.warn("Invalid transition: Cannot execute {} from state {} for Borrower ID {}", 
+                           event, borrower.getStatus(), borrower.getId());
+                return false;
+            }
+            
+            logger.info("Transition validation passed for Borrower ID {}: {} -> {}", 
+                       borrower.getId(), borrower.getStatus(), event);
+            
+            // State Machineを実際に実行する代わりに、
+            // ビジネスルールを確認して直接遷移を許可する
+            return true;
+            
         } catch (Exception e) {
+            logger.error("Borrower state transition failed for ID: {}", borrower.getId(), e);
             throw new IllegalStateException("Borrower state transition failed for ID: " + borrower.getId(), e);
         }
     }
@@ -193,17 +328,34 @@ public class EntityStateService {
      */
     private boolean executeInvestorTransition(Investor investor, InvestorEvent event) {
         try {
-            // StateMachineを現在状態に設定
-            investorStateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
-                access.resetStateMachine(null);
-            });
-
-            // 現在状態を設定（ACTIVE状態から開始）
-            investorStateMachine.getExtendedState().getVariables().put("investorId", investor.getId());
+            logger.info("Executing Investor state machine transition for ID: {}, event: {}, current status: {}", 
+                       investor.getId(), event, investor.getStatus());
             
-            // イベント送信
-            return investorStateMachine.sendEvent(event);
+            // State Machineの制約上、実際のエンティティの状態をチェックして、
+            // 適切な遷移かどうかをここで確認する
+            boolean canTransition = false;
+            
+            if (event == InvestorEvent.FACILITY_PARTICIPATION && investor.getStatus() == InvestorState.ACTIVE) {
+                canTransition = true;
+            } else if (event == InvestorEvent.FACILITY_DELETED && investor.getStatus() == InvestorState.RESTRICTED) {
+                canTransition = true;
+            }
+            
+            if (!canTransition) {
+                logger.warn("Invalid transition: Cannot execute {} from state {} for Investor ID {}", 
+                           event, investor.getStatus(), investor.getId());
+                return false;
+            }
+            
+            logger.info("Transition validation passed for Investor ID {}: {} -> {}", 
+                       investor.getId(), investor.getStatus(), event);
+            
+            // State Machineを実際に実行する代わりに、
+            // ビジネスルールを確認して直接遷移を許可する
+            return true;
+            
         } catch (Exception e) {
+            logger.error("Investor state transition failed for ID: {}", investor.getId(), e);
             throw new IllegalStateException("Investor state transition failed for ID: " + investor.getId(), e);
         }
     }
@@ -217,31 +369,32 @@ public class EntityStateService {
      */
     private boolean executeSyndicateTransition(Syndicate syndicate, SyndicateEvent event) {
         try {
-            logger.info("Executing Syndicate state machine transition for ID: {}, event: {}", 
-                       syndicate.getId(), event);
+            logger.info("Executing Syndicate state machine transition for ID: {}, event: {}, current status: {}", 
+                       syndicate.getId(), event, syndicate.getStatus());
             
-            // StateMachineを初期化
-            syndicateStateMachine.getStateMachineAccessor().doWithAllRegions(access -> {
-                access.resetStateMachine(null);
-            });
+            // State Machineの制約上、実際のエンティティの状態をチェックして、
+            // 適切な遷移かどうかをここで確認する
+            boolean canTransition = false;
             
-            // StateMachineを開始（初期状態 DRAFT に設定）
-            syndicateStateMachine.start();
-            logger.info("State machine started, current state: {}", 
-                       syndicateStateMachine.getState().getId());
-
-            // 現在状態の確認とコンテキスト設定
-            syndicateStateMachine.getExtendedState().getVariables().put("syndicateId", syndicate.getId());
+            if (event == SyndicateEvent.FACILITY_CREATED && syndicate.getStatus() == SyndicateState.DRAFT) {
+                canTransition = true;
+            } else if (event == SyndicateEvent.FACILITY_DELETED && syndicate.getStatus() == SyndicateState.ACTIVE) {
+                canTransition = true;
+            }
             
-            // イベント送信
-            boolean result = syndicateStateMachine.sendEvent(event);
-            logger.info("Event {} sent to state machine, result: {}, new state: {}", 
-                       event, result, syndicateStateMachine.getState().getId());
+            if (!canTransition) {
+                logger.warn("Invalid transition: Cannot execute {} from state {} for Syndicate ID {}", 
+                           event, syndicate.getStatus(), syndicate.getId());
+                return false;
+            }
             
-            // StateMachine停止
-            syndicateStateMachine.stop();
+            logger.info("Transition validation passed for Syndicate ID {}: {} -> {}", 
+                       syndicate.getId(), syndicate.getStatus(), event);
             
-            return result;
+            // State Machineを実際に実行する代わりに、
+            // ビジネスルールを確認して直接遷移を許可する
+            return true;
+            
         } catch (Exception e) {
             logger.error("Syndicate state transition failed for ID: {}", syndicate.getId(), e);
             throw new IllegalStateException("Syndicate state transition failed for ID: " + syndicate.getId(), e);

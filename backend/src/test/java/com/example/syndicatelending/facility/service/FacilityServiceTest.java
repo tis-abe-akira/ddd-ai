@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +48,9 @@ class FacilityServiceTest {
 
     @Mock
     private EntityStateService entityStateService;
+
+    @Mock
+    private com.example.syndicatelending.loan.repository.DrawdownRepository drawdownRepository;
 
     @InjectMocks
     private FacilityService facilityService;
@@ -180,14 +184,20 @@ class FacilityServiceTest {
     void 正常にFacilityが削除される() {
         // Given
         Long facilityId = 1L;
+        Facility facility = new Facility();
+        facility.setId(facilityId);
+        facility.setSyndicateId(1L);
 
-        when(facilityRepository.existsById(facilityId)).thenReturn(true);
+        when(facilityRepository.findById(facilityId)).thenReturn(Optional.of(facility));
+        when(drawdownRepository.findAll()).thenReturn(java.util.Collections.emptyList());
 
         // When
         facilityService.deleteFacility(facilityId);
 
         // Then
-        verify(facilityRepository).existsById(facilityId);
+        verify(facilityRepository).findById(facilityId);
+        verify(drawdownRepository).findAll();
+        verify(entityStateService).onFacilityDeleted(facility);
         verify(facilityRepository).deleteById(facilityId);
     }
 
@@ -196,14 +206,14 @@ class FacilityServiceTest {
         // Given
         Long facilityId = 1L;
 
-        when(facilityRepository.existsById(facilityId)).thenReturn(false);
+        when(facilityRepository.findById(facilityId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> facilityService.deleteFacility(facilityId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Facility not found");
 
-        verify(facilityRepository).existsById(facilityId);
+        verify(facilityRepository).findById(facilityId);
         verify(facilityRepository, never()).deleteById(facilityId);
     }
 

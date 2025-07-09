@@ -200,6 +200,52 @@ public class BorrowerService {
 
 **将来のマイクロサービス化への対応**: Domain Eventsパターンへの移行準備として、現在の実装を最小限に留める。
 
+### 7. **削除処理における状態管理の必須要件**
+
+**教訓**: 「作成時に状態を変更したら、削除時に必ず状態を復旧せよ」
+
+**問題の発生**: 2025年7月9日、Facility削除処理において以下の重大な設計上の欠陥が発見された：
+- Facility作成時: Borrower/Investor → RESTRICTED、Syndicate → ACTIVE
+- Facility削除時: **状態復旧処理が一切存在しない**
+- 結果: 削除後もRESTRICTED状態が残存し、データ整合性が破綻
+
+**根本原因**: 
+1. **実装の非対称性**: 作成処理（`onFacilityCreated()`）のみ実装し、削除処理（`onFacilityDeleted()`）を忘却
+2. **テストの不備**: 削除後の状態復旧テストが存在しない
+3. **文書化の欠如**: 削除時の状態復旧要件が文書化されていない
+
+**修正内容**:
+```java
+// EntityStateService に追加
+public void onFacilityDeleted(Facility facility) {
+    // 1. Syndicate: ACTIVE → DRAFT
+    // 2. Borrower: RESTRICTED → ACTIVE
+    // 3. Investor: RESTRICTED → ACTIVE
+}
+
+// FacilityService.deleteFacility() の完全な再実装
+@Transactional
+public void deleteFacility(Long id) {
+    // 1. 存在確認
+    // 2. ビジネスルール検証
+    // 3. 状態復旧処理 ← 追加
+    // 4. 関連データ削除
+    // 5. 物理削除
+}
+```
+
+**設計原則**: 
+- **状態遷移の対称性**: 全ての状態変更は、その逆方向の処理も必ず実装する
+- **削除処理の4段階**: 検証 → 状態復旧 → 関連データ削除 → 物理削除
+- **State Machine統合**: 削除時も必ずState Machineイベント（`FACILITY_DELETED`）を発火
+
+**予防策**:
+1. **実装チェックリスト**: 状態変更を伴う機能では、作成・削除の両方向処理を必ず実装
+2. **テスト戦略**: 削除後の状態復旧テストを必須とする
+3. **コードレビュー**: 削除処理では状態復旧の有無を重点的に確認
+
+この教訓により、将来的な同様の問題を防止し、データ整合性を保つことができる。
+
 ---
 
 ## タスク完了時の文書更新確認プロセス

@@ -49,7 +49,15 @@ public class SyndicateStateMachineConfig {
                 // トリガーイベント: Facility組成時に発火
                 .event(SyndicateEvent.FACILITY_CREATED)
                 // ガード条件: DRAFT状態でのみFacility組成を許可
-                .guard(facilityCreationOnlyFromDraftGuard());
+                .guard(facilityCreationOnlyFromDraftGuard())
+            .and()
+            .withExternal()
+                // 外部遷移: ACTIVE状態からDRAFT状態への復旧遷移
+                .source(SyndicateState.ACTIVE).target(SyndicateState.DRAFT)
+                // トリガーイベント: Facility削除時に発火
+                .event(SyndicateEvent.FACILITY_DELETED)
+                // ガード条件: ACTIVE状態でのみFacility削除を許可
+                .guard(facilityDeletionOnlyFromActiveGuard());
 
         return builder.build();
     }
@@ -69,6 +77,23 @@ public class SyndicateStateMachineConfig {
             SyndicateState currentState = context.getStateMachine().getState().getId();
             // DRAFT状態の場合のみFacility組成を許可
             return SyndicateState.DRAFT.equals(currentState);
+        };
+    }
+
+    /**
+     * Facility削除制約ガード
+     * 
+     * DRAFT状態への復旧はACTIVE状態からのみ許可する。
+     * Facility削除時の状態復旧を制御するビジネスルール。
+     * 
+     * @return ガード条件（ACTIVE状態の場合のみ true）
+     */
+    private Guard<SyndicateState, SyndicateEvent> facilityDeletionOnlyFromActiveGuard() {
+        return context -> {
+            // 現在の状態を取得
+            SyndicateState currentState = context.getStateMachine().getState().getId();
+            // ACTIVE状態の場合のみFacility削除を許可
+            return SyndicateState.ACTIVE.equals(currentState);
         };
     }
 }
