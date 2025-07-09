@@ -22,6 +22,7 @@ import com.example.syndicatelending.facility.repository.SharePieRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.facility.service.FacilityService;
+import com.example.syndicatelending.common.statemachine.EntityStateService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +54,7 @@ public class DrawdownService {
     
     // 他のサービス層（状態管理のため）
     private final FacilityService facilityService;
+    private final EntityStateService entityStateService;
 
     public DrawdownService(DrawdownRepository drawdownRepository,
             LoanRepository loanRepository,
@@ -60,7 +62,8 @@ public class DrawdownService {
             BorrowerRepository borrowerRepository,
             SharePieRepository sharePieRepository,
             InvestorRepository investorRepository,
-            FacilityService facilityService) {
+            FacilityService facilityService,
+            EntityStateService entityStateService) {
         this.drawdownRepository = drawdownRepository;
         this.loanRepository = loanRepository;
         this.facilityRepository = facilityRepository;
@@ -68,6 +71,7 @@ public class DrawdownService {
         this.sharePieRepository = sharePieRepository;
         this.investorRepository = investorRepository;
         this.facilityService = facilityService;
+        this.entityStateService = entityStateService;
     }
 
     /**
@@ -158,7 +162,8 @@ public class DrawdownService {
 
         // 7. FacilityをFIXED状態に変更 - 初回ドローダウンでファシリティを確定状態にする
         //    これにより、以降のファシリティ変更（持分比率変更等）を禁止する
-        facilityService.fixFacility(request.getFacilityId());
+        //    EntityStateServiceを使用して統一的な状態管理を実現
+        entityStateService.onDrawdownCreated(request.getFacilityId());
 
         return savedDrawdown;
     }
@@ -389,8 +394,9 @@ public class DrawdownService {
                 .toList();
         
         // 他にDrawdownが無い場合のみ、FacilityをDRAFTに戻す
+        // EntityStateServiceを使用して統一的な状態管理を実現
         if (otherDrawdowns.isEmpty()) {
-            facilityService.autoRevertToDraftOnDrawdownDeletion(facilityId);
+            entityStateService.onDrawdownDeleted(facilityId);
         }
     }
 

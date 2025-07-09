@@ -309,6 +309,63 @@ private boolean executeBorrowerTransition(Borrower borrower, BorrowerEvent event
 
 この判断により、Spring State Machineの価値を最大限活用しながら、エンティティ状態の正確な管理を実現した。
 
+### 8. **Drawdown-Facility関係の統一的状態管理実装**
+
+**背景**: 2025年7月10日、Facility-Borrower/Investor関係で確立されたCross-Context-Reference解決パターンをDrawdown-Facility関係に適用し、アーキテクチャの一貫性を実現した。
+
+**実装前の問題**:
+- DrawdownServiceが直接FacilityService.fixFacility()を呼び出していた
+- EntityStateServiceを通らない状態管理により、統一的なアーキテクチャから逸脱
+- 他のエンティティ関係と異なる実装パターンによる保守性の低下
+
+**採用したアーキテクチャパターン**: **「EntityStateService統一型状態管理」**
+
+```java
+// Before: DrawdownService直接呼び出し
+facilityService.fixFacility(request.getFacilityId());
+facilityService.autoRevertToDraftOnDrawdownDeletion(facilityId);
+
+// After: EntityStateService統一管理
+entityStateService.onDrawdownCreated(request.getFacilityId());
+entityStateService.onDrawdownDeleted(facilityId);
+```
+
+**実装内容**:
+1. **EntityStateService拡張**: Facility状態遷移メソッドを追加
+   - `transitionFacilityToFixed()`: DRAFT → FIXED状態遷移
+   - `transitionFacilityToDraft()`: FIXED → DRAFT状態復旧
+   - `executeFacilityTransition()`: Facility State Machine実行
+   - `createFacilityStateMachine()`: エンティティ状態反映型インスタンス作成
+
+2. **FacilityStateMachine Bean定義**: 依存性注入可能なBean設定
+   - `@EnableStateMachine`から`@Bean`定義に変更
+   - EntityStateServiceでの依存性注入を可能にする
+
+3. **DrawdownService統合**: 既存のFacilityService呼び出しをEntityStateServiceに統一
+   - Drawdown作成時: `onDrawdownCreated()`でFacility状態変更
+   - Drawdown削除時: `onDrawdownDeleted()`でFacility状態復旧
+
+**アーキテクチャ一貫性の確保**:
+| 関係 | 作成時のパターン | 削除時のパターン | 状態管理 |
+|------|------------------|------------------|----------|
+| **Facility-Borrower/Investor** | EntityStateService.onFacilityCreated() | EntityStateService.onFacilityDeleted() | ✅ 統一 |
+| **Drawdown-Facility** | EntityStateService.onDrawdownCreated() | EntityStateService.onDrawdownDeleted() | ✅ 統一 |
+
+**実装効果**:
+- ✅ **アーキテクチャ一貫性**: 全Cross-Context関係で統一的な状態管理パターン
+- ✅ **EntityStateService集約**: 全エンティティ状態遷移を一箇所で管理
+- ✅ **State Machine統合**: 既存のFacilityStateMachineConfigを活用した適切な状態管理
+- ✅ **保守性向上**: 既存のBorrower/Investorパターンと同じ実装アプローチ
+
+**動作検証結果**:
+```
+2025-07-10T06:42:03.704+09:00 INFO EntityStateService: Starting Drawdown creation state management for facility ID: 3
+2025-07-10T06:42:03.705+09:00 INFO EntityStateService: Facility state machine transition successful: DRAFT -> FIXED for ID 3
+2025-07-10T06:42:03.708+09:00 INFO EntityStateService: Facility ID 3 successfully transitioned to FIXED status
+```
+
+この実装により、Drawdown-Facility関係もParty状態管理と同じCross-Context-Reference解決パターンに統合され、システム全体のアーキテクチャ一貫性を実現した。
+
 ---
 
 ## タスク完了時の文書更新確認プロセス

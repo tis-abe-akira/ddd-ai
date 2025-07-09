@@ -5,6 +5,7 @@ import com.example.syndicatelending.common.application.exception.ResourceNotFoun
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.statemachine.EntityStateService;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.facility.domain.FacilityValidator;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
@@ -187,16 +188,16 @@ class FacilityServiceTest {
         Facility facility = new Facility();
         facility.setId(facilityId);
         facility.setSyndicateId(1L);
+        facility.setStatus(FacilityState.DRAFT); // DRAFT状態は削除可能
 
         when(facilityRepository.findById(facilityId)).thenReturn(Optional.of(facility));
-        when(drawdownRepository.findAll()).thenReturn(java.util.Collections.emptyList());
 
         // When
         facilityService.deleteFacility(facilityId);
 
         // Then
         verify(facilityRepository).findById(facilityId);
-        verify(drawdownRepository).findAll();
+        // drawdownRepository.findAll() は呼び出されない（状態ベース判定のため）
         verify(entityStateService).onFacilityDeleted(facility);
         verify(facilityRepository).deleteById(facilityId);
     }
@@ -215,6 +216,27 @@ class FacilityServiceTest {
 
         verify(facilityRepository).findById(facilityId);
         verify(facilityRepository, never()).deleteById(facilityId);
+    }
+
+    @Test
+    void FIXED状態のFacilityを削除しようとした場合はエラーになる() {
+        // Given
+        Long facilityId = 1L;
+        Facility facility = new Facility();
+        facility.setId(facilityId);
+        facility.setSyndicateId(1L);
+        facility.setStatus(FacilityState.FIXED); // FIXED状態は削除不可
+
+        when(facilityRepository.findById(facilityId)).thenReturn(Optional.of(facility));
+
+        // When & Then
+        assertThatThrownBy(() -> facilityService.deleteFacility(facilityId))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining("FIXED状態のFacilityは削除できません");
+
+        verify(facilityRepository).findById(facilityId);
+        verify(facilityRepository, never()).deleteById(facilityId);
+        verify(entityStateService, never()).onFacilityDeleted(any());
     }
 
     private CreateFacilityRequest createValidFacilityRequest() {

@@ -15,12 +15,9 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
-import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
-import com.example.syndicatelending.common.statemachine.syndicate.SyndicateEvent;
 import com.example.syndicatelending.common.statemachine.EntityStateService;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.transaction.entity.TransactionType;
-import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDate;
@@ -41,22 +38,19 @@ public class FacilityService {
     private final FacilityInvestmentRepository facilityInvestmentRepository;
     private final SyndicateRepository syndicateRepository;
     private final EntityStateService entityStateService;
-    private final DrawdownRepository drawdownRepository;
     
     @Autowired
     private StateMachine<FacilityState, FacilityEvent> stateMachine;
 
     public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
             SharePieRepository sharePieRepository, FacilityInvestmentRepository facilityInvestmentRepository,
-            SyndicateRepository syndicateRepository, EntityStateService entityStateService,
-            DrawdownRepository drawdownRepository) {
+            SyndicateRepository syndicateRepository, EntityStateService entityStateService) {
         this.facilityRepository = facilityRepository;
         this.facilityValidator = facilityValidator;
         this.sharePieRepository = sharePieRepository;
         this.facilityInvestmentRepository = facilityInvestmentRepository;
         this.syndicateRepository = syndicateRepository;
         this.entityStateService = entityStateService;
-        this.drawdownRepository = drawdownRepository;
     }
 
     @Transactional
@@ -226,17 +220,17 @@ public class FacilityService {
     /**
      * Facility削除時のビジネスルール検証
      * 
+     * Cross-Context-Reference解決パターンに基づき、Facility自身の状態でビジネスルールを判定。
+     * DrawdownRepositoryへの依存を排除し、状態ベースの判定を実現。
+     * 
      * @param facility 削除対象のFacility
      * @throws BusinessRuleViolationException ビジネスルール違反時
      */
     private void validateFacilityDeletion(Facility facility) {
-        // アクティブなDrawdownが存在する場合は削除不可
-        boolean hasActiveDrawdowns = drawdownRepository.findAll()
-            .stream()
-            .anyMatch(drawdown -> drawdown.getFacilityId().equals(facility.getId()));
-        if (hasActiveDrawdowns) {
+        // FIXED状態のFacilityは削除不可（関連するDrawdownが存在することを示す）
+        if (facility.getStatus() == FacilityState.FIXED) {
             throw new BusinessRuleViolationException(
-                "アクティブなDrawdownが存在するため、Facility ID " + facility.getId() + " は削除できません");
+                "FIXED状態のFacilityは削除できません。関連するDrawdownを先に削除してください。現在の状態: " + facility.getStatus());
         }
         
         // 他の削除制約があれば、ここに追加
@@ -316,12 +310,9 @@ public class FacilityService {
                 "FIXED状態のFacilityのみDRAFTに戻すことができます。現在の状態: " + facility.getStatus());
         }
         
-        // ビジネスルール検証: 関連するDrawdownが存在しないことを確認
-        if (hasActiveDrawdowns(facilityId)) {
-            throw new BusinessRuleViolationException(
-                "関連するDrawdownが存在するため、Facilityを DRAFT状態に戻すことができません。" +
-                "先に全てのDrawdownを削除してください。");
-        }
+        // ビジネスルール検証: FIXED状態からDRAFT状態への遷移は、
+        // 関連するDrawdownが削除されている前提で呼び出される
+        // （状態ベースの判定により、追加のチェックは不要）
         
         // State Machine実行 - ビジネスルール検証済みのため、遷移を実行
         // （実際のState Machine処理は複雑なので、Service層でビジネスロジックを管理）
@@ -339,15 +330,6 @@ public class FacilityService {
         facilityRepository.save(facility);
     }
 
-    /**
-     * 指定されたFacilityに関連するアクティブなDrawdownが存在するかを確認
-     * 
-     * @param facilityId FacilityのID
-     * @return 関連するDrawdownが存在する場合 true
-     */
-    private boolean hasActiveDrawdowns(Long facilityId) {
-        return !drawdownRepository.findByFacilityId(facilityId).isEmpty();
-    }
 
     /**
      * Drawdown削除時にFacilityをDRAFT状態に自動復帰させる

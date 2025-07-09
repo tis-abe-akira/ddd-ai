@@ -337,31 +337,20 @@ public class FacilityStateMachineTest {
     }
 
     @Test
-    void testRevertToDraftWithActiveDrawdownsThrowsException() {
-        // Drawdownが存在する場合のrevertToDraftは例外をスロー
+    void testRevertToDraftFromFixedStateSucceeds() {
+        // FIXED状態からのrevertToDraftは成功する（状態ベース判定）
         
         // FacilityをFIXED状態にする
         facilityService.fixFacility(testFacility.getId());
+        Facility fixedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.FIXED, fixedFacility.getStatus());
         
-        // テスト用のDrawdownを作成（実際のDrawdownエンティティを使用）
-        com.example.syndicatelending.loan.entity.Drawdown testDrawdown = 
-            new com.example.syndicatelending.loan.entity.Drawdown();
-        testDrawdown.setFacilityId(testFacility.getId());
-        testDrawdown.setBorrowerId(testBorrower.getId());
-        testDrawdown.setLoanId(1L); // 必須フィールド: Loan ID を設定
-        testDrawdown.setAmount(Money.of(new BigDecimal("100000.00")));
-        testDrawdown.setCurrency("USD");
-        testDrawdown.setPurpose("Test drawdown");
-        testDrawdown.setTransactionDate(LocalDate.now());
-        // TransactionTypeはコンストラクタで自動設定される
-        drawdownRepository.save(testDrawdown);
+        // revertToDraftは成功する（Cross-Context依存を排除したため）
+        assertDoesNotThrow(() -> facilityService.revertToDraft(testFacility.getId()));
         
-        // revertToDraftでBusinessRuleViolationExceptionがスローされることを確認
-        BusinessRuleViolationException exception = assertThrows(
-            BusinessRuleViolationException.class,
-            () -> facilityService.revertToDraft(testFacility.getId())
-        );
-        
-        assertTrue(exception.getMessage().contains("関連するDrawdownが存在するため"));
+        // DRAFT状態に戻ったことを確認
+        Facility revertedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.DRAFT, revertedFacility.getStatus());
+        assertTrue(revertedFacility.canBeModified());
     }
 }

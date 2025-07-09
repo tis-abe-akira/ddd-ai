@@ -5,6 +5,7 @@ import com.example.syndicatelending.common.application.exception.BusinessRuleVio
 import com.example.syndicatelending.party.dto.*;
 import com.example.syndicatelending.party.entity.*;
 import com.example.syndicatelending.party.repository.*;
+//TODO: 依存性の違反なので、見直すこと！
 import com.example.syndicatelending.facility.repository.FacilityRepository;
 import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import org.springframework.data.domain.Page;

@@ -14,6 +14,9 @@ import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.facility.entity.Facility;
 import com.example.syndicatelending.facility.entity.SharePie;
+import com.example.syndicatelending.facility.repository.FacilityRepository;
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
+import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.statemachine.StateMachine;
@@ -40,24 +43,30 @@ public class EntityStateService {
     private final BorrowerRepository borrowerRepository;
     private final InvestorRepository investorRepository;
     private final SyndicateRepository syndicateRepository;
+    private final FacilityRepository facilityRepository;
     
     private final StateMachine<BorrowerState, BorrowerEvent> borrowerStateMachine;
     private final StateMachine<InvestorState, InvestorEvent> investorStateMachine;
     private final StateMachine<SyndicateState, SyndicateEvent> syndicateStateMachine;
+    private final StateMachine<FacilityState, FacilityEvent> facilityStateMachine;
 
     public EntityStateService(
             BorrowerRepository borrowerRepository,
             InvestorRepository investorRepository, 
             SyndicateRepository syndicateRepository,
+            FacilityRepository facilityRepository,
             @Qualifier("borrowerStateMachine") StateMachine<BorrowerState, BorrowerEvent> borrowerStateMachine,
             @Qualifier("investorStateMachine") StateMachine<InvestorState, InvestorEvent> investorStateMachine,
-            @Qualifier("syndicateStateMachine") StateMachine<SyndicateState, SyndicateEvent> syndicateStateMachine) {
+            @Qualifier("syndicateStateMachine") StateMachine<SyndicateState, SyndicateEvent> syndicateStateMachine,
+            @Qualifier("facilityStateMachine") StateMachine<FacilityState, FacilityEvent> facilityStateMachine) {
         this.borrowerRepository = borrowerRepository;
         this.investorRepository = investorRepository;
         this.syndicateRepository = syndicateRepository;
+        this.facilityRepository = facilityRepository;
         this.borrowerStateMachine = borrowerStateMachine;
         this.investorStateMachine = investorStateMachine;
         this.syndicateStateMachine = syndicateStateMachine;
+        this.facilityStateMachine = facilityStateMachine;
     }
 
     /**
@@ -116,6 +125,38 @@ public class EntityStateService {
         }
         
         logger.info("Facility deletion state recovery completed for facility ID: {}", facility.getId());
+    }
+
+    /**
+     * Drawdown作成時の状態変更処理
+     * 
+     * Drawdown作成時にFacilityをFIXED状態に遷移させる
+     * 
+     * @param facilityId 関連するFacility ID
+     */
+    public void onDrawdownCreated(Long facilityId) {
+        logger.info("Starting Drawdown creation state management for facility ID: {}", facilityId);
+        
+        // FacilityをFIXED状態に遷移
+        transitionFacilityToFixed(facilityId);
+        
+        logger.info("Drawdown creation state management completed for facility ID: {}", facilityId);
+    }
+
+    /**
+     * Drawdown削除時の状態復旧処理
+     * 
+     * Drawdown削除時にFacilityをDRAFT状態に復旧させる
+     * 
+     * @param facilityId 関連するFacility ID
+     */
+    public void onDrawdownDeleted(Long facilityId) {
+        logger.info("Starting Drawdown deletion state recovery for facility ID: {}", facilityId);
+        
+        // FacilityをDRAFT状態に復旧
+        transitionFacilityToDraft(facilityId);
+        
+        logger.info("Drawdown deletion state recovery completed for facility ID: {}", facilityId);
     }
 
     /**
@@ -486,5 +527,135 @@ public class EntityStateService {
         }
         
         return investorIds;
+    }
+
+    /**
+     * FacilityをFIXED状態に遷移
+     * 
+     * @param facilityId Facility ID
+     */
+    private void transitionFacilityToFixed(Long facilityId) {
+        Facility facility = facilityRepository.findById(facilityId)
+            .orElseThrow(() -> new IllegalStateException("Facility not found: " + facilityId));
+
+        // 既にFIXED状態の場合は2度目のドローダウンを禁止
+        if (facility.getStatus() == FacilityState.FIXED) {
+            logger.warn("Attempted second drawdown on FIXED facility ID: {}", facilityId);
+            throw new com.example.syndicatelending.common.application.exception.BusinessRuleViolationException(
+                "FIXED状態のFacilityに対して2度目のドローダウンはできません。現在の状態: " + facility.getStatus());
+        }
+
+        logger.info("Starting Facility state transition for ID: {}, current status: {}", 
+                   facilityId, facility.getStatus());
+
+        // StateMachine実行
+        if (executeFacilityTransition(facility, FacilityEvent.DRAWDOWN_EXECUTED)) {
+            // エンティティ状態更新
+            facility.setStatus(FacilityState.FIXED);
+            facilityRepository.save(facility);
+            logger.info("Facility ID {} successfully transitioned to FIXED status", facilityId);
+        } else {
+            logger.warn("Failed to transition Facility ID {} to FIXED status", facilityId);
+        }
+    }
+
+    /**
+     * FacilityをDRAFT状態に遷移（削除時の状態復旧）
+     * 
+     * @param facilityId Facility ID
+     */
+    private void transitionFacilityToDraft(Long facilityId) {
+        Facility facility = facilityRepository.findById(facilityId)
+            .orElseThrow(() -> new IllegalStateException("Facility not found: " + facilityId));
+
+        // 既にDRAFT状態の場合はスキップ
+        if (facility.getStatus() == FacilityState.DRAFT) {
+            logger.info("Facility ID {} is already DRAFT, skipping recovery", facilityId);
+            return;
+        }
+
+        logger.info("Starting Facility state recovery for ID: {}, current status: {}", 
+                   facilityId, facility.getStatus());
+
+        // StateMachine実行（REVERT_TO_DRAFT イベントで FIXED → DRAFT）
+        if (executeFacilityTransition(facility, FacilityEvent.REVERT_TO_DRAFT)) {
+            // エンティティ状態更新
+            facility.setStatus(FacilityState.DRAFT);
+            facilityRepository.save(facility);
+            logger.info("Facility ID {} successfully recovered to DRAFT status", facilityId);
+        } else {
+            logger.warn("Failed to recover Facility ID {} to DRAFT status", facilityId);
+        }
+    }
+
+    /**
+     * Facility StateMachine遷移実行
+     * 
+     * @param facility Facilityエンティティ
+     * @param event 発火イベント
+     * @return 遷移成功時 true
+     */
+    private boolean executeFacilityTransition(Facility facility, FacilityEvent event) {
+        try {
+            logger.info("Executing Facility state machine transition for ID: {}, event: {}, current status: {}", 
+                       facility.getId(), event, facility.getStatus());
+            
+            // エンティティ用の新しいState Machineインスタンスを作成
+            StateMachine<FacilityState, FacilityEvent> entityStateMachine = createFacilityStateMachine(facility);
+            
+            // State Machineを開始
+            entityStateMachine.start();
+            
+            logger.info("Facility state machine started for entity state: {}", 
+                       entityStateMachine.getState().getId());
+            
+            // コンテキスト設定
+            entityStateMachine.getExtendedState().getVariables().put("facilityId", facility.getId());
+            
+            // イベント送信
+            boolean result = entityStateMachine.sendEvent(event);
+            
+            if (result) {
+                FacilityState newState = entityStateMachine.getState().getId();
+                logger.info("Facility state machine transition successful: {} -> {} for ID {}", 
+                           facility.getStatus(), newState, facility.getId());
+            } else {
+                logger.warn("Facility state machine transition failed for ID {}: cannot execute {} from {}", 
+                           facility.getId(), event, facility.getStatus());
+            }
+            
+            // State Machine停止
+            entityStateMachine.stop();
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Facility state transition failed for ID: {}", facility.getId(), e);
+            throw new IllegalStateException("Facility state transition failed for ID: " + facility.getId(), e);
+        }
+    }
+    
+    /**
+     * Facility用のState Machineインスタンスを現在のエンティティ状態で作成
+     * 
+     * @param facility Facilityエンティティ
+     * @return 現在の状態に設定されたStateMachine
+     */
+    private StateMachine<FacilityState, FacilityEvent> createFacilityStateMachine(Facility facility) {
+        try {
+            // 新しいState Machineインスタンスを作成
+            StateMachine<FacilityState, FacilityEvent> machine = facilityStateMachine;
+            
+            // State Machineを現在のエンティティ状態に設定
+            machine.getStateMachineAccessor().doWithAllRegions(access -> {
+                access.resetStateMachine(new org.springframework.statemachine.support.DefaultStateMachineContext<>(
+                    facility.getStatus(), null, null, null));
+            });
+            
+            return machine;
+        } catch (Exception e) {
+            logger.error("Failed to create Facility state machine for entity state: {}", facility.getStatus(), e);
+            throw new IllegalStateException("Failed to create Facility state machine", e);
+        }
     }
 }

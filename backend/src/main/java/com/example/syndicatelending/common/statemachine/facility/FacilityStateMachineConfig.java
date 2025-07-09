@@ -1,11 +1,13 @@
 package com.example.syndicatelending.common.statemachine.facility;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.statemachine.config.EnableStateMachine;
+import org.springframework.context.annotation.Bean;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.guard.Guard;
+import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.config.StateMachineBuilder;
 
 import java.util.EnumSet;
 
@@ -24,7 +26,6 @@ import java.util.EnumSet;
  * REVERT_TO_DRAFT イベント: FIXED → DRAFT（全ドローダウン削除時）
  */
 @Configuration
-@EnableStateMachine
 public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<FacilityState, FacilityEvent> {
 
     /**
@@ -112,5 +113,34 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
             // State Machine遷移を許可する
             return true;
         };
+    }
+
+    /**
+     * FacilityStateMachineのBean定義
+     * 
+     * @return 設定済みのStateMachineインスタンス
+     * @throws Exception 設定エラー時
+     */
+    @Bean(name = "facilityStateMachine")
+    public StateMachine<FacilityState, FacilityEvent> facilityStateMachine() throws Exception {
+        StateMachineBuilder.Builder<FacilityState, FacilityEvent> builder = StateMachineBuilder.builder();
+        
+        builder.configureStates()
+            .withStates()
+            .initial(FacilityState.DRAFT)
+            .states(EnumSet.allOf(FacilityState.class));
+        
+        builder.configureTransitions()
+            .withExternal()
+                .source(FacilityState.DRAFT).target(FacilityState.FIXED)
+                .event(FacilityEvent.DRAWDOWN_EXECUTED)
+                .guard(drawdownOnlyFromDraftGuard())
+            .and()
+            .withExternal()
+                .source(FacilityState.FIXED).target(FacilityState.DRAFT)
+                .event(FacilityEvent.REVERT_TO_DRAFT)
+                .guard(revertToDraftGuard());
+        
+        return builder.build();
     }
 }
