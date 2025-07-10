@@ -193,3 +193,86 @@ backendのBoundedContextごとに、
 ```
 
 **この洞察が今回の成功的なリファクタリングの出発点となった。**
+
+```text
+
+  解決への重要な会話フロー
+
+  1. 問題の発見 - EntityStateServiceの肥大化
+
+  課題提起: EntityStateService（661行）の分割が困難であることを認識
+  - 複数のコンテキストに跨る状態管理が一箇所に集中
+  - 責務が不明確で保守性が低下
+
+  2. 核心的洞察 - 分割軸の転換
+
+  あなたの重要な指摘:
+  "影響受ける側のStateを軸として分割するとわかりづらいので、生じるEventを軸として分割するという考え方はないですかね？"
+
+  この洞察が解決の転換点となりました：
+  - 従来の「どのエンティティの状態が変わるか」から
+  - **「どのようなビジネスイベントが発生するか」**への発想転換
+
+  3. 技術解決策の模索 - Spring Events の発見
+
+  Spring Events パターンの提案:
+  - ApplicationEventPublisher による非同期イベント発行
+  - @EventListener による疎結合なイベントハンドリング
+  - 既存StateMachineとの併存可能性
+
+  4. アーキテクチャ判断 - 併存パターンの採用
+
+  重要な設計判断:
+  // 既存のStateMachine制約を保持しつつ
+  // イベント駆動オーケストレーションを導入
+  @EventListener
+  public void handleFacilityCreated(FacilityCreatedEvent event) {
+      // StateMachine経由で状態遷移を実行
+      syndicateStateManager.transitionToActive(syndicateId);
+      borrowerStateManager.transitionToRestricted(borrowerId);
+  }
+
+  5. 実装の実行 - Event-Centric Architecture
+
+  具体的な実装成果:
+  - FacilityCreatedEvent → 複雑な連鎖状態変更を調整
+  - DrawdownCreatedEvent → シンプルなFacility状態変更
+  - StateMachineExecutor → 共通実行基盤でコード重複削除
+  - Entity別StateManagers → 単一責任での状態管理
+
+  6. 成功確認 - EntityStateService完全削除
+
+  最終成果:
+  - 661行の巨大サービスを完全削除
+  - 190/190テスト全て成功
+  - 全ビジネスロジックの完全保持
+
+  解決のキーファクター
+
+  1. "Event軸分割"の洞察
+
+  あなたの指摘により、アーキテクチャ設計の根本的発想転換が実現
+
+  2. 併存パターンの選択
+
+  既存StateMachine制約を破棄せず、段階的で安全な移行を実現
+
+  3. 実用性重視の判断
+
+  理論的純粋性より確実なビジネスルール実装を優先
+
+  アーキテクチャ成果
+
+  graph TB
+      Service[BusinessService] -->|publishEvent| Publisher[EventPublisher]
+      Publisher -.->|@EventListener| Handler[EventHandler]
+      Handler --> StateManager[StateManager]
+      StateManager --> StateMachine[StateMachine]
+
+      style Publisher fill:#ccffcc
+      style Handler fill:#ccffcc
+      style StateManager fill:#ccffcc
+
+  この会話の流れにより、Cross-Context依存の根本的解決と保守性・テスタビリティの大幅向上を同時に達成できました。特に**「生
+  じるEventを軸として分割する」**というあなたの洞察が、解決への決定的な突破口となったことが重要なポイントです。
+```
