@@ -22,8 +22,11 @@ import com.example.syndicatelending.facility.repository.SharePieRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.facility.service.FacilityService;
-import com.example.syndicatelending.common.statemachine.EntityStateService;
+// import com.example.syndicatelending.common.statemachine.EntityStateService; // 【削除】Spring Eventsに移行
+import com.example.syndicatelending.common.statemachine.events.DrawdownCreatedEvent;
+import com.example.syndicatelending.common.statemachine.events.DrawdownDeletedEvent;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -54,7 +57,8 @@ public class DrawdownService {
     
     // 他のサービス層（状態管理のため）
     private final FacilityService facilityService;
-    private final EntityStateService entityStateService;
+    // private final EntityStateService entityStateService; // 【削除】Spring Eventsに移行
+    private final ApplicationEventPublisher eventPublisher;
 
     public DrawdownService(DrawdownRepository drawdownRepository,
             LoanRepository loanRepository,
@@ -63,7 +67,8 @@ public class DrawdownService {
             SharePieRepository sharePieRepository,
             InvestorRepository investorRepository,
             FacilityService facilityService,
-            EntityStateService entityStateService) {
+            // EntityStateService entityStateService, // 【削除】Spring Eventsに移行
+            ApplicationEventPublisher eventPublisher) {
         this.drawdownRepository = drawdownRepository;
         this.loanRepository = loanRepository;
         this.facilityRepository = facilityRepository;
@@ -71,7 +76,8 @@ public class DrawdownService {
         this.sharePieRepository = sharePieRepository;
         this.investorRepository = investorRepository;
         this.facilityService = facilityService;
-        this.entityStateService = entityStateService;
+        // this.entityStateService = entityStateService; // 【削除】Spring Eventsに移行
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -163,7 +169,10 @@ public class DrawdownService {
         // 7. FacilityをFIXED状態に変更 - 初回ドローダウンでファシリティを確定状態にする
         //    これにより、以降のファシリティ変更（持分比率変更等）を禁止する
         //    EntityStateServiceを使用して統一的な状態管理を実現
-        entityStateService.onDrawdownCreated(request.getFacilityId());
+        // entityStateService.onDrawdownCreated(request.getFacilityId()); // 【移行中】Spring Eventsに置き換え
+
+        // 【新機能】Spring Eventsでイベント発行
+        eventPublisher.publishEvent(new DrawdownCreatedEvent(request.getFacilityId(), savedDrawdown.getId()));
 
         return savedDrawdown;
     }
@@ -396,7 +405,10 @@ public class DrawdownService {
         // 他にDrawdownが無い場合のみ、FacilityをDRAFTに戻す
         // EntityStateServiceを使用して統一的な状態管理を実現
         if (otherDrawdowns.isEmpty()) {
-            entityStateService.onDrawdownDeleted(facilityId);
+            // entityStateService.onDrawdownDeleted(facilityId); // 【移行中】Spring Eventsに置き換え
+            
+            // 【新機能】Spring Eventsでイベント発行
+            eventPublisher.publishEvent(new DrawdownDeletedEvent(facilityId, excludeDrawdownId));
         }
     }
 

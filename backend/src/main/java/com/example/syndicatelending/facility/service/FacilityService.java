@@ -15,11 +15,14 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
-import com.example.syndicatelending.common.statemachine.EntityStateService;
+// import com.example.syndicatelending.common.statemachine.EntityStateService; // 【削除】Spring Eventsに移行
+import com.example.syndicatelending.common.statemachine.events.FacilityCreatedEvent;
+import com.example.syndicatelending.common.statemachine.events.FacilityDeletedEvent;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.transaction.entity.TransactionType;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
@@ -37,20 +40,24 @@ public class FacilityService {
     private final SharePieRepository sharePieRepository;
     private final FacilityInvestmentRepository facilityInvestmentRepository;
     private final SyndicateRepository syndicateRepository;
-    private final EntityStateService entityStateService;
+    // private final EntityStateService entityStateService; // 【削除】Spring Eventsに移行
+    private final ApplicationEventPublisher eventPublisher;
     
     @Autowired
     private StateMachine<FacilityState, FacilityEvent> stateMachine;
 
     public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
             SharePieRepository sharePieRepository, FacilityInvestmentRepository facilityInvestmentRepository,
-            SyndicateRepository syndicateRepository, EntityStateService entityStateService) {
+            SyndicateRepository syndicateRepository,
+            // EntityStateService entityStateService, // 【削除】Spring Eventsに移行
+            ApplicationEventPublisher eventPublisher) {
         this.facilityRepository = facilityRepository;
         this.facilityValidator = facilityValidator;
         this.sharePieRepository = sharePieRepository;
         this.facilityInvestmentRepository = facilityInvestmentRepository;
         this.syndicateRepository = syndicateRepository;
-        this.entityStateService = entityStateService;
+        // this.entityStateService = entityStateService; // 【削除】Spring Eventsに移行
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -105,7 +112,10 @@ public class FacilityService {
         facilityInvestmentRepository.saveAll(investments);
 
         // 【重要】Facility組成時のBorrower/Investor状態遷移実行
-        entityStateService.onFacilityCreated(savedFacility);
+        // entityStateService.onFacilityCreated(savedFacility); // 【移行中】Spring Eventsに置き換え
+
+        // 【新機能】Spring Eventsでイベント発行
+        eventPublisher.publishEvent(new FacilityCreatedEvent(savedFacility));
 
         return savedFacility;
     }
@@ -206,7 +216,10 @@ public class FacilityService {
         validateFacilityDeletion(facility);
         
         // 3. 状態復旧処理（EntityStateService経由）
-        entityStateService.onFacilityDeleted(facility);
+        // entityStateService.onFacilityDeleted(facility); // 【移行中】Spring Eventsに置き換え
+        
+        // 【新機能】Spring Eventsでイベント発行
+        eventPublisher.publishEvent(new FacilityDeletedEvent(facility));
         
         // 4. 関連データの削除
         deleteRelatedData(facility);
