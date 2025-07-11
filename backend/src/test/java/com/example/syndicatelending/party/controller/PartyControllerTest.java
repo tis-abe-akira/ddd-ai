@@ -99,7 +99,7 @@ class PartyControllerTest {
                                 .andExpect(jsonPath("$.phoneNumber").value("987-654-3210"))
                                 .andExpect(jsonPath("$.investmentCapacity").value(5000000))
                                 .andExpect(jsonPath("$.investorType").value("BANK"))
-                                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                                .andExpect(jsonPath("$.status").value("DRAFT"))
                                 .andExpect(jsonPath("$.id").exists())
                                 .andExpect(jsonPath("$.createdAt").exists())
                                 .andExpect(jsonPath("$.updatedAt").exists());

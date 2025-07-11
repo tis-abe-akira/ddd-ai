@@ -42,7 +42,7 @@ public class Investor {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private InvestorState status = InvestorState.ACTIVE;
+    private InvestorState status = InvestorState.DRAFT;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -196,11 +196,12 @@ public class Investor {
 
     /**
      * Investorが制限状態かどうかを判定する
+     * ACTIVE状態 = Facility参加中のため削除不可
      * 
      * @return 制限状態の場合 true
      */
     public boolean isRestricted() {
-        return InvestorState.COMPLETED.equals(this.status);
+        return InvestorState.ACTIVE.equals(this.status);
     }
 
     /**

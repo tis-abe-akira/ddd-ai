@@ -92,7 +92,7 @@ public class FacilityStateMachineTest {
         testInvestor.setCurrentInvestmentAmount(Money.of(new BigDecimal("0.00")));
         testInvestor.setCreatedAt(java.time.LocalDateTime.now());
         testInvestor.setUpdatedAt(java.time.LocalDateTime.now());
-        testInvestor.setStatus(InvestorState.ACTIVE);
+        testInvestor.setStatus(InvestorState.DRAFT);
         testInvestor = investorRepository.save(testInvestor);
 
         // テスト用Syndicateを作成

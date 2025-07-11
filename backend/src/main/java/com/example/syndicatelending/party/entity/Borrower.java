@@ -39,7 +39,7 @@ public class Borrower {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private BorrowerState status = BorrowerState.ACTIVE;
+    private BorrowerState status = BorrowerState.DRAFT;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -181,11 +181,12 @@ public class Borrower {
 
     /**
      * Borrowerが制限状態かどうかを判定する
+     * ACTIVE状態 = Facility参加中のため削除不可
      * 
      * @return 制限状態の場合 true
      */
     public boolean isRestricted() {
-        return BorrowerState.COMPLETED.equals(this.status);
+        return BorrowerState.ACTIVE.equals(this.status);
     }
 
     /**

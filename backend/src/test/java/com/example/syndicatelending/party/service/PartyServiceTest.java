@@ -464,11 +464,11 @@ class PartyServiceTest {
         }
 
         @Test
-        void RESTRICTED状態の借り手を削除しようとした場合は例外が発生する() {
+        void ACTIVE状態の借り手を削除しようとした場合は例外が発生する() {
                 Long borrowerId = 1L;
                 Borrower borrower = new Borrower("Test Borrower", "test@example.com", "123-456-7890", "COMP001", Money.of(1000000), CreditRating.A);
-                // Set borrower to RESTRICTED state
-                borrower.setStatus(BorrowerState.COMPLETED);
+                // Set borrower to ACTIVE state (Facility participation)
+                borrower.setStatus(BorrowerState.ACTIVE);
 
                 when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(borrower));
 
@@ -482,11 +482,11 @@ class PartyServiceTest {
         }
 
         @Test
-        void RESTRICTED状態の投資家を削除しようとした場合は例外が発生する() {
+        void ACTIVE状態の投資家を削除しようとした場合は例外が発生する() {
                 Long investorId = 1L;
                 Investor investor = new Investor("Test Investor", "test@example.com", "123-456-7890", "COMP001", BigDecimal.valueOf(5000000), InvestorType.BANK);
-                // Set investor to RESTRICTED state
-                investor.setStatus(InvestorState.COMPLETED);
+                // Set investor to ACTIVE state (Facility participation)
+                investor.setStatus(InvestorState.ACTIVE);
 
                 when(investorRepository.findById(investorId)).thenReturn(Optional.of(investor));
 
