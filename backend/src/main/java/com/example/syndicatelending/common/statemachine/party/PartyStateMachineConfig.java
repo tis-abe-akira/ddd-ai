@@ -45,7 +45,7 @@ public class PartyStateMachineConfig {
             .and()
             .withExternal()
                 .source(BorrowerState.ACTIVE)
-                .target(BorrowerState.COMPLETED)
+                .target(BorrowerState.DRAFT)
                 .event(BorrowerEvent.FACILITY_DELETED)
                 .guard(borrowerFacilityDeletionGuard());
 
@@ -78,7 +78,7 @@ public class PartyStateMachineConfig {
             .and()
             .withExternal()
                 .source(InvestorState.ACTIVE)
-                .target(InvestorState.COMPLETED)
+                .target(InvestorState.DRAFT)
                 .event(InvestorEvent.FACILITY_DELETED)
                 .guard(investorFacilityDeletionGuard());
 

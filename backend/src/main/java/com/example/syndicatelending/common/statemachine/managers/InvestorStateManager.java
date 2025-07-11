@@ -96,9 +96,9 @@ public class InvestorStateManager {
         // 事前検証
         stateMachineExecutor.validateCurrentState(investor.getStatus(), investorId, "Investor");
         
-        // 既にCOMPLETED状態の場合はスキップ
+        // 既にDRAFT状態の場合はスキップ
         if (!stateMachineExecutor.shouldTransition(
-                investor.getStatus(), InvestorState.COMPLETED, investorId, "Investor")) {
+                investor.getStatus(), InvestorState.DRAFT, investorId, "Investor")) {
             return;
         }
         
@@ -113,11 +113,11 @@ public class InvestorStateManager {
         
         if (success) {
             // エンティティ状態更新
-            investor.setStatus(InvestorState.COMPLETED);
+            investor.setStatus(InvestorState.DRAFT);
             investorRepository.save(investor);
             
             stateMachineExecutor.logTransitionSuccess(
-                investorId, "Investor", "ACTIVE", "COMPLETED");
+                investorId, "Investor", "ACTIVE", "DRAFT");
         } else {
             stateMachineExecutor.logTransitionFailure(
                 investorId, "Investor", investor.getStatus(), InvestorEvent.FACILITY_DELETED);

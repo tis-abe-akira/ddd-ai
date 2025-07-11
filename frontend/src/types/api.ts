@@ -82,9 +82,9 @@ export type FacilityStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
 export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
 
-export type BorrowerStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
+export type BorrowerStatus = 'DRAFT' | 'ACTIVE';
 
-export type InvestorStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
+export type InvestorStatus = 'DRAFT' | 'ACTIVE';
 
 export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
 

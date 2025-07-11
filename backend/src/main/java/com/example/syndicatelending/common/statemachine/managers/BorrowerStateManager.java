@@ -96,9 +96,9 @@ public class BorrowerStateManager {
         // 事前検証
         stateMachineExecutor.validateCurrentState(borrower.getStatus(), borrowerId, "Borrower");
         
-        // 既にCOMPLETED状態の場合はスキップ
+        // 既にDRAFT状態の場合はスキップ
         if (!stateMachineExecutor.shouldTransition(
-                borrower.getStatus(), BorrowerState.COMPLETED, borrowerId, "Borrower")) {
+                borrower.getStatus(), BorrowerState.DRAFT, borrowerId, "Borrower")) {
             return;
         }
         
@@ -113,11 +113,11 @@ public class BorrowerStateManager {
         
         if (success) {
             // エンティティ状態更新
-            borrower.setStatus(BorrowerState.COMPLETED);
+            borrower.setStatus(BorrowerState.DRAFT);
             borrowerRepository.save(borrower);
             
             stateMachineExecutor.logTransitionSuccess(
-                borrowerId, "Borrower", "ACTIVE", "COMPLETED");
+                borrowerId, "Borrower", "ACTIVE", "DRAFT");
         } else {
             stateMachineExecutor.logTransitionFailure(
                 borrowerId, "Borrower", borrower.getStatus(), BorrowerEvent.FACILITY_DELETED);
