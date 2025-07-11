@@ -45,7 +45,7 @@ export interface Syndicate {
   version: number;
 }
 
-export type SyndicateStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
+export type SyndicateStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
 export interface SyndicateDetail {
   id: number;
@@ -78,13 +78,13 @@ export type InvestorType =
   | 'CREDIT_UNION' 
   | 'OTHER';
 
-export type FacilityStatus = 'DRAFT' | 'FIXED';
+export type FacilityStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
 export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
 
-export type BorrowerStatus = 'ACTIVE' | 'RESTRICTED';
+export type BorrowerStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
-export type InvestorStatus = 'ACTIVE' | 'RESTRICTED';
+export type InvestorStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
 export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
 
@@ -258,7 +258,7 @@ export interface Drawdown {
   version: number;
 }
 
-export type TransactionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+export type TransactionStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
 export interface AmountPie {
   id: number;

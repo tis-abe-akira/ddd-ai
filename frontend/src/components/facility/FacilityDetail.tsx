@@ -74,7 +74,7 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({
     switch (status) {
       case 'DRAFT':
         return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'FIXED':
+      case 'ACTIVE':
         return 'bg-success/20 text-success border-success/30';
       default:
         return 'bg-secondary-600 text-accent-400 border-secondary-500';
@@ -85,8 +85,10 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({
     switch (status) {
       case 'DRAFT':
         return 'Draft (編集可能)';
-      case 'FIXED':
-        return 'Fixed (確定済み)';
+      case 'ACTIVE':
+        return 'Active (確定済み)';
+      case 'COMPLETED':
+        return 'Completed (完了済み)';
       default:
         return status;
     }

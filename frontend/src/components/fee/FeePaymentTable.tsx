@@ -43,9 +43,9 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
 
   const getStatusColor = (status: TransactionStatus) => {
     switch (status) {
-      case 'PENDING':
+      case 'DRAFT':
         return 'bg-warning/20 text-warning';
-      case 'PROCESSING':
+      case 'ACTIVE':
         return 'bg-accent-500/20 text-accent-500';
       case 'COMPLETED':
         return 'bg-success/20 text-success';
@@ -62,9 +62,9 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
 
   const getStatusLabel = (status: TransactionStatus) => {
     switch (status) {
-      case 'PENDING':
+      case 'DRAFT':
         return 'Pending';
-      case 'PROCESSING':
+      case 'ACTIVE':
         return 'Processing';
       case 'COMPLETED':
         return 'Completed';
@@ -109,7 +109,7 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
   };
 
   const isDeletable = (feePayment: FeePayment) => {
-    return feePayment.status === 'PENDING' || feePayment.status === 'PROCESSING';
+    return feePayment.status === 'DRAFT' || feePayment.status === 'ACTIVE';
   };
 
   if (isLoading) {
@@ -334,7 +334,7 @@ const FeePaymentTable: React.FC<FeePaymentTableProps> = ({
         <div className="bg-secondary-600 rounded-lg p-4">
           <div className="text-accent-400 text-sm">Pending</div>
           <div className="text-warning font-bold text-lg">
-            {feePayments.filter(fp => fp.status === 'PENDING').length}
+            {feePayments.filter(fp => fp.status === 'DRAFT').length}
           </div>
         </div>
         <div className="bg-secondary-600 rounded-lg p-4">

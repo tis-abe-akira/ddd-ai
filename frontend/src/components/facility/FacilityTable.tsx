@@ -67,8 +67,10 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
     switch (status) {
       case 'DRAFT':
         return 'bg-yellow-500/20 text-yellow-400';
-      case 'FIXED':
+      case 'ACTIVE':
         return 'bg-success/20 text-success';
+      case 'COMPLETED':
+        return 'bg-blue-500/20 text-blue-400';
       default:
         return 'bg-secondary-600 text-accent-400';
     }
@@ -81,10 +83,15 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
           label: 'Draft', 
           tooltip: 'Draft - Facility can be edited and modified. No drawdowns have been executed yet.' 
         };
-      case 'FIXED':
+      case 'ACTIVE':
         return { 
-          label: 'Fixed', 
-          tooltip: 'Fixed - Facility is finalized after drawdown execution. Cannot be modified anymore.' 
+          label: 'Active', 
+          tooltip: 'Active - Facility is finalized after drawdown execution. Cannot be modified anymore.' 
+        };
+      case 'COMPLETED':
+        return { 
+          label: 'Completed', 
+          tooltip: 'Completed - All loans have been repaid and facility is closed.' 
         };
       default:
         return { 
@@ -243,9 +250,9 @@ const FacilityTable: React.FC<FacilityTableProps> = ({
                               </svg>
                             </button>
                           )}
-                          {facility.status === 'FIXED' && (
+                          {facility.status === 'ACTIVE' && (
                             <div className="text-accent-400 text-xs">
-                              Fixed
+                              Active
                             </div>
                           )}
                         </div>

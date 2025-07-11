@@ -60,7 +60,7 @@ class FeePaymentControllerTest {
                 .andExpect(jsonPath("$.feeType").value("MANAGEMENT_FEE"))
                 .andExpect(jsonPath("$.amount").exists())
                 .andExpect(jsonPath("$.transactionType").value("FEE_PAYMENT"))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(jsonPath("$.status").value("DRAFT"));
     }
 
     @Test

@@ -279,7 +279,7 @@ const FeeStatisticsDashboard: React.FC<FeeStatisticsDashboardProps> = ({
                   <div className="text-accent-400 text-sm">Status</div>
                   <div className="text-white font-medium">
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      getSelectedFacility()?.status === 'FIXED' 
+                      getSelectedFacility()?.status === 'ACTIVE' 
                         ? 'bg-success/20 text-success' 
                         : 'bg-warning/20 text-warning'
                     }`}>

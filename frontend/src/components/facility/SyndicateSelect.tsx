@@ -55,7 +55,7 @@ const SyndicateSelect: React.FC<SyndicateSelectProps> = ({ value, onChange, erro
         return { text: 'Draft', color: 'text-success', tooltip: 'Available for facility creation' };
       case 'ACTIVE':
         return { text: 'Active', color: 'text-accent-500', tooltip: 'Already used for facility creation' };
-      case 'CLOSED':
+      case 'COMPLETED':
         return { text: 'Closed', color: 'text-accent-400', tooltip: 'No longer active' };
       default:
         return { text: 'Unknown', color: 'text-accent-400', tooltip: 'Unknown status' };

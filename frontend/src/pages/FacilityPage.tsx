@@ -20,13 +20,13 @@ const FacilityPage: React.FC = () => {
   // Quick Stats計算
   const calculateStats = () => {
     const draftCount = facilities.filter(f => f.status === 'DRAFT').length;
-    const fixedCount = facilities.filter(f => f.status === 'FIXED').length;
+    const activeCount = facilities.filter(f => f.status === 'ACTIVE').length;
     const totalAmount = facilities.reduce((sum, f) => sum + f.commitment, 0);
     
-    return { draftCount, fixedCount, totalAmount };
+    return { draftCount, activeCount, totalAmount };
   };
 
-  const { draftCount, fixedCount, totalAmount } = calculateStats();
+  const { draftCount, activeCount, totalAmount } = calculateStats();
 
   const formatCurrency = (amount: number) => {
     // Facilitiesの通貨は混在可能だが、主要通貨として最初のFacilityの通貨を使用
@@ -196,8 +196,8 @@ const FacilityPage: React.FC = () => {
                   <div className="text-accent-400 text-xs mt-1">Editable facilities</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
-                  <div className="text-accent-400 text-sm">Fixed</div>
-                  <div className="text-white text-2xl font-bold">{fixedCount}</div>
+                  <div className="text-accent-400 text-sm">Active</div>
+                  <div className="text-white text-2xl font-bold">{activeCount}</div>
                   <div className="text-accent-400 text-xs mt-1">Confirmed facilities</div>
                 </div>
                 <div className="bg-secondary-600 rounded-lg p-4">
