@@ -190,7 +190,7 @@ class FeePaymentControllerTest {
         feePayment.setBorrowerId(1L);
         feePayment.setTransactionDate(LocalDate.of(2025, 1, 31));
         feePayment.setTransactionType(TransactionType.FEE_PAYMENT);
-        feePayment.setStatus(TransactionStatus.PENDING);
+        feePayment.setStatus(TransactionStatus.DRAFT);
         feePayment.setAmount(Money.of(new BigDecimal("25000.00")));
         feePayment.setCreatedAt(LocalDateTime.now());
         feePayment.setUpdatedAt(LocalDateTime.now());
@@ -226,7 +226,7 @@ class FeePaymentControllerTest {
         feePayment.setBorrowerId(1L);
         feePayment.setTransactionDate(LocalDate.of(2025, 1, 31));
         feePayment.setTransactionType(TransactionType.FEE_PAYMENT);
-        feePayment.setStatus(TransactionStatus.PENDING);
+        feePayment.setStatus(TransactionStatus.DRAFT);
         feePayment.setAmount(Money.of(new BigDecimal("12500.00")));
         feePayment.setCreatedAt(LocalDateTime.now());
         feePayment.setUpdatedAt(LocalDateTime.now());

@@ -139,7 +139,7 @@ public class DrawdownFacilityIntegrationTest {
 
         // FacilityがFIXED状態に変更されていることを確認
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
         assertFalse(updatedFacility.canBeModified());
         assertTrue(updatedFacility.isFixed());
     }
@@ -177,7 +177,7 @@ public class DrawdownFacilityIntegrationTest {
 
         // FacilityがFIXED状態になっていることを確認
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
 
         // 2回目のDrawdownを試みる（FIXED状態では2度目のDrawdownは不可）
         CreateDrawdownRequest secondRequest = createDrawdownRequest();
@@ -203,7 +203,7 @@ public class DrawdownFacilityIntegrationTest {
 
         // データベースから再取得して状態を確認
         Facility facilityFromDb = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, facilityFromDb.getStatus());
+        assertEquals(FacilityState.ACTIVE, facilityFromDb.getStatus());
         assertFalse(facilityFromDb.canBeModified());
     }
 

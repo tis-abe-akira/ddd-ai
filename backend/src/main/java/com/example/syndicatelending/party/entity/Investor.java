@@ -200,7 +200,7 @@ public class Investor {
      * @return 制限状態の場合 true
      */
     public boolean isRestricted() {
-        return InvestorState.RESTRICTED.equals(this.status);
+        return InvestorState.COMPLETED.equals(this.status);
     }
 
     /**

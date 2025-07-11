@@ -95,12 +95,12 @@ public class TransactionService {
     public void approveTransaction(Long transactionId) {
         Transaction transaction = getTransactionById(transactionId);
         
-        if (transaction.getStatus() != TransactionStatus.PENDING) {
+        if (transaction.getStatus() != TransactionStatus.DRAFT) {
             throw new BusinessRuleViolationException(
                 "Transaction cannot be approved. Current status: " + transaction.getStatus());
         }
         
-        transaction.setStatus(TransactionStatus.PROCESSING);
+        transaction.setStatus(TransactionStatus.ACTIVE);
         transactionRepository.save(transaction);
     }
 
@@ -113,7 +113,7 @@ public class TransactionService {
     public void completeTransaction(Long transactionId) {
         Transaction transaction = getTransactionById(transactionId);
         
-        if (transaction.getStatus() != TransactionStatus.PROCESSING) {
+        if (transaction.getStatus() != TransactionStatus.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "Transaction cannot be completed. Current status: " + transaction.getStatus());
         }
@@ -168,11 +168,11 @@ public class TransactionService {
             .count();
             
         long pendingCount = transactions.stream()
-            .filter(t -> t.getStatus() == TransactionStatus.PENDING)
+            .filter(t -> t.getStatus() == TransactionStatus.DRAFT)
             .count();
             
         long processingCount = transactions.stream()
-            .filter(Transaction::isProcessing)
+            .filter(Transaction::isActive)
             .count();
             
         return new TransactionStatistics(

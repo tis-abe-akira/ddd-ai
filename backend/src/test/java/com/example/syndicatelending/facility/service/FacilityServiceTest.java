@@ -234,7 +234,7 @@ class FacilityServiceTest {
         Facility facility = new Facility();
         facility.setId(facilityId);
         facility.setSyndicateId(1L);
-        facility.setStatus(FacilityState.FIXED); // FIXED状態は削除不可
+        facility.setStatus(FacilityState.ACTIVE); // FIXED状態は削除不可
 
         when(facilityRepository.findById(facilityId)).thenReturn(Optional.of(facility));
 

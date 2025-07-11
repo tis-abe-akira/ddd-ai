@@ -54,9 +54,9 @@ public class BorrowerStateManager {
         // 事前検証
         stateMachineExecutor.validateCurrentState(borrower.getStatus(), borrowerId, "Borrower");
         
-        // 既にRESTRICTED状態の場合はスキップ
+        // 既にACTIVE状態の場合はスキップ
         if (!stateMachineExecutor.shouldTransition(
-                borrower.getStatus(), BorrowerState.RESTRICTED, borrowerId, "Borrower")) {
+                borrower.getStatus(), BorrowerState.ACTIVE, borrowerId, "Borrower")) {
             return;
         }
         
@@ -71,11 +71,11 @@ public class BorrowerStateManager {
         
         if (success) {
             // エンティティ状態更新
-            borrower.setStatus(BorrowerState.RESTRICTED);
+            borrower.setStatus(BorrowerState.ACTIVE);
             borrowerRepository.save(borrower);
             
             stateMachineExecutor.logTransitionSuccess(
-                borrowerId, "Borrower", "ACTIVE", "RESTRICTED");
+                borrowerId, "Borrower", "DRAFT", "ACTIVE");
         } else {
             stateMachineExecutor.logTransitionFailure(
                 borrowerId, "Borrower", borrower.getStatus(), BorrowerEvent.FACILITY_PARTICIPATION);
@@ -96,9 +96,9 @@ public class BorrowerStateManager {
         // 事前検証
         stateMachineExecutor.validateCurrentState(borrower.getStatus(), borrowerId, "Borrower");
         
-        // 既にACTIVE状態の場合はスキップ
+        // 既にCOMPLETED状態の場合はスキップ
         if (!stateMachineExecutor.shouldTransition(
-                borrower.getStatus(), BorrowerState.ACTIVE, borrowerId, "Borrower")) {
+                borrower.getStatus(), BorrowerState.COMPLETED, borrowerId, "Borrower")) {
             return;
         }
         
@@ -113,11 +113,11 @@ public class BorrowerStateManager {
         
         if (success) {
             // エンティティ状態更新
-            borrower.setStatus(BorrowerState.ACTIVE);
+            borrower.setStatus(BorrowerState.COMPLETED);
             borrowerRepository.save(borrower);
             
             stateMachineExecutor.logTransitionSuccess(
-                borrowerId, "Borrower", "RESTRICTED", "ACTIVE");
+                borrowerId, "Borrower", "ACTIVE", "COMPLETED");
         } else {
             stateMachineExecutor.logTransitionFailure(
                 borrowerId, "Borrower", borrower.getStatus(), BorrowerEvent.FACILITY_DELETED);
@@ -144,6 +144,6 @@ public class BorrowerStateManager {
      */
     public boolean canBeDeleted(Long borrowerId) {
         BorrowerState currentState = getCurrentState(borrowerId);
-        return currentState == BorrowerState.ACTIVE;
+        return currentState == BorrowerState.DRAFT;
     }
 }

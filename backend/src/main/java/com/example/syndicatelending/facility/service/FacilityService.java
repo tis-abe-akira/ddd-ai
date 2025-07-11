@@ -241,7 +241,7 @@ public class FacilityService {
      */
     private void validateFacilityDeletion(Facility facility) {
         // FIXED状態のFacilityは削除不可（関連するDrawdownが存在することを示す）
-        if (facility.getStatus() == FacilityState.FIXED) {
+        if (facility.getStatus() == FacilityState.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "FIXED状態のFacilityは削除できません。関連するDrawdownを先に削除してください。現在の状態: " + facility.getStatus());
         }
@@ -273,7 +273,7 @@ public class FacilityService {
         Facility facility = getFacilityById(facilityId);
         
         // 既にFIXED状態の場合はBusinessRuleViolationExceptionをスロー
-        if (facility.getStatus() == FacilityState.FIXED) {
+        if (facility.getStatus() == FacilityState.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "FIXED状態のFacilityに対して2度目のドローダウンはできません。現在の状態: " + facility.getStatus());
         }
@@ -295,7 +295,7 @@ public class FacilityService {
         }
         
         // ビジネスルール検証が完了しているため、状態更新を実行
-        facility.setStatus(FacilityState.FIXED);
+        facility.setStatus(FacilityState.ACTIVE);
         facilityRepository.save(facility);
     }
 
@@ -318,7 +318,7 @@ public class FacilityService {
         }
         
         // FIXED状態からDRAFT状態への遷移のみ許可
-        if (facility.getStatus() != FacilityState.FIXED) {
+        if (facility.getStatus() != FacilityState.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "FIXED状態のFacilityのみDRAFTに戻すことができます。現在の状態: " + facility.getStatus());
         }
@@ -364,7 +364,7 @@ public class FacilityService {
         }
         
         // FIXED状態の場合のみDRAFTに戻す（他の状態からの復帰は想定外）
-        if (facility.getStatus() == FacilityState.FIXED) {
+        if (facility.getStatus() == FacilityState.ACTIVE) {
             // State Machine統合によるライフサイクル管理（CLAUDE.md方針準拠）
             // Drawdown削除時のビジネスルール検証は呼び出し元で完了済み
             boolean stateTransitionSuccess = false;

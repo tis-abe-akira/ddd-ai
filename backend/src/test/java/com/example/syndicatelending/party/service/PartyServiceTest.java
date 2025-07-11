@@ -468,7 +468,7 @@ class PartyServiceTest {
                 Long borrowerId = 1L;
                 Borrower borrower = new Borrower("Test Borrower", "test@example.com", "123-456-7890", "COMP001", Money.of(1000000), CreditRating.A);
                 // Set borrower to RESTRICTED state
-                borrower.setStatus(BorrowerState.RESTRICTED);
+                borrower.setStatus(BorrowerState.COMPLETED);
 
                 when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(borrower));
 
@@ -486,7 +486,7 @@ class PartyServiceTest {
                 Long investorId = 1L;
                 Investor investor = new Investor("Test Investor", "test@example.com", "123-456-7890", "COMP001", BigDecimal.valueOf(5000000), InvestorType.BANK);
                 // Set investor to RESTRICTED state
-                investor.setStatus(InvestorState.RESTRICTED);
+                investor.setStatus(InvestorState.COMPLETED);
 
                 when(investorRepository.findById(investorId)).thenReturn(Optional.of(investor));
 

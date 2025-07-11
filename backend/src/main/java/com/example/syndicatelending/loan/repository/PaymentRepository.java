@@ -12,4 +12,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByLoanId(Long loanId);
     List<Payment> findByLoanIdOrderByPaymentDateDesc(Long loanId);
     List<Payment> findByLoanIdAndStatusOrderByPaymentDateDesc(Long loanId, TransactionStatus status);
+    boolean existsByLoanId(Long loanId);
 }

@@ -19,11 +19,11 @@ import java.util.EnumSet;
  * BoundedContext間の整合性を保つ。
  * 
  * 状態遷移：
- * DRAFT（作成直後・変更可能） ↔ FIXED（確定済み・変更不可）
+ * DRAFT（作成直後・変更可能） ↔ ACTIVE（確定済み・変更不可）
  * 
  * 遷移条件：
- * DRAWDOWN_EXECUTED イベント: DRAFT → FIXED
- * REVERT_TO_DRAFT イベント: FIXED → DRAFT（全ドローダウン削除時）
+ * DRAWDOWN_EXECUTED イベント: DRAFT → ACTIVE
+ * REVERT_TO_DRAFT イベント: ACTIVE → DRAFT（全ドローダウン削除時）
  */
 @Configuration
 public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<FacilityState, FacilityEvent> {
@@ -48,10 +48,10 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
      * 状態遷移ルールの定義
      * 
      * ビジネスルール：
-     * - ドローダウン実行時にFacilityを確定状態に変更（DRAFT → FIXED）
-     * - FIXED状態からDRAFT状態への復帰（全ドローダウン削除時のみ）
+     * - ドローダウン実行時にFacilityを確定状態に変更（DRAFT → ACTIVE）
+     * - ACTIVE状態からDRAFT状態への復帰（全ドローダウン削除時のみ）
      * - 確定後は持分比率（SharePie）等の変更を禁止
-     * - FIXED状態では2度目のドローダウンを禁止
+     * - ACTIVE状態では2度目のドローダウンを禁止
      * - クロスBoundedContext整合性の維持
      * 
      * @param transitions 遷移設定ビルダー
@@ -61,16 +61,16 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
     public void configure(StateMachineTransitionConfigurer<FacilityState, FacilityEvent> transitions) throws Exception {
         transitions
             .withExternal()
-                // 外部遷移: DRAFT状態からFIXED状態への遷移
-                .source(FacilityState.DRAFT).target(FacilityState.FIXED)
+                // 外部遷移: DRAFT状態からACTIVE状態への遷移
+                .source(FacilityState.DRAFT).target(FacilityState.ACTIVE)
                 // トリガーイベント: ドローダウン実行時に発火
                 .event(FacilityEvent.DRAWDOWN_EXECUTED)
                 // ガード条件: DRAFT状態でのみドローダウン実行を許可
                 .guard(drawdownOnlyFromDraftGuard())
             .and()
             .withExternal()
-                // 外部遷移: FIXED状態からDRAFT状態への復帰遷移
-                .source(FacilityState.FIXED).target(FacilityState.DRAFT)
+                // 外部遷移: ACTIVE状態からDRAFT状態への復帰遷移
+                .source(FacilityState.ACTIVE).target(FacilityState.DRAFT)
                 // トリガーイベント: 全ドローダウン削除時に発火
                 .event(FacilityEvent.REVERT_TO_DRAFT)
                 // ガード条件: 全ドローダウンが削除済みの場合のみ許可
@@ -80,7 +80,7 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
     /**
      * ドローダウン実行制約ガード
      * 
-     * FIXED状態での2度目のドローダウンを防ぐビジネスルール制約。
+     * ACTIVE状態での2度目のドローダウンを防ぐビジネスルール制約。
      * Spring State Machineはガード条件が false を返す場合、
      * 遷移を拒否する。
      * 
@@ -98,7 +98,7 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
     /**
      * DRAFT状態復帰制約ガード
      * 
-     * FIXED状態からDRAFT状態への復帰を制御する基本的なガード。
+     * ACTIVE状態からDRAFT状態への復帰を制御する基本的なガード。
      * 詳細なビジネスルール検証（Drawdown存在チェック等）は
      * Service層で事前に実行される前提。
      * 
@@ -132,12 +132,12 @@ public class FacilityStateMachineConfig extends StateMachineConfigurerAdapter<Fa
         
         builder.configureTransitions()
             .withExternal()
-                .source(FacilityState.DRAFT).target(FacilityState.FIXED)
+                .source(FacilityState.DRAFT).target(FacilityState.ACTIVE)
                 .event(FacilityEvent.DRAWDOWN_EXECUTED)
                 .guard(drawdownOnlyFromDraftGuard())
             .and()
             .withExternal()
-                .source(FacilityState.FIXED).target(FacilityState.DRAFT)
+                .source(FacilityState.ACTIVE).target(FacilityState.DRAFT)
                 .event(FacilityEvent.REVERT_TO_DRAFT)
                 .guard(revertToDraftGuard());
         

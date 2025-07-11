@@ -185,7 +185,7 @@ public class Borrower {
      * @return 制限状態の場合 true
      */
     public boolean isRestricted() {
-        return BorrowerState.RESTRICTED.equals(this.status);
+        return BorrowerState.COMPLETED.equals(this.status);
     }
 
     /**

@@ -155,7 +155,7 @@ class FeePaymentServiceTest {
 
         // Transaction基底クラスのフィールド検証
         assertEquals(TransactionType.FEE_PAYMENT, feePayment.getTransactionType());
-        assertEquals(TransactionStatus.PENDING, feePayment.getStatus());
+        assertEquals(TransactionStatus.DRAFT, feePayment.getStatus());
         assertEquals(facility.getId(), feePayment.getFacilityId());
         assertEquals(borrower.getId(), feePayment.getBorrowerId());
         assertEquals(LocalDate.of(2025, 1, 31), feePayment.getTransactionDate());
@@ -366,7 +366,7 @@ class FeePaymentServiceTest {
     void PENDING状態の手数料支払いを削除できる() {
         // PENDING状態の手数料支払いを作成
         FeePayment feePayment = createTestFeePayment(FeeType.MANAGEMENT_FEE, "BANK", new BigDecimal("25000"));
-        assertEquals(TransactionStatus.PENDING, feePayment.getStatus());
+        assertEquals(TransactionStatus.DRAFT, feePayment.getStatus());
         
         Long feePaymentId = feePayment.getId();
         assertNotNull(feePaymentId);
@@ -385,7 +385,7 @@ class FeePaymentServiceTest {
         FeePayment feePayment = createTestFeePayment(FeeType.ARRANGEMENT_FEE, "BANK", new BigDecimal("50000"));
         
         // PROCESSING状態に変更
-        feePayment.setStatus(TransactionStatus.PROCESSING);
+        feePayment.setStatus(TransactionStatus.ACTIVE);
         feePayment = feePaymentRepository.save(feePayment);
         
         Long feePaymentId = feePayment.getId();

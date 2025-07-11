@@ -250,7 +250,7 @@ class FacilityValidatorTest {
         // Investor 1が制限状態の設定
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setStatus(InvestorState.RESTRICTED); // 制限状態
+        investor1.setStatus(InvestorState.COMPLETED); // 制限状態
         when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
 
         // When & Then

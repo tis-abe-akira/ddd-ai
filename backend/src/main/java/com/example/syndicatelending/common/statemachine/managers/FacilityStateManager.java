@@ -58,7 +58,7 @@ public class FacilityStateManager {
         stateMachineExecutor.validateCurrentState(facility.getStatus(), facilityId, "Facility");
         
         // 既にFIXED状態の場合は2度目のドローダウンを禁止
-        if (facility.getStatus() == FacilityState.FIXED) {
+        if (facility.getStatus() == FacilityState.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "FIXED状態のFacilityに対して2度目のドローダウンはできません。現在の状態: " + facility.getStatus());
         }
@@ -74,7 +74,7 @@ public class FacilityStateManager {
         
         if (success) {
             // エンティティ状態更新
-            facility.setStatus(FacilityState.FIXED);
+            facility.setStatus(FacilityState.ACTIVE);
             facilityRepository.save(facility);
             
             stateMachineExecutor.logTransitionSuccess(
@@ -164,6 +164,6 @@ public class FacilityStateManager {
      */
     public boolean isFixed(Long facilityId) {
         FacilityState currentState = getCurrentState(facilityId);
-        return currentState == FacilityState.FIXED;
+        return currentState == FacilityState.ACTIVE;
     }
 }

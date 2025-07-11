@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
  * 
  * Investorの状態遷移を管理し、既存のStateMachine制約を活用する。
  * 主な責務：
- * - ACTIVE → RESTRICTED 状態遷移（Facility作成時）
- * - RESTRICTED → ACTIVE 状態遷移（Facility削除時）
+ * - DRAFT → ACTIVE 状態遷移（Facility作成時）
+ * - ACTIVE → COMPLETED 状態遷移（Facility削除時）
  * - StateMachine制約の活用
  */
 @Component
@@ -41,12 +41,12 @@ public class InvestorStateManager {
     }
     
     /**
-     * InvestorをRESTRICTED状態に遷移（Facility作成時）
+     * InvestorをACTIVE状態に遷移（Facility作成時）
      * 
      * @param investorId Investor ID
      */
     public void transitionToRestricted(Long investorId) {
-        logger.info("Starting Investor state transition to RESTRICTED for ID: {}", investorId);
+        logger.info("Starting Investor state transition to ACTIVE for ID: {}", investorId);
         
         Investor investor = investorRepository.findById(investorId)
             .orElseThrow(() -> new IllegalStateException("Investor not found: " + investorId));
@@ -54,9 +54,9 @@ public class InvestorStateManager {
         // 事前検証
         stateMachineExecutor.validateCurrentState(investor.getStatus(), investorId, "Investor");
         
-        // 既にRESTRICTED状態の場合はスキップ
+        // 既にACTIVE状態の場合はスキップ
         if (!stateMachineExecutor.shouldTransition(
-                investor.getStatus(), InvestorState.RESTRICTED, investorId, "Investor")) {
+                investor.getStatus(), InvestorState.ACTIVE, investorId, "Investor")) {
             return;
         }
         
@@ -71,11 +71,11 @@ public class InvestorStateManager {
         
         if (success) {
             // エンティティ状態更新
-            investor.setStatus(InvestorState.RESTRICTED);
+            investor.setStatus(InvestorState.ACTIVE);
             investorRepository.save(investor);
             
             stateMachineExecutor.logTransitionSuccess(
-                investorId, "Investor", "ACTIVE", "RESTRICTED");
+                investorId, "Investor", "ACTIVE", "ACTIVE");
         } else {
             stateMachineExecutor.logTransitionFailure(
                 investorId, "Investor", investor.getStatus(), InvestorEvent.FACILITY_PARTICIPATION);
@@ -96,9 +96,9 @@ public class InvestorStateManager {
         // 事前検証
         stateMachineExecutor.validateCurrentState(investor.getStatus(), investorId, "Investor");
         
-        // 既にACTIVE状態の場合はスキップ
+        // 既にCOMPLETED状態の場合はスキップ
         if (!stateMachineExecutor.shouldTransition(
-                investor.getStatus(), InvestorState.ACTIVE, investorId, "Investor")) {
+                investor.getStatus(), InvestorState.COMPLETED, investorId, "Investor")) {
             return;
         }
         
@@ -113,11 +113,11 @@ public class InvestorStateManager {
         
         if (success) {
             // エンティティ状態更新
-            investor.setStatus(InvestorState.ACTIVE);
+            investor.setStatus(InvestorState.COMPLETED);
             investorRepository.save(investor);
             
             stateMachineExecutor.logTransitionSuccess(
-                investorId, "Investor", "RESTRICTED", "ACTIVE");
+                investorId, "Investor", "ACTIVE", "COMPLETED");
         } else {
             stateMachineExecutor.logTransitionFailure(
                 investorId, "Investor", investor.getStatus(), InvestorEvent.FACILITY_DELETED);
@@ -144,6 +144,6 @@ public class InvestorStateManager {
      */
     public boolean canBeDeleted(Long investorId) {
         InvestorState currentState = getCurrentState(investorId);
-        return currentState == InvestorState.ACTIVE;
+        return currentState == InvestorState.DRAFT;
     }
 }

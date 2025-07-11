@@ -159,7 +159,7 @@ public class FacilityStateMachineTest {
 
         // 状態がFIXEDに変更されていることを確認
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
         assertFalse(updatedFacility.canBeModified());
         assertTrue(updatedFacility.isFixed());
     }
@@ -167,7 +167,7 @@ public class FacilityStateMachineTest {
     @Test
     void testFixFacilityFromFixedStateThrowsException() {
         // 既にFIXED状態のFacilityをFIXEDにしようとする場合は例外が発生する
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         facilityRepository.save(testFacility);
 
         // BusinessRuleViolationExceptionがスローされることを確認
@@ -193,7 +193,7 @@ public class FacilityStateMachineTest {
     @Test
     void testUpdateFacilityInFixedState() {
         // FacilityをFIXED状態にする
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         facilityRepository.save(testFacility);
 
         UpdateFacilityRequest request = createUpdateRequest();
@@ -214,7 +214,7 @@ public class FacilityStateMachineTest {
         assertTrue(testFacility.canBeModified());
 
         // FIXED状態では変更不可
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         assertFalse(testFacility.canBeModified());
     }
 
@@ -225,7 +225,7 @@ public class FacilityStateMachineTest {
         assertFalse(testFacility.isFixed());
 
         // FIXED状態ではFixed = true
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         assertTrue(testFacility.isFixed());
     }
 
@@ -265,7 +265,7 @@ public class FacilityStateMachineTest {
         assertDoesNotThrow(() -> facilityService.fixFacility(testFacility.getId()));
         
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
         
         // 2度目のfixFacility（ドローダウン）は例外
         BusinessRuleViolationException exception = assertThrows(
@@ -309,7 +309,7 @@ public class FacilityStateMachineTest {
         // 最初にFacilityをFIXED状態にする
         facilityService.fixFacility(testFacility.getId());
         Facility fixedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, fixedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, fixedFacility.getStatus());
         
         // Drawdownが存在しないことを確認
         assertTrue(drawdownRepository.findByFacilityId(testFacility.getId()).isEmpty());
@@ -343,7 +343,7 @@ public class FacilityStateMachineTest {
         // FacilityをFIXED状態にする
         facilityService.fixFacility(testFacility.getId());
         Facility fixedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, fixedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, fixedFacility.getStatus());
         
         // revertToDraftは成功する（Cross-Context依存を排除したため）
         assertDoesNotThrow(() -> facilityService.revertToDraft(testFacility.getId()));
