@@ -262,7 +262,7 @@ class TransactionServiceIntegrationTest {
         // 取引を再取得して状態確認
         Transaction completedTransaction = transactionService.getTransactionById(feePayment.getId());
         assertEquals(TransactionStatus.COMPLETED, completedTransaction.getStatus());
-        assertFalse(completedTransaction.isCancellable());
+        assertTrue(completedTransaction.isCancellable()); // COMPLETED状態でも取り消し可能に修正
         assertTrue(completedTransaction.isCompleted());
         assertFalse(completedTransaction.isActive());
     }

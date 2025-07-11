@@ -104,7 +104,11 @@ public class PaymentService {
         // 7. Loan状態管理（初回返済時のDRAFT→ACTIVE遷移）
         updateLoanStateForFirstPayment(loan);
 
-        // 8. PaymentCreatedEventを発行
+        // 8. Payment処理完了 - COMPLETED状態に遷移
+        savedPayment.setStatus(com.example.syndicatelending.transaction.entity.TransactionStatus.COMPLETED);
+        savedPayment = paymentRepository.save(savedPayment);
+
+        // 9. PaymentCreatedEventを発行
         eventPublisher.publishEvent(new PaymentCreatedEvent(
             savedPayment.getLoanId(), 
             savedPayment.getId(), 

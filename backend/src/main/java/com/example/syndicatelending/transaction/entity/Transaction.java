@@ -177,7 +177,8 @@ public abstract class Transaction {
      */
     public boolean isCancellable() {
         return this.status == TransactionStatus.DRAFT || 
-               this.status == TransactionStatus.ACTIVE;
+               this.status == TransactionStatus.ACTIVE ||
+               this.status == TransactionStatus.COMPLETED;
     }
     
     /**
