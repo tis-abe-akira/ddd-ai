@@ -104,6 +104,7 @@ mvn test jacoco:report
 - **ドローダウン**: `POST /api/v1/loans/drawdowns` - ローンの引き出し実行
 - **支払い**: `POST /api/v1/loans/payments` - 元本・利息の返済処理
 - **支払い履歴**: `GET /api/v1/loans/payments/loan/{loanId}` - 特定ローンの支払い履歴
+- **支払い取り消し**: `POST /api/v1/loans/payments/{id}/cancel` - 支払い済み取引の取り消し
 
 ### 手数料管理
 - **手数料支払い**: `POST /api/v1/fees/payments` - 手数料支払い処理
@@ -135,7 +136,7 @@ mvn test jacoco:report
 - ✅ **Syndicate管理**: シンジケート団の組成・管理
 - ✅ **Facility管理**: 融資枠作成、SharePie（持分比率）管理、状態管理（State Machine）
 - ✅ **Loan管理**: ドローダウン実行、返済スケジュール自動生成
-- ✅ **Payment管理**: 元本・利息返済処理、投資家別配分管理、REST API
+- ✅ **Payment管理**: 元本・利息返済処理、投資家別配分管理、支払い取り消し機能、REST API
 - ✅ **Transaction管理**: 統一取引基盤、横断的取引履歴・統計、状態管理API
 - ✅ **Fee管理**: 7種類手数料タイプ、手数料計算・配分、投資家別配分API
 - ✅ **State Machine**: Facility・Loan・Party包括的ライフサイクル管理
@@ -157,7 +158,8 @@ mvn test jacoco:report
 - **AmountPie生成**: ドローダウン時の投資家別配分額自動計算
 - **投資額自動管理**: Drawdown時増加、元本返済時減少（利息支払いは影響なし）
 - **PaymentDistribution生成**: 返済時の投資家別配分額自動計算（持分比率ベース）
-- **Transaction状態管理**: 全取引のライフサイクル制御（PENDING→PROCESSING→COMPLETED）
+- **Transaction状態管理**: 全取引のライフサイクル制御（DRAFT→ACTIVE→COMPLETED）
+- **Payment取り消し機能**: 支払い済み（COMPLETED）状態でも取り消し可能（間違った支払いの修正対応）
 - **手数料配分ルール**: 
   - 管理手数料・アレンジメント手数料：リードバンク収益
   - コミットメント手数料・遅延手数料：投資家配分（持分比率ベース）
@@ -365,6 +367,60 @@ entityStateService.onDrawdownDeleted(facilityId);
 ```
 
 この実装により、Drawdown-Facility関係もParty状態管理と同じCross-Context-Reference解決パターンに統合され、システム全体のアーキテクチャ一貫性を実現した。
+
+### 9. **Payment取り消し機能とTransaction状態管理の改善**
+
+**背景**: 2025年7月11日、ユーザーから「支払い済みのPaymentが取り消せない」という問題報告があり、金融システムにおける支払い修正機能の必要性が明確になった。
+
+**実装前の問題**:
+- `Transaction.isCancellable()`が`DRAFT`と`ACTIVE`状態のみを取り消し可能としていた
+- 実際のPaymentは処理完了後に`COMPLETED`状態になるため、取り消しができなかった
+- 間違った支払いの修正ができず、業務運用上の問題となっていた
+
+**採用した解決策**: **「COMPLETED状態も取り消し可能」な柔軟な状態管理**
+
+```java
+// Transaction.java - 取り消し可能条件の拡張
+public boolean isCancellable() {
+    return this.status == TransactionStatus.DRAFT || 
+           this.status == TransactionStatus.ACTIVE ||
+           this.status == TransactionStatus.COMPLETED;  // 追加
+}
+
+// PaymentService.java - 明示的な状態遷移
+public Payment processPayment(CreatePaymentRequest request) {
+    // ... 支払い処理 ...
+    
+    // Payment処理完了 - COMPLETED状態に遷移
+    savedPayment.setStatus(TransactionStatus.COMPLETED);
+    savedPayment = paymentRepository.save(savedPayment);
+    
+    return savedPayment;
+}
+```
+
+**実装効果**:
+- ✅ **支払い済み取り消し**: COMPLETED状態のPaymentが取り消し可能になった
+- ✅ **間違い修正対応**: 誤った支払いの修正が業務上可能になった
+- ✅ **一貫した状態管理**: 明示的な状態遷移によりPaymentライフサイクルが明確化
+- ✅ **金融業務要件**: 実際の金融業務で必要な支払い修正機能を実現
+
+**フロントエンド連携改善**:
+同時に発見されたInvestor選択問題も解決：
+- `InvestorCards.tsx`: DRAFT/ACTIVE両方の投資家を選択可能に修正
+- `SharePieAllocation.tsx`: DRAFT/ACTIVE両方の投資家を表示可能に修正
+
+**ビジネス価値**:
+1. **運用効率向上**: 支払いミスの迅速な修正が可能
+2. **データ整合性**: 不正確な支払いデータの是正機能
+3. **業務継続性**: 投資家選択問題の解決によりFacility作成が円滑化
+
+**設計原則の確立**:
+- **金融システムの柔軟性**: 完了した取引でも修正可能な設計
+- **状態遷移の明示化**: Paymentの明確なライフサイクル管理
+- **業務要件優先**: 理論的制約より実際の業務ニーズを重視
+
+この機能により、金融システムとしての実用性が大幅に向上し、実際の業務運用で求められる柔軟性を実現した。
 
 ---
 

@@ -80,14 +80,17 @@ Transaction (基底クラス)
 
 ### TransactionStatus enum
 
-| 値 | 説明 | 用途 |
-|---|---|---|
-| `PENDING` | 保留中 | 承認待ち状態 |
-| `PROCESSING` | 処理中 | 実行中状態 |
-| `COMPLETED` | 完了 | 正常完了 |
-| `FAILED` | 失敗 | エラー発生 |
-| `CANCELLED` | キャンセル | 意図的中止 |
-| `REFUNDED` | 返金済み | 返金処理完了（将来拡張） |
+| 値 | 説明 | 用途 | 取り消し可能 |
+|---|---|---|---|
+| `DRAFT` | 下書き | 作成直後の状態 | ✅ |
+| `ACTIVE` | アクティブ | 処理中状態 | ✅ |
+| `COMPLETED` | 完了 | 正常完了 | ✅ |
+| `FAILED` | 失敗 | エラー発生 | ❌ |
+| `CANCELLED` | キャンセル | 意図的中止 | ❌ |
+| `REFUNDED` | 返金済み | 返金処理完了（将来拡張） | ❌ |
+
+**重要な設計変更**: 2025年7月11日より、`COMPLETED`状態でも取り消し可能に変更されました。
+これにより、支払い済みの取引でも間違いの修正が可能になり、金融業務の実用性が向上しています。
 
 ## サービス層設計
 
@@ -182,18 +185,47 @@ transaction.markAsCompleted();
 transaction.markAsFailed();
 transaction.markAsCancelled();
 transaction.isCompleted();
-transaction.isCancellable();
-transaction.isProcessing();
+transaction.isCancellable();  // DRAFT, ACTIVE, COMPLETED状態で true
+transaction.isActive();
 ```
 
 ### 3. 自動状態設定
-- `@PrePersist`でデフォルト状態（PENDING）設定
+- `@PrePersist`でデフォルト状態（DRAFT）設定
 - 各サブクラスで適切なTransactionType自動設定
+- Payment処理完了時にCOMPLETED状態に自動遷移
+
+## 重要な設計変更履歴
+
+### Payment取り消し機能の実装（2025年7月11日）
+
+**背景**: ユーザーから「支払い済みのPaymentが取り消せない」問題の報告を受け、金融システムとしての実用性向上のため仕様変更を実施。
+
+**変更内容**:
+1. **`Transaction.isCancellable()`の拡張**:
+   ```java
+   // 変更前: DRAFT, ACTIVEのみ取り消し可能
+   // 変更後: DRAFT, ACTIVE, COMPLETEDすべて取り消し可能
+   public boolean isCancellable() {
+       return this.status == TransactionStatus.DRAFT || 
+              this.status == TransactionStatus.ACTIVE ||
+              this.status == TransactionStatus.COMPLETED;
+   }
+   ```
+
+2. **Paymentライフサイクルの明確化**:
+   - 作成時: DRAFT状態
+   - 処理完了時: COMPLETED状態に明示的遷移
+   - 取り消し時: COMPLETED状態でも取り消し可能
+
+**ビジネス価値**:
+- ✅ 間違った支払いの修正が可能
+- ✅ 金融業務の実用性向上
+- ✅ データ整合性の維持
 
 ## 今後の拡張予定
 
 1. **取引承認ワークフロー**: 複雑な承認プロセスの実装
-2. **取引キャンセル・修正**: リバーストランザクション機能
+2. ~~**取引キャンセル・修正**: リバーストランザクション機能~~ ✅ **実装完了**
 3. **バッチ処理**: 大量取引の一括処理機能
 4. **監査ログ強化**: 詳細な変更履歴追跡
 5. **パフォーマンス最適化**: インデックス最適化・N+1問題対応
