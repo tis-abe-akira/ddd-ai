@@ -22,6 +22,33 @@ BoundedContext間の依存関係を解決するため、直接的なサービス
 
 ## Event駆動アーキテクチャフロー
 
+### 概略図（エッセンス）
+
+```mermaid
+sequenceDiagram
+    participant FS as FacilityService
+    participant EP as EventPublisher
+    participant EH as EventHandler
+    participant SM as StateManager
+    participant Entity as Investor/Borrower
+
+    Note over FS,Entity: Event駆動による疎結合な状態管理
+
+    FS->>EP: publishEvent(FacilityCreatedEvent)
+    Note right of EP: 第2段階：直接呼び出しを<br/>Eventに置き換え
+    
+    EP->>EH: handleFacilityCreated()
+    Note right of EH: Cross-context状態変更<br/>の責務を分離
+    
+    EH->>SM: transitionToRestricted()
+    Note right of SM: StateMachine制約<br/>による安全な状態遷移
+    
+    SM->>Entity: setStatus(RESTRICTED)
+    Note right of Entity: Facility参加により<br/>削除・変更を制限
+```
+
+### 詳細フロー（実装レベル）
+
 ### Facility作成時の状態変更フロー
 
 ```mermaid
@@ -93,7 +120,45 @@ sequenceDiagram
     FS->>Client: Facility作成完了
 ```
 
-### コミュニケーション図（全体構造）
+### コミュニケーション図（概略）
+
+```mermaid
+graph LR
+    subgraph "Facility Context"
+        FS[FacilityService]
+    end
+    
+    subgraph "Event Infrastructure"
+        EP[EventPublisher]
+        EH[EventHandler]
+    end
+    
+    subgraph "State Management"
+        SM[StateManager]
+    end
+    
+    subgraph "Party Context"
+        Entity[Investor/Borrower<br/>Entity]
+    end
+    
+    FS -->|publishEvent| EP
+    EP -->|handleEvent| EH
+    EH -->|transitionState| SM
+    SM -->|updateStatus| Entity
+    
+    %% Styling
+    classDef facilityStyle fill:#e3f2fd
+    classDef eventStyle fill:#e8f5e8
+    classDef stateStyle fill:#fff3e0
+    classDef partyStyle fill:#fce4ec
+    
+    class FS facilityStyle
+    class EP,EH eventStyle
+    class SM stateStyle
+    class Entity partyStyle
+```
+
+### コミュニケーション図（詳細）
 
 ```mermaid
 graph TB
