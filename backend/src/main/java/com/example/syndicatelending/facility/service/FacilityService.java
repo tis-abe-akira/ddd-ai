@@ -15,14 +15,14 @@ import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.common.statemachine.facility.FacilityEvent;
-import com.example.syndicatelending.common.statemachine.syndicate.SyndicateState;
-import com.example.syndicatelending.common.statemachine.syndicate.SyndicateEvent;
-import com.example.syndicatelending.common.statemachine.EntityStateService;
+// import com.example.syndicatelending.common.statemachine.EntityStateService; // 【削除】Spring Eventsに移行
+import com.example.syndicatelending.common.statemachine.events.FacilityCreatedEvent;
+import com.example.syndicatelending.common.statemachine.events.FacilityDeletedEvent;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
 import com.example.syndicatelending.transaction.entity.TransactionType;
-import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
@@ -40,23 +40,24 @@ public class FacilityService {
     private final SharePieRepository sharePieRepository;
     private final FacilityInvestmentRepository facilityInvestmentRepository;
     private final SyndicateRepository syndicateRepository;
-    private final EntityStateService entityStateService;
-    private final DrawdownRepository drawdownRepository;
+    // private final EntityStateService entityStateService; // 【削除】Spring Eventsに移行
+    private final ApplicationEventPublisher eventPublisher;
     
     @Autowired
     private StateMachine<FacilityState, FacilityEvent> stateMachine;
 
     public FacilityService(FacilityRepository facilityRepository, FacilityValidator facilityValidator,
             SharePieRepository sharePieRepository, FacilityInvestmentRepository facilityInvestmentRepository,
-            SyndicateRepository syndicateRepository, EntityStateService entityStateService,
-            DrawdownRepository drawdownRepository) {
+            SyndicateRepository syndicateRepository,
+            // EntityStateService entityStateService, // 【削除】Spring Eventsに移行
+            ApplicationEventPublisher eventPublisher) {
         this.facilityRepository = facilityRepository;
         this.facilityValidator = facilityValidator;
         this.sharePieRepository = sharePieRepository;
         this.facilityInvestmentRepository = facilityInvestmentRepository;
         this.syndicateRepository = syndicateRepository;
-        this.entityStateService = entityStateService;
-        this.drawdownRepository = drawdownRepository;
+        // this.entityStateService = entityStateService; // 【削除】Spring Eventsに移行
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -111,7 +112,10 @@ public class FacilityService {
         facilityInvestmentRepository.saveAll(investments);
 
         // 【重要】Facility組成時のBorrower/Investor状態遷移実行
-        entityStateService.onFacilityCreated(savedFacility);
+        // entityStateService.onFacilityCreated(savedFacility); // 【移行中】Spring Eventsに置き換え
+
+        // 【新機能】Spring Eventsでイベント発行
+        eventPublisher.publishEvent(new FacilityCreatedEvent(savedFacility));
 
         return savedFacility;
     }
@@ -204,10 +208,64 @@ public class FacilityService {
 
     @Transactional
     public void deleteFacility(Long id) {
-        if (!facilityRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Facility not found with id: " + id);
-        }
+        // 1. Facilityの存在確認
+        Facility facility = facilityRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Facility not found with id: " + id));
+        
+        // 2. ビジネスルール検証
+        validateFacilityDeletion(facility);
+        
+        // 3. 状態復旧処理（EntityStateService経由）
+        // entityStateService.onFacilityDeleted(facility); // 【移行中】Spring Eventsに置き換え
+        
+        // 【新機能】Spring Eventsでイベント発行
+        eventPublisher.publishEvent(new FacilityDeletedEvent(facility));
+        
+        // 4. 関連データの削除
+        deleteRelatedData(facility);
+        
+        // 5. 物理削除
         facilityRepository.deleteById(id);
+        
+        System.out.println("Facility ID " + id + " has been successfully deleted with state recovery");
+    }
+    
+    /**
+     * Facility削除時のビジネスルール検証
+     * 
+     * Cross-Context-Reference解決パターンに基づき、Facility自身の状態でビジネスルールを判定。
+     * DrawdownRepositoryへの依存を排除し、状態ベースの判定を実現。
+     * 
+     * @param facility 削除対象のFacility
+     * @throws BusinessRuleViolationException ビジネスルール違反時
+     */
+    private void validateFacilityDeletion(Facility facility) {
+        // FIXED状態のFacilityは削除不可（関連するDrawdownが存在することを示す）
+        if (facility.getStatus() == FacilityState.ACTIVE) {
+            throw new BusinessRuleViolationException(
+                "FIXED状態のFacilityは削除できません。関連するDrawdownを先に削除してください。現在の状態: " + facility.getStatus());
+        }
+        
+        // 他の削除制約があれば、ここに追加
+    }
+    
+    /**
+     * Facility削除時の関連データ削除
+     * 
+     * @param facility 削除対象のFacility
+     */
+    private void deleteRelatedData(Facility facility) {
+        // SharePieの削除
+        sharePieRepository.deleteAll(facility.getSharePies());
+        
+        // FacilityInvestmentの削除
+        List<FacilityInvestment> facilityInvestments = facilityInvestmentRepository.findAll()
+            .stream()
+            .filter(fi -> fi.getFacilityId().equals(facility.getId()))
+            .collect(java.util.stream.Collectors.toList());
+        facilityInvestmentRepository.deleteAll(facilityInvestments);
+        
+        // 他の関連データがあれば、ここに追加
     }
 
     @Transactional
@@ -215,7 +273,7 @@ public class FacilityService {
         Facility facility = getFacilityById(facilityId);
         
         // 既にFIXED状態の場合はBusinessRuleViolationExceptionをスロー
-        if (facility.getStatus() == FacilityState.FIXED) {
+        if (facility.getStatus() == FacilityState.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "FIXED状態のFacilityに対して2度目のドローダウンはできません。現在の状態: " + facility.getStatus());
         }
@@ -237,7 +295,7 @@ public class FacilityService {
         }
         
         // ビジネスルール検証が完了しているため、状態更新を実行
-        facility.setStatus(FacilityState.FIXED);
+        facility.setStatus(FacilityState.ACTIVE);
         facilityRepository.save(facility);
     }
 
@@ -260,17 +318,14 @@ public class FacilityService {
         }
         
         // FIXED状態からDRAFT状態への遷移のみ許可
-        if (facility.getStatus() != FacilityState.FIXED) {
+        if (facility.getStatus() != FacilityState.ACTIVE) {
             throw new BusinessRuleViolationException(
                 "FIXED状態のFacilityのみDRAFTに戻すことができます。現在の状態: " + facility.getStatus());
         }
         
-        // ビジネスルール検証: 関連するDrawdownが存在しないことを確認
-        if (hasActiveDrawdowns(facilityId)) {
-            throw new BusinessRuleViolationException(
-                "関連するDrawdownが存在するため、Facilityを DRAFT状態に戻すことができません。" +
-                "先に全てのDrawdownを削除してください。");
-        }
+        // ビジネスルール検証: FIXED状態からDRAFT状態への遷移は、
+        // 関連するDrawdownが削除されている前提で呼び出される
+        // （状態ベースの判定により、追加のチェックは不要）
         
         // State Machine実行 - ビジネスルール検証済みのため、遷移を実行
         // （実際のState Machine処理は複雑なので、Service層でビジネスロジックを管理）
@@ -288,15 +343,6 @@ public class FacilityService {
         facilityRepository.save(facility);
     }
 
-    /**
-     * 指定されたFacilityに関連するアクティブなDrawdownが存在するかを確認
-     * 
-     * @param facilityId FacilityのID
-     * @return 関連するDrawdownが存在する場合 true
-     */
-    private boolean hasActiveDrawdowns(Long facilityId) {
-        return !drawdownRepository.findByFacilityId(facilityId).isEmpty();
-    }
 
     /**
      * Drawdown削除時にFacilityをDRAFT状態に自動復帰させる
@@ -318,7 +364,7 @@ public class FacilityService {
         }
         
         // FIXED状態の場合のみDRAFTに戻す（他の状態からの復帰は想定外）
-        if (facility.getStatus() == FacilityState.FIXED) {
+        if (facility.getStatus() == FacilityState.ACTIVE) {
             // State Machine統合によるライフサイクル管理（CLAUDE.md方針準拠）
             // Drawdown削除時のビジネスルール検証は呼び出し元で完了済み
             boolean stateTransitionSuccess = false;

@@ -2,6 +2,7 @@ package com.example.syndicatelending.party.repository;
 
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.entity.InvestorType;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,7 +21,7 @@ public interface InvestorRepository extends JpaRepository<Investor, Long>, JpaSp
 
     List<Investor> findByInvestorType(String investorType);
 
-    List<Investor> findByIsActiveTrue();
+    List<Investor> findByStatus(InvestorState status);
 
     Page<Investor> findByNameContainingIgnoreCase(String name, Pageable pageable);
 

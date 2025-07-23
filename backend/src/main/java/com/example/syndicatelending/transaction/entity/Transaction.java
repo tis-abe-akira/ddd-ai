@@ -50,7 +50,7 @@ public abstract class Transaction {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) {
-            this.status = TransactionStatus.PENDING;
+            this.status = TransactionStatus.DRAFT;
         }
     }
 
@@ -176,15 +176,16 @@ public abstract class Transaction {
      * @return キャンセル可能な場合true
      */
     public boolean isCancellable() {
-        return this.status == TransactionStatus.PENDING || 
-               this.status == TransactionStatus.PROCESSING;
+        return this.status == TransactionStatus.DRAFT || 
+               this.status == TransactionStatus.ACTIVE ||
+               this.status == TransactionStatus.COMPLETED;
     }
     
     /**
-     * 取引が処理中かチェック
-     * @return 処理中の場合true
+     * 取引がアクティブかチェック
+     * @return アクティブな場合true
      */
-    public boolean isProcessing() {
-        return this.status == TransactionStatus.PROCESSING;
+    public boolean isActive() {
+        return this.status == TransactionStatus.ACTIVE;
     }
 }

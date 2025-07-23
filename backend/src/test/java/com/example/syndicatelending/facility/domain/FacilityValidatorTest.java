@@ -13,6 +13,7 @@ import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.syndicate.entity.Syndicate;
 import com.example.syndicatelending.syndicate.repository.SyndicateRepository;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,13 +71,13 @@ class FacilityValidatorTest {
         // Investorのモック設定
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(true);
+        investor1.setStatus(InvestorState.DRAFT);
         Investor investor2 = new Investor("Investor 2", null, null, null, null, InvestorType.BANK);
         investor2.setId(2L);
-        investor2.setIsActive(true);
+        investor2.setStatus(InvestorState.DRAFT);
         Investor investor3 = new Investor("Investor 3", null, null, null, null, InvestorType.BANK);
         investor3.setId(3L);
-        investor3.setIsActive(true);
+        investor3.setStatus(InvestorState.DRAFT);
 
         when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
         when(investorRepository.findById(2L)).thenReturn(Optional.of(investor2));
@@ -144,7 +145,7 @@ class FacilityValidatorTest {
         // 重複しているInvestor(ID=1)のモック設定のみ
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(true);
+        investor1.setStatus(InvestorState.DRAFT);
         when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
 
         // When & Then
@@ -226,7 +227,7 @@ class FacilityValidatorTest {
         // Investorのモック設定
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(true);
+        investor1.setStatus(InvestorState.DRAFT);
         when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
 
         // When & Then
@@ -236,7 +237,7 @@ class FacilityValidatorTest {
     }
 
     @Test
-    void Investorが非アクティブの場合はバリデーションでエラーになる() {
+    void Investorが制限状態の場合はバリデーションでエラーになる() {
         // Given
         CreateFacilityRequest request = createValidFacilityRequest();
 
@@ -246,16 +247,27 @@ class FacilityValidatorTest {
         when(syndicateRepository.existsById(1L)).thenReturn(true);
         when(syndicateRepository.findById(1L)).thenReturn(Optional.of(mockSyndicate));
 
-        // Investor 1が非アクティブの設定
+        // Investor 1が制限状態の設定
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(false); // 非アクティブ
+        investor1.setStatus(InvestorState.ACTIVE); // 制限状態（ACTIVE = 削除不可）
         when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
+        
+        // 他のInvestorは正常状態（lenientを使用して未使用警告を回避）
+        Investor investor2 = new Investor("Investor 2", null, null, null, null, InvestorType.BANK);
+        investor2.setId(2L);
+        investor2.setStatus(InvestorState.DRAFT);
+        lenient().when(investorRepository.findById(2L)).thenReturn(Optional.of(investor2));
+        
+        Investor investor3 = new Investor("Investor 3", null, null, null, null, InvestorType.BANK);
+        investor3.setId(3L);
+        investor3.setStatus(InvestorState.DRAFT);
+        lenient().when(investorRepository.findById(3L)).thenReturn(Optional.of(investor3));
 
         // When & Then
         assertThatThrownBy(() -> facilityValidator.validateCreateFacilityRequest(request))
                 .isInstanceOf(BusinessRuleViolationException.class)
-                .hasMessageContaining("非アクティブなInvestorは投資できません: investorId=1");
+                .hasMessageContaining("制限状態のInvestorは投資できません: investorId=1");
     }
 
     @Test
@@ -273,13 +285,13 @@ class FacilityValidatorTest {
         // Investorのモック設定（requestで使用される1,2,3のみ）
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(true);
+        investor1.setStatus(InvestorState.DRAFT);
         Investor investor2 = new Investor("Investor 2", null, null, null, null, InvestorType.BANK);
         investor2.setId(2L);
-        investor2.setIsActive(true);
+        investor2.setStatus(InvestorState.DRAFT);
         Investor investor3 = new Investor("Investor 3", null, null, null, null, InvestorType.BANK);
         investor3.setId(3L);
-        investor3.setIsActive(true);
+        investor3.setStatus(InvestorState.DRAFT);
 
         lenient().when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
         lenient().when(investorRepository.findById(2L)).thenReturn(Optional.of(investor2));
@@ -314,13 +326,13 @@ class FacilityValidatorTest {
         // Investorのモック設定
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(true);
+        investor1.setStatus(InvestorState.DRAFT);
         Investor investor2 = new Investor("Investor 2", null, null, null, null, InvestorType.BANK);
         investor2.setId(2L);
-        investor2.setIsActive(true);
+        investor2.setStatus(InvestorState.DRAFT);
         Investor investor3 = new Investor("Investor 3", null, null, null, null, InvestorType.BANK);
         investor3.setId(3L);
-        investor3.setIsActive(true);
+        investor3.setStatus(InvestorState.DRAFT);
 
         lenient().when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
         lenient().when(investorRepository.findById(2L)).thenReturn(Optional.of(investor2));
@@ -476,13 +488,13 @@ class FacilityValidatorTest {
         // Investorのモック設定
         Investor investor1 = new Investor("Investor 1", null, null, null, null, InvestorType.BANK);
         investor1.setId(1L);
-        investor1.setIsActive(true);
+        investor1.setStatus(InvestorState.DRAFT);
         Investor investor2 = new Investor("Investor 2", null, null, null, null, InvestorType.BANK);
         investor2.setId(2L);
-        investor2.setIsActive(true);
+        investor2.setStatus(InvestorState.DRAFT);
         Investor investor3 = new Investor("Investor 3", null, null, null, null, InvestorType.BANK);
         investor3.setId(3L);
-        investor3.setIsActive(true);
+        investor3.setStatus(InvestorState.DRAFT);
 
         when(investorRepository.findById(1L)).thenReturn(Optional.of(investor1));
         when(investorRepository.findById(2L)).thenReturn(Optional.of(investor2));

@@ -248,10 +248,10 @@ class TransactionServiceIntegrationTest {
         FeePayment feePayment = createTestFeePayment(FeeType.AGENT_FEE, "BANK");
         
         // 初期状態はPENDING
-        assertEquals(TransactionStatus.PENDING, feePayment.getStatus());
+        assertEquals(TransactionStatus.DRAFT, feePayment.getStatus());
         assertTrue(feePayment.isCancellable());
         assertFalse(feePayment.isCompleted());
-        assertFalse(feePayment.isProcessing());
+        assertFalse(feePayment.isActive());
 
         // 取引承認（PENDING → PROCESSING）
         transactionService.approveTransaction(feePayment.getId());
@@ -262,9 +262,9 @@ class TransactionServiceIntegrationTest {
         // 取引を再取得して状態確認
         Transaction completedTransaction = transactionService.getTransactionById(feePayment.getId());
         assertEquals(TransactionStatus.COMPLETED, completedTransaction.getStatus());
-        assertFalse(completedTransaction.isCancellable());
+        assertTrue(completedTransaction.isCancellable()); // COMPLETED状態でも取り消し可能に修正
         assertTrue(completedTransaction.isCompleted());
-        assertFalse(completedTransaction.isProcessing());
+        assertFalse(completedTransaction.isActive());
     }
 
     @Test
@@ -281,7 +281,7 @@ class TransactionServiceIntegrationTest {
         assertEquals(TransactionStatus.CANCELLED, cancelledTransaction.getStatus());
         assertFalse(cancelledTransaction.isCancellable());
         assertFalse(cancelledTransaction.isCompleted());
-        assertFalse(cancelledTransaction.isProcessing());
+        assertFalse(cancelledTransaction.isActive());
     }
 
     @Test
@@ -298,7 +298,7 @@ class TransactionServiceIntegrationTest {
         assertEquals(TransactionStatus.FAILED, failedTransaction.getStatus());
         assertFalse(failedTransaction.isCancellable()); // 失敗した取引はキャンセル不可
         assertFalse(failedTransaction.isCompleted());
-        assertFalse(failedTransaction.isProcessing());
+        assertFalse(failedTransaction.isActive());
     }
 
     private FeePayment createTestFeePayment(FeeType feeType, String recipientType) {

@@ -66,7 +66,7 @@ const SyndicateTable: React.FC<SyndicateTableProps> = ({
             Active
           </span>
         );
-      case 'CLOSED':
+      case 'COMPLETED':
         return (
           <span 
             className="inline-flex px-2 py-1 text-xs font-medium bg-secondary-600 text-accent-400 rounded-full cursor-help"

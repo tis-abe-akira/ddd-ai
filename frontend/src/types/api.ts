@@ -18,6 +18,7 @@ export interface Borrower {
   creditLimit: number;
   creditRating: CreditRating;
   currentFacilityAmount: number; // 既存Facility総額（動的計算）
+  status: BorrowerStatus;
 }
 
 export interface Investor {
@@ -29,7 +30,7 @@ export interface Investor {
   investmentCapacity: number;
   currentInvestmentAmount: number;
   investorType: InvestorType;
-  isActive: boolean;
+  status: InvestorStatus;
 }
 
 export interface Syndicate {
@@ -44,7 +45,7 @@ export interface Syndicate {
   version: number;
 }
 
-export type SyndicateStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
+export type SyndicateStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
 export interface SyndicateDetail {
   id: number;
@@ -77,9 +78,13 @@ export type InvestorType =
   | 'CREDIT_UNION' 
   | 'OTHER';
 
-export type FacilityStatus = 'DRAFT' | 'FIXED';
+export type FacilityStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
 
 export type LoanStatus = 'DRAFT' | 'ACTIVE' | 'OVERDUE' | 'COMPLETED';
+
+export type BorrowerStatus = 'DRAFT' | 'ACTIVE';
+
+export type InvestorStatus = 'DRAFT' | 'ACTIVE';
 
 export type RepaymentMethod = 'EQUAL_INSTALLMENT' | 'BULLET_PAYMENT';
 
@@ -253,7 +258,7 @@ export interface Drawdown {
   version: number;
 }
 
-export type TransactionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+export type TransactionStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
 export interface AmountPie {
   id: number;

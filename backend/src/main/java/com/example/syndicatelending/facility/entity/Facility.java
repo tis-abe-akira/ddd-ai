@@ -179,7 +179,7 @@ public class Facility {
     }
 
     public boolean isFixed() {
-        return status == FacilityState.FIXED;
+        return status == FacilityState.ACTIVE;
     }
 
 }

@@ -18,6 +18,7 @@ import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
 import com.example.syndicatelending.common.application.exception.BusinessRuleViolationException;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,7 @@ public class DrawdownFacilityIntegrationTest {
         testInvestor.setCurrentInvestmentAmount(Money.of(new BigDecimal("0.00")));
         testInvestor.setCreatedAt(LocalDateTime.now());
         testInvestor.setUpdatedAt(LocalDateTime.now());
-        testInvestor.setIsActive(true);
+        testInvestor.setStatus(InvestorState.ACTIVE);
         testInvestor = investorRepository.save(testInvestor);
 
         // テスト用Syndicateを作成
@@ -138,7 +139,7 @@ public class DrawdownFacilityIntegrationTest {
 
         // FacilityがFIXED状態に変更されていることを確認
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
         assertFalse(updatedFacility.canBeModified());
         assertTrue(updatedFacility.isFixed());
     }
@@ -176,7 +177,7 @@ public class DrawdownFacilityIntegrationTest {
 
         // FacilityがFIXED状態になっていることを確認
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
 
         // 2回目のDrawdownを試みる（FIXED状態では2度目のDrawdownは不可）
         CreateDrawdownRequest secondRequest = createDrawdownRequest();
@@ -202,7 +203,7 @@ public class DrawdownFacilityIntegrationTest {
 
         // データベースから再取得して状態を確認
         Facility facilityFromDb = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, facilityFromDb.getStatus());
+        assertEquals(FacilityState.ACTIVE, facilityFromDb.getStatus());
         assertFalse(facilityFromDb.canBeModified());
     }
 

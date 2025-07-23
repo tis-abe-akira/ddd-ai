@@ -12,5 +12,13 @@ public enum BorrowerEvent {
      * - ACTIVE → RESTRICTED への遷移トリガー
      * - 以降、companyId, creditRating, creditLimit変更不可
      */
-    FACILITY_PARTICIPATION
+    FACILITY_PARTICIPATION,
+
+    /**
+     * Facility削除イベント
+     * - 参加していたFacilityが削除された時に発火
+     * - RESTRICTED → ACTIVE への遷移トリガー
+     * - 制限状態が解除され、重要フィールドの変更が再び可能になる
+     */
+    FACILITY_DELETED
 }

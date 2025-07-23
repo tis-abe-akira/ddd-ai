@@ -39,12 +39,10 @@ public class Investor {
     @Column(name = "investor_type")
     private InvestorType investorType;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private InvestorState status = InvestorState.ACTIVE;
+    private InvestorState status = InvestorState.DRAFT;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -68,7 +66,6 @@ public class Investor {
         this.investmentCapacity = investmentCapacity != null ? investmentCapacity : BigDecimal.ZERO;
         this.currentInvestmentAmount = Money.zero();
         this.investorType = investorType;
-        this.isActive = true;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -141,14 +138,6 @@ public class Investor {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Boolean getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-        this.updatedAt = LocalDateTime.now();
-    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -207,11 +196,12 @@ public class Investor {
 
     /**
      * Investorが制限状態かどうかを判定する
+     * ACTIVE状態 = Facility参加中のため削除不可
      * 
      * @return 制限状態の場合 true
      */
     public boolean isRestricted() {
-        return InvestorState.RESTRICTED.equals(this.status);
+        return InvestorState.ACTIVE.equals(this.status);
     }
 
     /**

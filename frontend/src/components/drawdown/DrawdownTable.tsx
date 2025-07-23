@@ -72,9 +72,9 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case 'DRAFT':
         return 'bg-warning/20 text-warning';
-      case 'PROCESSING':
+      case 'ACTIVE':
         return 'bg-accent-500/20 text-accent-500';
       case 'COMPLETED':
         return 'bg-success/20 text-success';
@@ -91,12 +91,12 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
 
   const getStatusInfo = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case 'DRAFT':
         return { 
           label: 'Pending', 
           tooltip: 'Pending - Transaction has been created but not yet started processing.' 
         };
-      case 'PROCESSING':
+      case 'ACTIVE':
         return { 
           label: 'Processing', 
           tooltip: 'Processing - Transaction is currently being executed.' 
@@ -131,12 +131,12 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
 
   const canEdit = (status: string) => {
     // PENDING, FAILED状態では編集可能
-    return status === 'PENDING' || status === 'FAILED';
+    return status === 'DRAFT' || status === 'FAILED';
   };
 
   const canDelete = (status: string) => {
     // PENDING, FAILED状態では削除可能（COMPLETED, CANCELLED, REFUNDEDは削除不可）
-    return status === 'PENDING' || status === 'FAILED';
+    return status === 'DRAFT' || status === 'FAILED';
   };
 
   const filteredDrawdowns = drawdowns.filter(drawdown => {
@@ -310,7 +310,7 @@ const DrawdownTable: React.FC<DrawdownTableProps> = ({
                           )}
                           {(!canEdit(drawdown.status) && !canDelete(drawdown.status)) && (
                             <div className="text-accent-400 text-xs">
-                              {drawdown.status === 'PROCESSING' ? 'Processing...' : 
+                              {drawdown.status === 'ACTIVE' ? 'Processing...' : 
                                drawdown.status === 'COMPLETED' ? 'Completed' : 
                                drawdown.status === 'CANCELLED' ? 'Cancelled' : 
                                'No Actions'}

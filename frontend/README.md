@@ -90,6 +90,53 @@ src/
 - **Date**: ISO 8601 → Date オブジェクト
 - **ID**: Auto-increment (DB) + UUID (business)
 
+### Status Management
+- **Entity Status**: `BorrowerStatus = 'DRAFT' | 'ACTIVE'`, `InvestorStatus = 'DRAFT' | 'ACTIVE'`
+- **Transaction Status**: `TransactionStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED'`
+- **Payment Status**: `PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE'`
+
+---
+
+## 重要な実装変更履歴
+
+### Investor/Borrower選択機能の改善（2025年7月11日）
+
+**背景**: Investor/Borrowerの状態管理変更により、DRAFT状態のエンティティが選択できない問題が発生。
+Facility作成時に「No LEAD_BANK type investors found」エラーが発生していた。
+
+**変更内容**:
+
+#### 1. InvestorCards.tsx
+```typescript
+// 変更前: ACTIVE状態のみ表示
+setInvestors(response.data.content.filter(investor => investor.status === 'ACTIVE'));
+
+// 変更後: DRAFT/ACTIVE両方表示
+setInvestors(response.data.content.filter(investor => 
+  investor.status === 'ACTIVE' || investor.status === 'DRAFT'
+));
+```
+
+#### 2. SharePieAllocation.tsx  
+```typescript
+// 変更前: ACTIVE状態のみ表示
+const allInvestors = investorsResponse.data.content.filter(investor => investor.status === 'ACTIVE');
+
+// 変更後: DRAFT/ACTIVE両方表示
+const allInvestors = investorsResponse.data.content.filter(investor => 
+  investor.status === 'ACTIVE' || investor.status === 'DRAFT'
+);
+```
+
+**ビジネス価値**:
+- ✅ **Facility作成の円滑化**: LEAD_BANK選択問題の解決
+- ✅ **投資家選択の柔軟性**: DRAFT状態の投資家も参加可能
+- ✅ **状態管理の一貫性**: バックエンドの状態変更に対応
+
+**設計思想**:
+投資家・借り手は**継続的に存在する法人格**であり、一つのFacilityの終了により「完了」状態になるのは不適切。
+そのため、DRAFT（未参加）とACTIVE（参加中）の2状態のみを持ち、複数のFacilityに参加可能な設計とした。
+
 ---
 
 ## 開発コマンド

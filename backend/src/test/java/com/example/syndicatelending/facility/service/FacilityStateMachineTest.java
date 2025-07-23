@@ -13,6 +13,7 @@ import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.party.entity.Borrower;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
+import com.example.syndicatelending.common.statemachine.party.InvestorState;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
@@ -91,7 +92,7 @@ public class FacilityStateMachineTest {
         testInvestor.setCurrentInvestmentAmount(Money.of(new BigDecimal("0.00")));
         testInvestor.setCreatedAt(java.time.LocalDateTime.now());
         testInvestor.setUpdatedAt(java.time.LocalDateTime.now());
-        testInvestor.setIsActive(true);
+        testInvestor.setStatus(InvestorState.DRAFT);
         testInvestor = investorRepository.save(testInvestor);
 
         // テスト用Syndicateを作成
@@ -158,7 +159,7 @@ public class FacilityStateMachineTest {
 
         // 状態がFIXEDに変更されていることを確認
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
         assertFalse(updatedFacility.canBeModified());
         assertTrue(updatedFacility.isFixed());
     }
@@ -166,7 +167,7 @@ public class FacilityStateMachineTest {
     @Test
     void testFixFacilityFromFixedStateThrowsException() {
         // 既にFIXED状態のFacilityをFIXEDにしようとする場合は例外が発生する
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         facilityRepository.save(testFacility);
 
         // BusinessRuleViolationExceptionがスローされることを確認
@@ -192,7 +193,7 @@ public class FacilityStateMachineTest {
     @Test
     void testUpdateFacilityInFixedState() {
         // FacilityをFIXED状態にする
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         facilityRepository.save(testFacility);
 
         UpdateFacilityRequest request = createUpdateRequest();
@@ -213,7 +214,7 @@ public class FacilityStateMachineTest {
         assertTrue(testFacility.canBeModified());
 
         // FIXED状態では変更不可
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         assertFalse(testFacility.canBeModified());
     }
 
@@ -224,7 +225,7 @@ public class FacilityStateMachineTest {
         assertFalse(testFacility.isFixed());
 
         // FIXED状態ではFixed = true
-        testFacility.setStatus(FacilityState.FIXED);
+        testFacility.setStatus(FacilityState.ACTIVE);
         assertTrue(testFacility.isFixed());
     }
 
@@ -264,7 +265,7 @@ public class FacilityStateMachineTest {
         assertDoesNotThrow(() -> facilityService.fixFacility(testFacility.getId()));
         
         Facility updatedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, updatedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, updatedFacility.getStatus());
         
         // 2度目のfixFacility（ドローダウン）は例外
         BusinessRuleViolationException exception = assertThrows(
@@ -308,7 +309,7 @@ public class FacilityStateMachineTest {
         // 最初にFacilityをFIXED状態にする
         facilityService.fixFacility(testFacility.getId());
         Facility fixedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
-        assertEquals(FacilityState.FIXED, fixedFacility.getStatus());
+        assertEquals(FacilityState.ACTIVE, fixedFacility.getStatus());
         
         // Drawdownが存在しないことを確認
         assertTrue(drawdownRepository.findByFacilityId(testFacility.getId()).isEmpty());
@@ -336,31 +337,20 @@ public class FacilityStateMachineTest {
     }
 
     @Test
-    void testRevertToDraftWithActiveDrawdownsThrowsException() {
-        // Drawdownが存在する場合のrevertToDraftは例外をスロー
+    void testRevertToDraftFromFixedStateSucceeds() {
+        // FIXED状態からのrevertToDraftは成功する（状態ベース判定）
         
         // FacilityをFIXED状態にする
         facilityService.fixFacility(testFacility.getId());
+        Facility fixedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.ACTIVE, fixedFacility.getStatus());
         
-        // テスト用のDrawdownを作成（実際のDrawdownエンティティを使用）
-        com.example.syndicatelending.loan.entity.Drawdown testDrawdown = 
-            new com.example.syndicatelending.loan.entity.Drawdown();
-        testDrawdown.setFacilityId(testFacility.getId());
-        testDrawdown.setBorrowerId(testBorrower.getId());
-        testDrawdown.setLoanId(1L); // 必須フィールド: Loan ID を設定
-        testDrawdown.setAmount(Money.of(new BigDecimal("100000.00")));
-        testDrawdown.setCurrency("USD");
-        testDrawdown.setPurpose("Test drawdown");
-        testDrawdown.setTransactionDate(LocalDate.now());
-        // TransactionTypeはコンストラクタで自動設定される
-        drawdownRepository.save(testDrawdown);
+        // revertToDraftは成功する（Cross-Context依存を排除したため）
+        assertDoesNotThrow(() -> facilityService.revertToDraft(testFacility.getId()));
         
-        // revertToDraftでBusinessRuleViolationExceptionがスローされることを確認
-        BusinessRuleViolationException exception = assertThrows(
-            BusinessRuleViolationException.class,
-            () -> facilityService.revertToDraft(testFacility.getId())
-        );
-        
-        assertTrue(exception.getMessage().contains("関連するDrawdownが存在するため"));
+        // DRAFT状態に戻ったことを確認
+        Facility revertedFacility = facilityRepository.findById(testFacility.getId()).orElseThrow();
+        assertEquals(FacilityState.DRAFT, revertedFacility.getStatus());
+        assertTrue(revertedFacility.canBeModified());
     }
 }

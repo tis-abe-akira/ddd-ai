@@ -148,7 +148,7 @@ class PaymentServiceTest {
         
         // Transaction基底クラスのフィールド検証
         assertEquals(TransactionType.PAYMENT, payment.getTransactionType());
-        assertEquals(TransactionStatus.PENDING, payment.getStatus());
+        assertEquals(TransactionStatus.COMPLETED, payment.getStatus());
         assertEquals(facility.getId(), payment.getFacilityId());
         assertEquals(borrower.getId(), payment.getBorrowerId());
         assertNotNull(payment.getId());

@@ -13,6 +13,7 @@ import com.example.syndicatelending.loan.entity.Loan;
 import com.example.syndicatelending.loan.entity.RepaymentCycle;
 import com.example.syndicatelending.loan.repository.DrawdownRepository;
 import com.example.syndicatelending.loan.repository.LoanRepository;
+import com.example.syndicatelending.loan.repository.PaymentRepository;
 import com.example.syndicatelending.party.repository.BorrowerRepository;
 import com.example.syndicatelending.transaction.entity.TransactionStatus;
 import com.example.syndicatelending.loan.entity.AmountPie;
@@ -22,7 +23,11 @@ import com.example.syndicatelending.facility.repository.SharePieRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.InvestorRepository;
 import com.example.syndicatelending.facility.service.FacilityService;
+// import com.example.syndicatelending.common.statemachine.EntityStateService; // 【削除】Spring Eventsに移行
+import com.example.syndicatelending.common.statemachine.events.DrawdownCreatedEvent;
+import com.example.syndicatelending.common.statemachine.events.DrawdownDeletedEvent;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -46,6 +51,7 @@ public class DrawdownService {
     // データアクセス層
     private final DrawdownRepository drawdownRepository;
     private final LoanRepository loanRepository;
+    private final PaymentRepository paymentRepository;
     private final FacilityRepository facilityRepository;
     private final BorrowerRepository borrowerRepository;
     private final SharePieRepository sharePieRepository;
@@ -53,21 +59,29 @@ public class DrawdownService {
     
     // 他のサービス層（状態管理のため）
     private final FacilityService facilityService;
+    // private final EntityStateService entityStateService; // 【削除】Spring Eventsに移行
+    private final ApplicationEventPublisher eventPublisher;
 
     public DrawdownService(DrawdownRepository drawdownRepository,
             LoanRepository loanRepository,
+            PaymentRepository paymentRepository,
             FacilityRepository facilityRepository,
             BorrowerRepository borrowerRepository,
             SharePieRepository sharePieRepository,
             InvestorRepository investorRepository,
-            FacilityService facilityService) {
+            FacilityService facilityService,
+            // EntityStateService entityStateService, // 【削除】Spring Eventsに移行
+            ApplicationEventPublisher eventPublisher) {
         this.drawdownRepository = drawdownRepository;
         this.loanRepository = loanRepository;
+        this.paymentRepository = paymentRepository;
         this.facilityRepository = facilityRepository;
         this.borrowerRepository = borrowerRepository;
         this.sharePieRepository = sharePieRepository;
         this.investorRepository = investorRepository;
         this.facilityService = facilityService;
+        // this.entityStateService = entityStateService; // 【削除】Spring Eventsに移行
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -156,9 +170,17 @@ public class DrawdownService {
         // 6. Investor投資額の更新 - 各投資家の現在投資額（currentInvestmentAmount）を増加
         updateInvestorAmounts(amountPies);
 
-        // 7. FacilityをFIXED状態に変更 - 初回ドローダウンでファシリティを確定状態にする
+        // 7. FacilityをACTIVE状態に変更 - 初回ドローダウンでファシリティを確定状態にする
         //    これにより、以降のファシリティ変更（持分比率変更等）を禁止する
-        facilityService.fixFacility(request.getFacilityId());
+        //    EntityStateServiceを使用して統一的な状態管理を実現
+        // entityStateService.onDrawdownCreated(request.getFacilityId()); // 【移行中】Spring Eventsに置き換え
+
+        // 【新機能】Spring Eventsでイベント発行
+        eventPublisher.publishEvent(new DrawdownCreatedEvent(request.getFacilityId(), savedDrawdown.getId()));
+
+        // 8. Drawdown状態をACTIVE状態に変更（ドローダウン実行後）
+        savedDrawdown.setStatus(TransactionStatus.ACTIVE);
+        savedDrawdown = drawdownRepository.save(savedDrawdown);
 
         return savedDrawdown;
     }
@@ -222,25 +244,32 @@ public class DrawdownService {
         Drawdown drawdown = drawdownRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Drawdown not found with id: " + id));
 
-        // 2. 削除可能状態の確認 (PENDING, FAILED のみ削除可能)
+        // 2. 削除可能状態の確認 (DRAFT, FAILED のみ削除可能)
         if (!canDelete(drawdown.getStatus())) {
             throw new BusinessRuleViolationException(
                     "Cannot delete drawdown with status: " + drawdown.getStatus() + 
-                    ". Only PENDING or FAILED drawdowns can be deleted.");
+                    ". Only DRAFT or FAILED drawdowns can be deleted.");
         }
 
-        // 3. 投資家の投資額を元に戻す
+        // 3. 支払い実行チェック - 関連するLoanに支払いが存在する場合は削除不可
+        if (drawdown.getLoanId() != null && hasPayments(drawdown.getLoanId())) {
+            throw new BusinessRuleViolationException(
+                    "Cannot delete drawdown because payments have been made on the related loan. " +
+                    "LoanId: " + drawdown.getLoanId());
+        }
+
+        // 4. 投資家の投資額を元に戻す
         revertInvestorAmounts(drawdown.getAmountPies());
 
-        // 4. 関連するローンの削除 (ローンが存在する場合)
+        // 5. 関連するローンの削除 (ローンが存在する場合)
         if (drawdown.getLoanId() != null) {
             loanRepository.deleteById(drawdown.getLoanId());
         }
 
-        // 5. Facilityの状態をDRAFTに戻す（他にDrawdownが無い場合のみ）
+        // 6. Facilityの状態をDRAFTに戻す（他にDrawdownが無い場合のみ）
         revertFacilityStateIfNeeded(drawdown.getFacilityId(), drawdown.getId());
 
-        // 6. ドローダウンの削除 (AmountPieはCascadeで自動削除)
+        // 7. ドローダウンの削除 (AmountPieはCascadeで自動削除)
         drawdownRepository.delete(drawdown);
     }
 
@@ -248,7 +277,7 @@ public class DrawdownService {
      * 削除可能状態かどうかを判定
      */
     private boolean canDelete(TransactionStatus status) {
-        return status == TransactionStatus.PENDING || status == TransactionStatus.FAILED;
+        return status == TransactionStatus.DRAFT || status == TransactionStatus.FAILED;
     }
 
     /**
@@ -269,14 +298,21 @@ public class DrawdownService {
         Drawdown drawdown = drawdownRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Drawdown not found with id: " + id));
 
-        // 2. 更新可能状態の確認 (PENDING, FAILED のみ更新可能)
+        // 2. 更新可能状態の確認 (DRAFT, FAILED のみ更新可能)
         if (!canEdit(drawdown.getStatus())) {
             throw new BusinessRuleViolationException(
                     "Cannot update drawdown with status: " + drawdown.getStatus() + 
-                    ". Only PENDING or FAILED drawdowns can be updated.");
+                    ". Only DRAFT or FAILED drawdowns can be updated.");
         }
 
-        // 3. 楽観的ロックの確認
+        // 3. 支払い実行チェック - 関連するLoanに支払いが存在する場合は更新不可
+        if (drawdown.getLoanId() != null && hasPayments(drawdown.getLoanId())) {
+            throw new BusinessRuleViolationException(
+                    "Cannot update drawdown because payments have been made on the related loan. " +
+                    "LoanId: " + drawdown.getLoanId());
+        }
+
+        // 4. 楽観的ロックの確認
         if (!drawdown.getVersion().equals(request.getVersion())) {
             throw new BusinessRuleViolationException(
                     "Drawdown has been modified by another user. Please refresh and try again.");
@@ -373,7 +409,7 @@ public class DrawdownService {
      * 編集可能状態かどうかを判定
      */
     private boolean canEdit(TransactionStatus status) {
-        return status == TransactionStatus.PENDING || status == TransactionStatus.FAILED;
+        return status == TransactionStatus.DRAFT || status == TransactionStatus.FAILED;
     }
 
     /**
@@ -389,8 +425,12 @@ public class DrawdownService {
                 .toList();
         
         // 他にDrawdownが無い場合のみ、FacilityをDRAFTに戻す
+        // EntityStateServiceを使用して統一的な状態管理を実現
         if (otherDrawdowns.isEmpty()) {
-            facilityService.autoRevertToDraftOnDrawdownDeletion(facilityId);
+            // entityStateService.onDrawdownDeleted(facilityId); // 【移行中】Spring Eventsに置き換え
+            
+            // 【新機能】Spring Eventsでイベント発行
+            eventPublisher.publishEvent(new DrawdownDeletedEvent(facilityId, excludeDrawdownId));
         }
     }
 
@@ -465,5 +505,18 @@ public class DrawdownService {
             investor.increaseInvestmentAmount(investmentAmount);
             investorRepository.save(investor);
         }
+    }
+
+    /**
+     * 指定されたLoanに対して支払いが実行されているかどうかをチェックする
+     * 
+     * PaymentDetailに基づく支払い、または手動作成された支払いの両方をチェックする。
+     * 支払いが存在する場合、関連するDrawdownの変更・削除を禁止するために使用される。
+     * 
+     * @param loanId チェック対象のLoanID
+     * @return 支払いが存在する場合true、存在しない場合false
+     */
+    private boolean hasPayments(Long loanId) {
+        return paymentRepository.existsByLoanId(loanId);
     }
 }

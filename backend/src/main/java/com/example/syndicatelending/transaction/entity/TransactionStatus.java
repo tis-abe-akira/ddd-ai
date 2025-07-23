@@ -8,18 +8,18 @@ package com.example.syndicatelending.transaction.entity;
  */
 public enum TransactionStatus {
     /**
-     * 保留中
+     * 下書き状態
      * - 取引が作成されたが、まだ処理が開始されていない状態
-     * - 承認待ち、確認待ち等の中間状態
+     * - 変更可能、承認待ち等の初期状態
      */
-    PENDING,
+    DRAFT,
     
     /**
-     * 処理中
-     * - 取引処理が開始され、現在実行中の状態
-     * - 資金移動、配分計算等が進行中
+     * アクティブ状態
+     * - 取引処理が開始され、現在実行中または運用中の状態
+     * - 資金移動、配分計算等が進行中または完了済み
      */
-    PROCESSING,
+    ACTIVE,
     
     /**
      * 完了

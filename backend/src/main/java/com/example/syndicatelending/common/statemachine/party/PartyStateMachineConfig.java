@@ -3,8 +3,11 @@ package com.example.syndicatelending.common.statemachine.party;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.StateMachineContext;
 import org.springframework.statemachine.config.StateMachineBuilder;
+import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.guard.Guard;
+import org.springframework.statemachine.support.DefaultStateMachineContext;
 
 import java.util.EnumSet;
 
@@ -30,18 +33,25 @@ public class PartyStateMachineConfig {
 
         builder.configureStates()
             .withStates()
-            .initial(BorrowerState.ACTIVE)
+            .initial(BorrowerState.DRAFT)
             .states(EnumSet.allOf(BorrowerState.class));
 
         builder.configureTransitions()
             .withExternal()
-                .source(BorrowerState.ACTIVE)
-                .target(BorrowerState.RESTRICTED)
+                .source(BorrowerState.DRAFT)
+                .target(BorrowerState.ACTIVE)
                 .event(BorrowerEvent.FACILITY_PARTICIPATION)
-                .guard(borrowerFacilityParticipationGuard());
+                .guard(borrowerFacilityParticipationGuard())
+            .and()
+            .withExternal()
+                .source(BorrowerState.ACTIVE)
+                .target(BorrowerState.DRAFT)
+                .event(BorrowerEvent.FACILITY_DELETED)
+                .guard(borrowerFacilityDeletionGuard());
 
         return builder.build();
     }
+
 
     /**
      * Investor用State Machine Bean
@@ -56,27 +66,48 @@ public class PartyStateMachineConfig {
 
         builder.configureStates()
             .withStates()
-            .initial(InvestorState.ACTIVE)
+            .initial(InvestorState.DRAFT)
             .states(EnumSet.allOf(InvestorState.class));
 
         builder.configureTransitions()
             .withExternal()
-                .source(InvestorState.ACTIVE)
-                .target(InvestorState.RESTRICTED)
+                .source(InvestorState.DRAFT)
+                .target(InvestorState.ACTIVE)
                 .event(InvestorEvent.FACILITY_PARTICIPATION)
-                .guard(investorFacilityParticipationGuard());
+                .guard(investorFacilityParticipationGuard())
+            .and()
+            .withExternal()
+                .source(InvestorState.ACTIVE)
+                .target(InvestorState.DRAFT)
+                .event(InvestorEvent.FACILITY_DELETED)
+                .guard(investorFacilityDeletionGuard());
 
         return builder.build();
     }
 
+
     /**
      * Borrower Facility参加制約ガード
      * 
-     * ACTIVE状態からのみFacility参加を許可する。
+     * DRAFT状態からのみFacility参加を許可する。
+     * 
+     * @return ガード条件（DRAFT状態の場合のみ true）
+     */
+    private Guard<BorrowerState, BorrowerEvent> borrowerFacilityParticipationGuard() {
+        return context -> {
+            BorrowerState currentState = context.getStateMachine().getState().getId();
+            return BorrowerState.DRAFT.equals(currentState);
+        };
+    }
+
+    /**
+     * Borrower Facility削除制約ガード
+     * 
+     * ACTIVE状態からのみFacility削除による状態復旧を許可する。
      * 
      * @return ガード条件（ACTIVE状態の場合のみ true）
      */
-    private Guard<BorrowerState, BorrowerEvent> borrowerFacilityParticipationGuard() {
+    private Guard<BorrowerState, BorrowerEvent> borrowerFacilityDeletionGuard() {
         return context -> {
             BorrowerState currentState = context.getStateMachine().getState().getId();
             return BorrowerState.ACTIVE.equals(currentState);
@@ -86,11 +117,25 @@ public class PartyStateMachineConfig {
     /**
      * Investor Facility参加制約ガード
      * 
-     * ACTIVE状態からのみFacility参加を許可する。
+     * DRAFT状態からのみFacility参加を許可する。
+     * 
+     * @return ガード条件（DRAFT状態の場合のみ true）
+     */
+    private Guard<InvestorState, InvestorEvent> investorFacilityParticipationGuard() {
+        return context -> {
+            InvestorState currentState = context.getStateMachine().getState().getId();
+            return InvestorState.DRAFT.equals(currentState);
+        };
+    }
+
+    /**
+     * Investor Facility削除制約ガード
+     * 
+     * ACTIVE状態からのみFacility削除による状態復旧を許可する。
      * 
      * @return ガード条件（ACTIVE状態の場合のみ true）
      */
-    private Guard<InvestorState, InvestorEvent> investorFacilityParticipationGuard() {
+    private Guard<InvestorState, InvestorEvent> investorFacilityDeletionGuard() {
         return context -> {
             InvestorState currentState = context.getStateMachine().getState().getId();
             return InvestorState.ACTIVE.equals(currentState);

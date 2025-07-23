@@ -4,8 +4,12 @@ import com.example.syndicatelending.common.application.exception.BusinessRuleVio
 import com.example.syndicatelending.common.application.exception.ResourceNotFoundException;
 import com.example.syndicatelending.common.domain.model.Money;
 import com.example.syndicatelending.common.domain.model.Percentage;
-import com.example.syndicatelending.common.statemachine.EntityStateService;
+// import com.example.syndicatelending.common.statemachine.EntityStateService; // 【削除】Spring Eventsに移行
+import com.example.syndicatelending.common.statemachine.facility.FacilityState;
 import com.example.syndicatelending.facility.domain.FacilityValidator;
+import com.example.syndicatelending.common.statemachine.events.FacilityCreatedEvent;
+import com.example.syndicatelending.common.statemachine.events.FacilityDeletedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import com.example.syndicatelending.facility.dto.CreateFacilityRequest;
 import com.example.syndicatelending.facility.dto.UpdateFacilityRequest;
 import com.example.syndicatelending.facility.entity.Facility;
@@ -21,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,8 +50,14 @@ class FacilityServiceTest {
     @Mock
     private com.example.syndicatelending.syndicate.repository.SyndicateRepository syndicateRepository;
 
+    // @Mock
+    // private EntityStateService entityStateService; // 【削除】Spring Eventsに移行
+
     @Mock
-    private EntityStateService entityStateService;
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private com.example.syndicatelending.loan.repository.DrawdownRepository drawdownRepository;
 
     @InjectMocks
     private FacilityService facilityService;
@@ -77,7 +88,8 @@ class FacilityServiceTest {
         verify(facilityRepository).save(any(Facility.class));
         verify(syndicateRepository).findById(1L); // Syndicate取得確認
         verify(facilityInvestmentRepository).saveAll(any(List.class)); // FacilityInvestment保存確認
-        verify(entityStateService).onFacilityCreated(any(Facility.class)); // 状態遷移実行確認
+        // verify(entityStateService).onFacilityCreated(any(Facility.class)); // 【移行中】Spring Eventsに置き換え
+        verify(eventPublisher).publishEvent(any(FacilityCreatedEvent.class)); // イベント発行確認
     }
 
     @Test
@@ -94,7 +106,8 @@ class FacilityServiceTest {
 
         verify(facilityValidator).validateCreateFacilityRequest(request);
         verify(facilityRepository, never()).save(any(Facility.class));
-        verify(entityStateService, never()).onFacilityCreated(any(Facility.class)); // バリデーション失敗時は状態遷移なし
+        // verify(entityStateService, never()).onFacilityCreated(any(Facility.class)); // 【移行中】Spring Eventsに置き換え
+        verify(eventPublisher, never()).publishEvent(any()); // バリデーション失敗時はイベント発行なし
     }
 
     @Test
@@ -180,14 +193,21 @@ class FacilityServiceTest {
     void 正常にFacilityが削除される() {
         // Given
         Long facilityId = 1L;
+        Facility facility = new Facility();
+        facility.setId(facilityId);
+        facility.setSyndicateId(1L);
+        facility.setStatus(FacilityState.DRAFT); // DRAFT状態は削除可能
 
-        when(facilityRepository.existsById(facilityId)).thenReturn(true);
+        when(facilityRepository.findById(facilityId)).thenReturn(Optional.of(facility));
 
         // When
         facilityService.deleteFacility(facilityId);
 
         // Then
-        verify(facilityRepository).existsById(facilityId);
+        verify(facilityRepository).findById(facilityId);
+        // drawdownRepository.findAll() は呼び出されない（状態ベース判定のため）
+        // verify(entityStateService).onFacilityDeleted(facility); // 【移行中】Spring Eventsに置き換え
+        verify(eventPublisher).publishEvent(any(FacilityDeletedEvent.class)); // イベント発行確認
         verify(facilityRepository).deleteById(facilityId);
     }
 
@@ -196,15 +216,37 @@ class FacilityServiceTest {
         // Given
         Long facilityId = 1L;
 
-        when(facilityRepository.existsById(facilityId)).thenReturn(false);
+        when(facilityRepository.findById(facilityId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> facilityService.deleteFacility(facilityId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Facility not found");
 
-        verify(facilityRepository).existsById(facilityId);
+        verify(facilityRepository).findById(facilityId);
         verify(facilityRepository, never()).deleteById(facilityId);
+    }
+
+    @Test
+    void FIXED状態のFacilityを削除しようとした場合はエラーになる() {
+        // Given
+        Long facilityId = 1L;
+        Facility facility = new Facility();
+        facility.setId(facilityId);
+        facility.setSyndicateId(1L);
+        facility.setStatus(FacilityState.ACTIVE); // FIXED状態は削除不可
+
+        when(facilityRepository.findById(facilityId)).thenReturn(Optional.of(facility));
+
+        // When & Then
+        assertThatThrownBy(() -> facilityService.deleteFacility(facilityId))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining("FIXED状態のFacilityは削除できません");
+
+        verify(facilityRepository).findById(facilityId);
+        verify(facilityRepository, never()).deleteById(facilityId);
+        // verify(entityStateService, never()).onFacilityDeleted(any()); // 【移行中】Spring Eventsに置き換え
+        verify(eventPublisher, never()).publishEvent(any()); // エラー時はイベント発行なし
     }
 
     private CreateFacilityRequest createValidFacilityRequest() {

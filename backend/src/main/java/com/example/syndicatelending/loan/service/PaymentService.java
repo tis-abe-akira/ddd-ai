@@ -18,8 +18,11 @@ import com.example.syndicatelending.loan.repository.AmountPieRepository;
 import com.example.syndicatelending.loan.repository.PaymentDetailRepository;
 import com.example.syndicatelending.party.entity.Investor;
 import com.example.syndicatelending.party.repository.InvestorRepository;
+import com.example.syndicatelending.common.statemachine.events.PaymentCreatedEvent;
+import com.example.syndicatelending.common.statemachine.events.PaymentCancelledEvent;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.statemachine.StateMachine;
 
 import org.springframework.stereotype.Service;
@@ -42,19 +45,22 @@ public class PaymentService {
     private final InvestorRepository investorRepository;
     private final PaymentDetailRepository paymentDetailRepository;
     private final StateMachine<LoanState, LoanEvent> loanStateMachine;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PaymentService(PaymentRepository paymentRepository,
                          LoanRepository loanRepository,
                          AmountPieRepository amountPieRepository,
                          InvestorRepository investorRepository,
                          PaymentDetailRepository paymentDetailRepository,
-                         @Qualifier("loanStateMachine") StateMachine<LoanState, LoanEvent> loanStateMachine) {
+                         @Qualifier("loanStateMachine") StateMachine<LoanState, LoanEvent> loanStateMachine,
+                         ApplicationEventPublisher eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.loanRepository = loanRepository;
         this.amountPieRepository = amountPieRepository;
         this.investorRepository = investorRepository;
         this.paymentDetailRepository = paymentDetailRepository;
         this.loanStateMachine = loanStateMachine;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -97,6 +103,17 @@ public class PaymentService {
 
         // 7. Loan状態管理（初回返済時のDRAFT→ACTIVE遷移）
         updateLoanStateForFirstPayment(loan);
+
+        // 8. Payment処理完了 - COMPLETED状態に遷移
+        savedPayment.setStatus(com.example.syndicatelending.transaction.entity.TransactionStatus.COMPLETED);
+        savedPayment = paymentRepository.save(savedPayment);
+
+        // 9. PaymentCreatedEventを発行
+        eventPublisher.publishEvent(new PaymentCreatedEvent(
+            savedPayment.getLoanId(), 
+            savedPayment.getId(), 
+            savedPayment.getFacilityId()
+        ));
 
         return savedPayment;
     }
@@ -313,6 +330,14 @@ public class PaymentService {
         // 9. 投資家の投資額更新（元本返済分のみ）
         updateInvestorInvestmentAmounts(distributions, paymentDetail.getPrincipalPayment());
 
+        // 10. PaymentCreatedEventを発行（PaymentDetail基づく支払い）
+        eventPublisher.publishEvent(new PaymentCreatedEvent(
+            savedPayment.getLoanId(), 
+            savedPayment.getId(), 
+            savedPayment.getFacilityId(),
+            paymentDetailId  // PaymentDetailのIDを含める
+        ));
+
         return savedPayment;
     }
 
@@ -459,6 +484,14 @@ public class PaymentService {
 
         // 8. 投資家の投資額を復元（元本返済分のみ）
         restoreInvestorInvestmentAmounts(payment.getPaymentDistributions());
+
+        // 9. PaymentCancelledEventを発行
+        eventPublisher.publishEvent(new PaymentCancelledEvent(
+            cancelledPayment.getLoanId(), 
+            cancelledPayment.getId(), 
+            cancelledPayment.getFacilityId(),
+            paymentDetail.getId()  // PaymentDetailのIDを含める
+        ));
 
         return cancelledPayment;
     }
