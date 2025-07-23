@@ -132,8 +132,8 @@ graph TB
     %% Event Flow
     FC -->|createFacility| FS
     FS -->|publishEvent| EP
-    EP -->|配信| FE
-    FE -->|@EventListener| FH
+    EP -->|delivery| FE
+    FE -->|EventListener| FH
     
     %% State Management Flow
     FH -->|transitionToActive| SSM
