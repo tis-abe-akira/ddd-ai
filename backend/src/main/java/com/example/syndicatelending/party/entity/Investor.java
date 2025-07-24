@@ -166,6 +166,10 @@ public class Investor {
 
     public void increaseInvestmentAmount(Money amount) {
         if (amount != null && amount.isPositiveOrZero()) {
+            // Null safety: 初期化されていない場合はゼロから開始
+            if (this.currentInvestmentAmount == null) {
+                this.currentInvestmentAmount = Money.zero();
+            }
             this.currentInvestmentAmount = this.currentInvestmentAmount.add(amount);
             this.updatedAt = LocalDateTime.now();
         }
@@ -173,6 +177,10 @@ public class Investor {
 
     public void decreaseInvestmentAmount(Money amount) {
         if (amount != null && amount.isPositiveOrZero()) {
+            // Null safety: 初期化されていない場合はゼロから開始
+            if (this.currentInvestmentAmount == null) {
+                this.currentInvestmentAmount = Money.zero();
+            }
             this.currentInvestmentAmount = this.currentInvestmentAmount.subtract(amount);
             this.updatedAt = LocalDateTime.now();
         }
