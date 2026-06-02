@@ -21,19 +21,28 @@
 ![Facility一覧](./screenshots/facilities-list.png)
 
 ```
-+----------------------------------------------------------+
-| Facilities  [New Facility]                               |
-|             [Search: ________]  [Refresh]                |
-| ✅ 成功メッセージ（3秒間表示）                            |
-+----------------------------------------------------------+
-| [Draft: N件] [Fixed: N件] [Total: ¥XXX,XXX,XXX]         |
-+----------------------------------------------------------+
-| ID | Syndicate | 融資枠 | 通貨 | 開始日 | 終了日 | 状態 | ACTIONS          |
-|----|-----------|--------|------|--------|--------|------|------------------|
-| 1  | ...       | ¥...   | JPY  | ...    | ...    | DRAFT | Detail Edit Delete |
-+----------------------------------------------------------+
-| ページネーション                                         |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| Facilities                              [+ New Facility]             |
+| Create and manage financing facilities                               |
++----------------------------------------------------------------------+
+| Search                                                               |
+| [🔍 Search by facility ID or interest terms...        ] [Refresh]   |
++----------------------------------------------------------------------+
+| +------------------+ +------------------+ +------------------------+ |
+| | Draft            | | Active           | | Total Facility Amount  | |
+| | 1                | | 0                | | ¥1000                  | |
+| | Editable fac..   | | Confirmed fac..  | | Combined commitment    | |
+| +------------------+ +------------------+ +------------------------+ |
++----------------------------------------------------------------------+
+| 1 facility(ies)                                         Page 1 / 1  |
++----------------------------------------------------------------------+
+| FACILITY         | AMOUNT     |SYNDICATE| PERIOD      |INVESTORS     |
+| STATUS           | ACTIONS                                           |
+|------------------|------------|---------|-------------|--------------|
+| [F1] Facility #1 | ¥1000      | #1      | 2025-7-4    | 2 investors  |
+|      TIBOR+0.2%  | JPY        |         | ~ 2026-7-4  | 100%         |
+|      [Draft] v0  | ✏️ 🗑️                                             |
++----------------------------------------------------------------------+
 ```
 
 > **Borrower / Investor との違い**: "New Facility" ボタンはトグル動作（常時表示）。Quick Stats（Draft件数・Fixed件数・Total合計）を表示。
@@ -44,22 +53,34 @@
 
 ![Step1 Syndicate選択（選択前）](./screenshots/facilities-form-1-1.png)
 
+```
++----------------------------------------------------------------------+
+| Facilities                             [+ Close Form]                |
+| Create and manage financing facilities                               |
++----------------------------------------------------------------------+
+| ①──────────── 2 ──────────── 3 ──────────── 4                      |
+| Syndicate Selection                                                  |
+| Select the syndicate to create the facility                          |
++----------------------------------------------------------------------+
+| Syndicate Selection                                                  |
+| Select the syndicate for this facility                               |
+|                                                                      |
+| Select Syndicate *                                                   |
+| [Please select a syndicate                                       ▼ ] |
+|                                                                      |
+| [                   Next (disabled)                  ] [Cancel]     |
++----------------------------------------------------------------------+
+```
+
 **選択後:**
 
 ![Step1 Syndicate選択（選択後）](./screenshots/facilities-form-1-2.png)
 
 ```
-+----------------------------------------------------------+
-| Facilities  [Close Form]                                 |
-+----------------------------------------------------------+
-| ●Step1  ○Step2  ○Step3  ○Step4                         |
-| Select Syndicate                                         |
-+----------------------------------------------------------+
-| Syndicate * [SyndicateSelectコンポーネント]              |
-|  （編集モードでは disabled で変更不可）                   |
-|                                                          |
-| [Cancel]                              [Next →]          |
-+----------------------------------------------------------+
+| Select Syndicate *                                                   |
+| [[A] ABC-Syndicate-2026  Draft  ID: 10 | Members: 3            ▼ ] |
+|                                                                      |
+| [                         Next                         ] [Cancel]   |
 ```
 
 ### 2.3 ウィザード Step2: 基本情報
@@ -67,20 +88,26 @@
 ![Step2 基本情報](./screenshots/facilities-form-2.png)
 
 ```
-+----------------------------------------------------------+
-| ✓Step1  ●Step2  ○Step3  ○Step4                         |
-| Facility Basic Information                               |
-+----------------------------------------------------------+
-| Facility Amount *                                        |
-|   [_________________] JPY                               |
-|   💡 BorrowerのcreaitLimit: ¥XXX / 残高: ¥XXX [色表示]  |
-| Currency *    [▼ JPY / USD / EUR / ...]                 |
-| Start Date *  [YYYY-MM-DD]                               |
-| End Date *    [YYYY-MM-DD]                               |
-| Interest Terms * [例: LIBOR + 2%]                       |
-|                                                          |
-| [Cancel]              [← Back]  [Next →]                |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| ✓ ──────────── ②──────────── 3 ──────────── 4                     |
+| Basic Information                                                    |
+| Enter basic facility information                                     |
++----------------------------------------------------------------------+
+| Facility Basic Information                                           |
+| Set the basic conditions for the credit facility                     |
+|                                                                      |
+| Facility Amount *                      | Currency *                 |
+| Credit Limit: ¥2000  Available: ¥2000  |                            |
+| [2000                               ]  | [JPY (Japanese Yen)    ▼ ] |
+|                                                                      |
+| Start Date *                           | End Date *                 |
+| [2026/06/02                      📅 ]  | [2027/06/02          📅 ] |
+|                                                                      |
+| Interest Terms *                                                     |
+| [4.5                                                              ]  |
+|                                                                      |
+| [      Back      ] [                Next                ] [Cancel]  |
++----------------------------------------------------------------------+
 ```
 
 > 与信残高（`creditLimit - currentFacilityAmount`）が正の場合は success色、0以下の場合は warning色で表示。
@@ -91,51 +118,104 @@
 
 ![Step3 持分配分（初期）](./screenshots/facilities-form-3-1.png)
 
+```
++----------------------------------------------------------------------+
+| ✓ ──────── ✓ ──────────── ③──────────── 4                         |
+| Share Allocation                                                     |
+| Set investor share percentages                                       |
++----------------------------------------------------------------------+
+| Investor Share Allocation                                            |
+| Set the share percentage for each investor (total 100%)              |
+|                                                                      |
+| Investor Share Allocation *                                          |
+| [i] Only investors participating in Syndicate "ABC-Syndicate-2026"  |
+|     can be selected (3 investors)                                    |
+|                                                                      |
+| [+ Add Investor]                                                     |
+|                                                                      |
+| +------------------------------------------------------------------+ |
+| | Total Share Percentage                               0%  ⚠      | |
+| | Please adjust to reach 100% total (current: -100%)              | |
+| +------------------------------------------------------------------+ |
+|                                                                      |
+| [      Back      ] [         Next (disabled)          ] [Cancel]    |
++----------------------------------------------------------------------+
+```
+
 **配分中（一部設定済み）:**
 
 ![Step3 持分配分（設定中）](./screenshots/facilities-form-3-2.png)
+
+```
+| +------------------------------------------------------------------+ |
+| | [i] investor02  ID: 2  [BANK] Investment Capacity: ¥27  50 % 🗑 | |
+| +------------------------------------------------------------------+ |
+| | Investor                      | Share Percentage (%)             | |
+| | [investor04 (ID: 4)       ▼ ] | [30                    ]         | |
+| | [Add] [Cancel]                                                   | |
+| +------------------------------------------------------------------+ |
+| | Total Share Percentage                               50%  ⚠      | |
+| | Please adjust to reach 100% total (current: -50%)                | |
+| +------------------------------------------------------------------+ |
+```
 
 **配分完了（合計100%）:**
 
 ![Step3 持分配分（完了）](./screenshots/facilities-form-3-3.png)
 
 ```
-+----------------------------------------------------------+
-| ✓Step1  ✓Step2  ●Step3  ○Step4                         |
-| Investor Share Allocation                                |
-+----------------------------------------------------------+
-| [+ Add Investor]                                        |
-|                                                          |
-| Investor * [▼ 投資家選択]  Share(%) * [___] %  [✕]     |
-| Investor * [▼ 投資家選択]  Share(%) * [___] %  [✕]     |
-|                                                          |
-| 合計: XX% （100%のとき ✅success色、それ以外 ⚠️warning色）|
-|                                                          |
-| [Cancel]              [← Back]  [Next →]                |
-+----------------------------------------------------------+
+| +------------------------------------------------------------------+ |
+| | [i] investor02  ID: 2  [BANK]       Investment Capacity: ¥27  50 % 🗑 |
+| | [i] investor04  ID: 4  [LEAD_BANK]  Investment Capacity: ¥47  30 % 🗑 |
+| | [i] investor06  ID: 6  [BANK]       Investment Capacity: ¥67  20 % 🗑 |
+| +------------------------------------------------------------------+ |
+| | Total Share Percentage                              100%  ✓ (green)| |
+| | Total share percentage has reached 100%                          | |
+| +------------------------------------------------------------------+ |
+|                                                                      |
+| [      Back      ] [                Next                ] [Cancel]  |
 ```
 
 > 合計が100%になるまで "Next" ボタンは disabled。
 
 ### 2.5 ウィザード Step4: 確認
 
-![Step4 確認](./screenshots/facilities-form-fin.png)
+> **注意**: facilities-form-fin.png は Facility 作成後の一覧画面（2件表示）
+
+![Facilities一覧（作成後）](./screenshots/facilities-form-fin.png)
 
 ```
-+----------------------------------------------------------+
-| ✓Step1  ✓Step2  ✓Step3  ●Step4                         |
-| Confirmation                                             |
-+----------------------------------------------------------+
-| Syndicate     : [選択したSyndicate名]                    |
-| Facility Amount: ¥XXX / [通貨]                          |
-| Period        : YYYY-MM-DD ～ YYYY-MM-DD                 |
-| Interest Terms: ...                                      |
-| Share Pies    :                                          |
-|   投資家A : XX%   ¥XXX                                  |
-|   投資家B : XX%   ¥XXX                                  |
-|                                                          |
-| [Cancel]  [← Back]          [Create Facility]           |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| Facilities                              [+ New Facility]             |
+| Create and manage financing facilities                               |
++----------------------------------------------------------------------+
+| Search: [                                              ] [Refresh]   |
+| Draft: 2 | Active: 0 | Total Facility Amount: ¥3000                  |
+| 2 facility(ies)                                         Page 1 / 1  |
++----------------------------------------------------------------------+
+| [F11] Facility #11  ¥2000 JPY  #10  2026-6-2~2027-6-2  2inv 100% [Draft] v0 | ✏️ 🗑️ |
+| [F1]  Facility #1   ¥1000 JPY  #1   2025-7-4~2026-7-4  2inv 100% [Draft] v0 | ✏️ 🗑️ |
++----------------------------------------------------------------------+
+```
+
+Step4 確認画面（スクリーンショット未取得）:
+
+```
++----------------------------------------------------------------------+
+| ✓ ──── ✓ ──── ✓ ──────────── ④                                    |
+| Confirmation                                                         |
++----------------------------------------------------------------------+
+| Syndicate      : ABC-Syndicate-2026 (ID: 10)                        |
+| Facility Amount: ¥2000 / JPY                                        |
+| Period         : 2026-06-02 ~ 2027-06-02                            |
+| Interest Terms : 4.5                                                 |
+| Share Pies     :                                                     |
+|   investor02 (BANK)      : 50%  ¥1,000                             |
+|   investor04 (LEAD_BANK) : 30%  ¥600                               |
+|   investor06 (BANK)      : 20%  ¥400                               |
+|                                                                      |
+| [  Cancel  ] [  Back  ]              [  Create Facility  ]          |
++----------------------------------------------------------------------+
 ```
 
 > 編集モードでは "Update Facility" ボタンが表示される。
@@ -145,24 +225,34 @@
 ![Facility詳細モーダル](./screenshots/facilities-show-detail.png)
 
 ```
-+----------------------------------------------------------+
-| Facility #ID                              [×]            |
-+----------------------------------------------------------+
-| 基本情報                    | 期間情報                  |
-| Amount: ¥XXX / JPY          | Start Date: YYYY-MM-DD   |
-| Interest Terms: ...          | End Date: YYYY-MM-DD     |
-| Status: [DRAFT/FIXED バッジ]| Created At: YYYY-MM-DD  |
-| Version: vN                  | Updated At: YYYY-MM-DD  |
-+----------------------------------------------------------+
-| 関連シンジケート情報（API取得成功時のみ）               |
-| Syndicate: [名前]  Borrower: [名前]  Lead Bank: [名前]  |
-+----------------------------------------------------------+
-| 投資家別持分配分（sharePies.length > 0 のとき）          |
-| 投資家名 | タイプ | 投資能力 | 持分 | 金額               |
-|--------|------|--------|-----|-----|                   |
-| ...    | ...  | ...    | X%  | ¥XX |                   |
-|        |      | 合計   | XX% |     （✅100%で成功色）   |
-+----------------------------------------------------------+
++---------------------------------------------------------------+
+| [F11] Facility #11 詳細                                  [×] |
+|       Credit Facility Information                             |
++---------------------------------------------------------------+
+| 基本情報                       | 期間情報                     |
+|--------------------------------|------------------------------|
+| Facility Amount                | Start Date                   |
+| ¥ 2,000  JPY                   | 2026年6月2日                 |
+|                                | End Date                     |
+| Interest Terms                 | 2027年6月2日                 |
+| 4.5                            | Created At                   |
+|                                | 2026年6月2日                 |
+| Status                         | Updated At                   |
+| [Draft（編集可能）]             | 2026年6月2日                 |
+|                                |                              |
+| Version: v0                    |                              |
++---------------------------------------------------------------+
+| 関連シンジケート情報                                          |
+| Syndicate Name    Borrower       Lead Bank                    |
+| ABC-Syndicate-2026  borrower02   investor04                   |
++---------------------------------------------------------------+
+| 投資家別持分配分                              合計: 100%      |
+|---------------------------------------------------------------|
+| [i] investor04  ID: 4  [LEAD_BANK]  Capacity: ¥40,000        |
+|                                              70%   ¥1,400    |
+| [i] investor06  ID: 6  [BANK]       Capacity: ¥60,000        |
+|                                              30%   ¥600      |
++---------------------------------------------------------------+
 ```
 
 ---

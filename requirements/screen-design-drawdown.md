@@ -22,21 +22,35 @@
 ![Drawdown一覧](./screenshots/drawdown-list.png)
 
 ```
-+----------------------------------------------------------+
-| Drawdowns  [New Drawdown]                                |
-|            [Search: ________]  [Refresh]                 |
-|            [Facility Filter: _____] [Clear Filter]       |
-| ✅ 成功メッセージ（5秒間表示）    [×]                    |
-+----------------------------------------------------------+
-| ID | 金額 | Loan ID | 目的 | 実行日 | 投資家配分 | 状態 | ACTIONS     |
-|----|------|---------|------|--------|-----------|------|-------------|
-| 1  | ¥... | #1      | ...  | ...    | N件 / ¥XX | ...  | Edit Delete |
-+----------------------------------------------------------+
-| ページネーション（facilityFilterなし かつ totalPages>1） |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| Drawdowns                                  [+ New Drawdown]          |
+| Execute and manage loan drawdowns                                    |
++----------------------------------------------------------------------+
+| Search                              | Facility Filter               |
+| [🔍 Search by drawdown ID or purp.. ]| [Facility ID       ] [Refresh]|
++----------------------------------------------------------------------+
+| 0 drawdown(s)                                           Page 1 / 1  |
+|                                                                      |
+|                    No drawdowns executed                             |
+|                    Please execute a new drawdown                     |
++----------------------------------------------------------------------+
 ```
 
 > **注意**: 成功メッセージの表示時間は Borrower/Investor の3秒ではなく **5秒**。
+
+一覧に1件以上ある場合のテーブル表示（drawdown-form-fin.png 参照）:
+
+```
++----------------------------------------------------------------------+
+| DRAWDOWN        | AMOUNT    |LOAN ID| PURPOSE        |EXECUTION DATE |
+| INVESTOR ALLOC  | STATUS    | ACTIONS                               |
+|-----------------|-----------|-------|----------------|---------------|
+| [D14] Drawdown  | ¥2000 JPY | #1    | Working Capital| 2026-6-2      |
+|  #14   v1       |           |       |                |Created 2026-6-2|
+| 2 investors     |[Processing]| Processing...                        |
+| Allocated: ¥2000|                                                    |
++----------------------------------------------------------------------+
+```
 
 ### 2.2 ウィザード Step1: Facility選択
 
@@ -44,22 +58,35 @@
 
 ![Step1 Facility選択（選択前）](./screenshots/drawdown-form-1-1.png)
 
+```
++----------------------------------------------------------------------+
+| Drawdowns                              [+ Close Form]                |
+| Execute and manage loan drawdowns                                    |
++----------------------------------------------------------------------+
+| ①──────────── 2 ──────────── 3 ──────────── 4                      |
+| Facility Selection                                                   |
+| Select facility to execute drawdown                                  |
++----------------------------------------------------------------------+
+| Select Facility *                                                    |
+| [Please select a facility                                        ▼ ] |
+|                                                                      |
+| [                   Next (disabled)                  ] [Cancel]     |
++----------------------------------------------------------------------+
+```
+
 **選択後:**
 
 ![Step1 Facility選択（選択後）](./screenshots/drawdown-form-1-2.png)
 
 ```
-+----------------------------------------------------------+
-| Drawdowns  [Close Form]                                  |
-+----------------------------------------------------------+
-| ●Step1  ○Step2  ○Step3  ○Step4                         |
-| Select Facility                                          |
-+----------------------------------------------------------+
-| Facility * [FacilitySelectForDrawdownコンポーネント]     |
-|   （FIXED状態のFacilityは選択不可）                      |
-|                                                          |
-| [Cancel]                              [Next →]          |
-+----------------------------------------------------------+
+| Select Facility *                                                    |
+| [[F11] Facility #11  Available: ¥2K  ¥2K | 4.5  Utilization: 0% ▼ ]|
+|                                                                      |
+| +---Selected Facility Details---------------------------------+      |
+| | Commitment: ¥2K  Available: ¥2K  Investors: 2  Status: DRAFT|     |
+| +-------------------------------------------------------------+      |
+|                                                                      |
+| [                         Next                         ] [Cancel]   |
 ```
 
 > **編集モードではStep1をスキップ**し、Step2（基本情報）から開始する。
@@ -69,19 +96,25 @@
 ![Step2 基本情報](./screenshots/drawdown-form-2.png)
 
 ```
-+----------------------------------------------------------+
-| ✓Step1（編集時はスキップ）  ●Step2  ○Step3  ○Step4    |
-| Basic Information                                        |
-+----------------------------------------------------------+
-| Drawdown Amount * [__________] JPY  (max: Facilityの融資枠)|
-| Drawdown Execution Date * [YYYY-MM-DD] (min: 今日)      |
-| Drawdown Purpose * [_________________________]           |
-|   クイック選択: [Working Capital] [Equipment Purchase]  |
-|                 [Project Finance] [Real Estate]          |
-|                 [Refinancing] [その他...]               |
-|                                                          |
-| [Cancel]              [← Back]  [Next →]                |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| ✓ ──────────── ②──────────── 3 ──────────── 4                     |
+| Drawdown Information                                                 |
+| Set amount, purpose, and execution date                              |
++----------------------------------------------------------------------+
+| Drawdown Basic Information                                           |
+| Set the amount, purpose, and execution date for the drawdown         |
+|                                                                      |
+| Drawdown Amount *              | Drawdown Execution Date *           |
+| [2000                       ]  | [2026/06/02                  📅 ]  |
+| Available Amount: ¥2,000       |                                     |
+|                                                                      |
+| Drawdown Purpose *                                                   |
+| [Working Capital] [Capital Investment] [M&A Funding]                 |
+| [Refinancing    ] [Business Expansion] [Other      ]                 |
+| [Working Capital                                                   ] |
+|                                                                      |
+| [      Back      ] [                Next                ] [Cancel]  |
++----------------------------------------------------------------------+
 ```
 
 ### 2.4 ウィザード Step3: 返済条件
@@ -89,41 +122,60 @@
 ![Step3 返済条件](./screenshots/drawdown-form-3.png)
 
 ```
-+----------------------------------------------------------+
-| ✓Step1  ✓Step2  ●Step3  ○Step4                         |
-| Repayment Terms                                          |
-+----------------------------------------------------------+
-| Annual Interest Rate * [_____] %                        |
-| Repayment Period *     [_____] months                   |
-| Repayment Cycle *      [▼ MONTHLY / QUARTERLY / ...]   |
-| Repayment Method *     [▼ EQUAL_INSTALLMENT / BULLET]  |
-|                                                          |
-| [Cancel]              [← Back]  [Next →]                |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| ✓ ──────── ✓ ──────────── ③──────────── 4                         |
+| Repayment Terms                                                      |
+| Set interest rate, period, and repayment method                      |
++----------------------------------------------------------------------+
+| Repayment Terms                                                      |
+| Set interest rate conditions and repayment schedule                  |
+|                                                                      |
+| Annual Interest Rate *         | Repayment Period *                  |
+| [4.5                      ] %  | [12                     ] months    |
+| e.g., 2.5% = 2.5% annual int  | Approx. 1 years                     |
+|                                                                      |
+| Repayment Cycle *              | Repayment Method *                  |
+| [Monthly - Monthly payment ▼ ] | [Equal Installment             ▼ ] |
+| +------------------------------+  Fixed monthly payment              |
+| | ● Monthly - Monthly payment  |                                     |
+| |   Quarterly - every 3 months |                                     |
+| |   Semi-Annually - every 6 mo.|                                     |
+| |   Annually - Annual payment  |                                     |
+| +------------------------------+                                     |
+|                                                                      |
+| +---Payment Preview-------------------------------------------+     |
+| | Monthly Payment: ¥171  Total Payment: ¥2,049  Total Int: ¥49|     |
+| | Effective Annual Rate: 4.50%  Repayment: 12 months (1 year) |     |
+| +-------------------------------------------------------------+     |
+|                                                                      |
+| [      Back      ] [                Next                ] [Cancel]  |
++----------------------------------------------------------------------+
 ```
 
 ### 2.5 ウィザード Step4: 確認・実行
 
-![Step4 確認・実行](./screenshots/drawdown-form-fin.png)
+> **注意**: drawdown-form-fin.png は Drawdown 実行後の一覧画面
+
+Step4 確認画面（スクリーンショット未取得）:
 
 ```
-+----------------------------------------------------------+
-| ✓Step1  ✓Step2  ✓Step3  ●Step4                         |
-| Confirmation & Execution                                 |
-+----------------------------------------------------------+
-| ⚠️ After drawdown execution, the facility will become   |
-|    fixed and no further modifications will be allowed.  |
-+----------------------------------------------------------+
-| Facility     : [選択したFacility名]                      |
-| Amount        : ¥XXX / JPY                               |
-| Execution Date: YYYY-MM-DD                               |
-| Purpose       : ...                                      |
-| Annual Rate   : X.XX%                                    |
-| Period        : XX months                                |
-| Cycle / Method: ...                                      |
-|                                                          |
-| [Cancel]  [← Back]          [Execute Drawdown]          |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| ✓ ──── ✓ ──── ✓ ──────────── ④                                    |
+| Confirmation & Execution                                             |
++----------------------------------------------------------------------+
+| ⚠️ After drawdown execution, the facility will become fixed         |
+|    and no further modifications will be allowed.                     |
++----------------------------------------------------------------------+
+| Facility      : Facility #11 (¥2K | 4.5)                           |
+| Amount        : ¥2,000 / JPY                                        |
+| Execution Date: 2026-06-02                                          |
+| Purpose       : Working Capital                                     |
+| Annual Rate   : 4.5%                                                |
+| Period        : 12 months                                           |
+| Cycle / Method: Monthly / Equal Installment                         |
+|                                                                      |
+| [  Cancel  ] [  Back  ]               [  Execute Drawdown  ]        |
++----------------------------------------------------------------------+
 ```
 
 > 編集モードでは "Update Drawdown" ボタンが表示される。
@@ -137,25 +189,46 @@
 ![Drawdown詳細（上部）](./screenshots/drawdown-show-detail-1.png)
 
 ```
-+----------------------------------------------------------+
-| ← Back to Drawdowns                                      |
-| Drawdown #ID              [Facility: #N / Status: XXX]  |
-+----------------------------------------------------------+
-| Drawdown Information          | Investor Allocation      |
-| Amount: ¥XXX                  | Investor #1: ¥XXX (X%)  |
-| Loan ID: #X                   | Investor #2: ¥XXX (X%)  |
-| Purpose: XXX                  | ...                      |
-| Execution Date: YYYY-MM-DD    | Total Allocation: ¥XXX   |
-| Created Date: YYYY-MM-DD      | Difference: ¥0.00 ✅    |
-+----------------------------------------------------------+
-| Related Loan Information                                 |
-| Loan Terms                  | Repayment Terms           |
-| Loan ID: #X                 | Annual Rate: X.XX%        |
-| Status: [ACTIVE ✅]         | Period: XX months         |
-| Principal: ¥XXX             | Cycle: MONTHLY            |
-| Outstanding: ¥XXX           | Method: EQUAL_INSTALLMENT |
-| Drawdown Date: YYYY-MM-DD   |                           |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| ← Drawdown #14                                          Version 1   |
+|    Detailed view and related loan information                        |
++----------------------------------------------------------------------+
+| +--Drawdown Information---------+ +--Investor Allocation (2)------+ |
+| | Amount                        | | Investor #4        ¥1,400     | |
+| | ¥ 2,000                       | | ID: 1              70.0%      | |
+| |                               | |                               | |
+| | Loan ID                       | | Investor #6        ¥600       | |
+| | #1                            | | ID: 2              30.0%      | |
+| |                               | |                               | |
+| | Purpose                       | | Total Allocation   ¥2,000     | |
+| | Working Capital               | | Difference         ¥0 (green) | |
+| |                               | |                               | |
+| | Execution Date                | |                               | |
+| | 2026-6-2                      | |                               | |
+| |                               | |                               | |
+| | Created Date                  | |                               | |
+| | 2026-6-2                      | |                               | |
+| +-------------------------------+ +-------------------------------+ |
++----------------------------------------------------------------------+
+| +--Related Loan Information-------------------------------------------+|
+| | +--Loan Terms--------------+  +--Repayment Terms--------------+   | |
+| | | Loan ID                  |  | Annual Interest Rate          |   | |
+| | | #1                       |  | 4.50%                         |   | |
+| | |                          |  |                               |   | |
+| | | Status                   |  | Repayment Period              |   | |
+| | | [DRAFT]                  |  | 12 months                     |   | |
+| | |                          |  |                               |   | |
+| | | Principal Amount         |  | Repayment Cycle               |   | |
+| | | ¥2,000                   |  | MONTHLY                       |   | |
+| | |                          |  |                               |   | |
+| | | Outstanding Balance      |  | Repayment Method              |   | |
+| | | ¥2,000                   |  | EQUAL_INSTALLMENT             |   | |
+| | |                          |  |                               |   | |
+| | |                          |  | Drawdown Date                 |   | |
+| | |                          |  | 2026-6-2                      |   | |
+| | +--------------------------+  +-------------------------------+   | |
+| +-------------------------------------------------------------------+ |
++----------------------------------------------------------------------+
 ```
 
 ### 3.2 詳細画面下部（返済スケジュール）
@@ -163,22 +236,44 @@
 ![Drawdown詳細（下部）](./screenshots/drawdown-show-detail-2.png)
 
 ```
-+----------------------------------------------------------+
-| Payment Schedule & History   [X scheduled, X completed] |
-+----------------------------------------------------------+
-| No. | Due Date   | Principal | Interest | Total | Balance | Status    | Action  |
-|-----|------------|-----------|----------|-------|---------|-----------|---------|
-| 1   | YYYY-MM-DD | ¥XXX      | ¥XXX     | ¥XXX  | ¥XXX    | PAID ✅  | Cancel  |
-| 2   | YYYY-MM-DD | ¥XXX      | ¥XXX     | ¥XXX  | ¥XXX    | PENDING ⚠️| Pay    |
-| 3   | YYYY-MM-DD | ¥XXX      | ¥XXX     | ¥XXX  | ¥XXX    | PENDING ⚠️| Pay    |
-+----------------------------------------------------------+
-| Total Payments: N件  |  Pending: N件  |  Completed: N件  |
-+----------------------------------------------------------+
++----------------------------------------------------------------------+
+| Payment Schedule & History              12 scheduled, 0 completed   |
++----------------------------------------------------------------------+
+| Payment Schedule (12 payments)                                       |
+| PAYMENT # | DUE DATE   |PRINCIPAL|INTEREST|TOTAL PMT|REM. BAL |STATUS  |ACTION|
+|-----------|------------|---------|--------|---------|---------|--------|------|
+| 1         | 2026-07-02 | ¥163    | ¥8     | ¥171    | ¥1,837  |Pending |[Pay] |
+| 2         | 2026-08-02 | ¥164    | ¥7     | ¥171    | ¥1,673  |Pending |[Pay] |
+| 3         | 2026-09-02 | ¥165    | ¥6     | ¥171    | ¥1,508  |Pending |[Pay] |
+| ...       | ...        | ...     | ...    | ...     | ...     |Pending |[Pay] |
+| 12        | 2027-06-02 | ¥168    | ¥1     | ¥169    | ¥0      |Pending |[Pay] |
++----------------------------------------------------------------------+
+| +--Total Payments------+ +--Pending Payments---+ +--Completed------+|
+| | 12                   | | 12                  | | 0               ||
+| +----------------------+ +---------------------+ +-----------------+|
++----------------------------------------------------------------------+
 ```
 
 ### 3.3 支払い済み状態
 
 ![支払い済み状態](./screenshots/payment-paid.png)
+
+```
++----------------------------------------------------------------------+
+| Payment Schedule & History              12 scheduled, 2 completed   |
++----------------------------------------------------------------------+
+| PAYMENT # | DUE DATE               |PRINCIPAL|...|STATUS  |ACTION  |
+|-----------|------------------------|---------|---|--------|--------|
+| 1         | 2026-07-02             | ¥163    |...| Paid   | Cancel |
+|           | Paid: 2026-06-02       |         |   |        |        |
+| 2         | 2026-08-02             | ¥164    |...| Pending|[Pay]   |
+| ...       | ...                    | ...     |...|        |[Pay]   |
++----------------------------------------------------------------------+
+| +--Total Payments------+ +--Pending Payments---+ +--Completed------+|
+| | 12                   | | 11                  | | 1               ||
+| +----------------------+ +---------------------+ +-----------------+|
++----------------------------------------------------------------------+
+```
 
 > 支払い済み（PAID）行では "Cancel" ボタンが表示される。支払い取り消しが可能。
 

@@ -18,21 +18,18 @@
 ![共通レイアウト](./screenshots/common-layout.png)
 
 ```
-+----------------------------------------------------------+
-| HEADER                                                   |
-| [ロゴ] Syndicate Lending Management System               |
-+----------------+-----------------------------------------+
-| SIDEBAR        | MAIN CONTENT AREA                       |
-|                |                                         |
-| Dashboard      |  各ページのコンテンツ                   |
-| Borrowers      |  （Page コンポーネントが描画される）     |
-| Investors      |                                         |
-| Syndicates     |                                         |
-| Facilities     |                                         |
-| Drawdowns      |                                         |
-| Fee Payments   |                                         |
-|                |                                         |
-+----------------+-----------------------------------------+
++----+-------------------------------+------------------+----+
+|[≡] LoanSys  | ■ LoanSys            | [🔍 Search    ] |[U]|
++----+-------------------------------+------------------+----+
+| [⊞] Dashboard  (active/highlight)  |                       |
+| [👤] Borrowers                     |                       |
+| [👤] Investors                     |   Syndicated Loan     |
+| [⊞] Syndicates                     |   Management System   |
+| [⬜] Facilities                    |                       |
+| [⊙] Drawdowns                      |  Welcome to the       |
+| [📄] Fee Payments                  |  Syndicated Loan      |
+|                                    |  Management System    |
++------------------------------------+-----------------------+
 ```
 
 ---
